@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The snapshot anchor resolver: an item identity that a committed pin holds.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 //! rules that exactly one resolver owns each anchor kind, and that "a resolver
 //! reads repository content or a committed snapshot, and never a live service".
 //! `headwater_graph::anchors::SourceTree` is the first half of that sentence.
@@ -20,7 +20,7 @@
 //! a typo to a real item, which is worse than binding nothing: an edge that
 //! reports as unresolved sends an author to the line, and an edge bound to the
 //! wrong item is a correct check result over a wrong graph, which is the failure
-//! [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names for an importer.
 //!
 //! So the whole of the normalization here is [`str::trim`], and it is a trim

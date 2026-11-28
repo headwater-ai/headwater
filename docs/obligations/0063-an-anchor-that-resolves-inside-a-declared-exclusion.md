@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 1](../spec/conceptual-model.md#external-anchor) fixes three outcomes for an anchor: resolved, unresolved, and withheld. A corpus exclusion states that a path is not corpus content, which is neither a defect nor a withholding. [Q17](../spec/decisions.md#q17--governed-access-and-the-solution-layer) rules on the withheld case and not on this one.
+[The conceptual model](../spec/conceptual-model.md#external-anchor) fixes three outcomes for an anchor: resolved, unresolved, and withheld. A corpus exclusion states that a path is not corpus content, which is neither a defect nor a withholding. [Q17](../spec/decisions.md#q17--governed-access-and-the-solution-layer) rules on the withheld case and not on this one.
 
 ## Obligation
 

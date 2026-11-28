@@ -2,7 +2,7 @@
 //! Graph build: edges, the identifier index, external anchors, and a report of
 //! what did not resolve.
 //!
-//! [Spec 6](../../../../docs/spec/engine-architecture.md) puts this phase
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) puts this phase
 //! after the census and before every check: it "resolves relations into edges,
 //! indexes identifiers, binds external anchors (code paths, work items, URLs),
 //! and reports what it could not resolve".
@@ -24,7 +24,7 @@
 //! It decides identity: which document an identifier names, which node two
 //! spellings of an anchor are, and which relation an authored name is. Each one
 //! is a **correctness root** in the sense of
-//! [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots):
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots):
 //! wrong, it produces no error anywhere, and every check over it passes on the
 //! wrong graph.
 //!

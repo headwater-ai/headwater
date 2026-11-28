@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The parser's conformance corpus.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) asks
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) asks
 //! for this by name: "a parser conformance corpus is part of the engine's own
 //! test surface". The reason is the failure mode. A parser defect does not
 //! crash a run, it moves a span or loses a block, and every check downstream

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The one crate of this workspace that runs a version control command.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
+//! [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
 //! and `headwater_check::change` both state the boundary this crate sits
 //! outside of: the check-evaluation path "runs no version control command, and
 //! opens no file that the [manifest] does not name". A change manifest still

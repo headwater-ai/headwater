@@ -28,7 +28,7 @@ No runner reads these files. There is no engine, so the expected findings below 
 
 Three findings are planted. A run that reports fewer has a hole in it, and a run that reports more has found something this file did not intend.
 
-**1. `naming-survey.md` carries `doc_type` on a homogeneous shelf.** The `evaluations` shelf declares one kind, so placement already states it, and `kinds.evaluation` forbids the facet. Expected as an error, from the rule that [spec 2](../../../spec/taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) states: a second statement of one fact eventually disagrees with the first.
+**1. `naming-survey.md` carries `doc_type` on a homogeneous shelf.** The `evaluations` shelf declares one kind, so placement already states it, and `kinds.evaluation` forbids the facet. Expected as an error, from the rule that [the taxonomy model](../../../spec/taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) states: a second statement of one fact eventually disagrees with the first.
 
 **2. `naming-survey.md` is cited by no register.** The `evidence-cited` expectation on `kinds.evaluation` gives thirty days from `status_since`, and the date is 2026-05-01. Expected as a warning against the evaluation, which is where the reader who can act will look.
 

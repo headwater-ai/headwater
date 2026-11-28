@@ -2,7 +2,7 @@
 //! The promotion count, and the corpus that separates it from a count of
 //! documents standing at `accepted`.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." A count is harder to hold to that bar than a defect
 //! is, because a wrong count and a right one produce reports of the same shape.
@@ -174,7 +174,7 @@ fn a_document_that_was_already_accepted_is_not_promoted() {
 
 /// A run with no change reports every instance as skipped, and never as passed.
 ///
-/// [Spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version):
+/// [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version):
 /// "In a full-corpus run, instances of such a check are counted and reported as
 /// skipped, with the reason `change-scoped-only` — visible, never silent." A
 /// rule that passed instead would contribute nothing in the mode this

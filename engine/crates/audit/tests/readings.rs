@@ -334,7 +334,7 @@ fn no_layout_reading_counts_more_than_it_measured() {
 
 /// The one finding class exists, and the declaration is what produces it.
 ///
-/// [Spec 12](../../../../docs/spec/check-layer.md) refuses a check with no
+/// [The check layer](../../../../docs/spec/check-layer.md) refuses a check with no
 /// failing fixture under it, and the same bar reaches a reading that carries a
 /// verdict. This is that fixture: on the recorded date two relations have a
 /// half on a document past the declared window, and on a date inside the window
@@ -985,7 +985,7 @@ fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read
 
 /// Two audits of one corpus at one date write one set of bytes.
 ///
-/// [Spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
+/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// binds a run to "same corpus, same lock, same injected clock, byte-identical
 /// output". Nothing gates on this verb, and it is held to that bar anyway,
 /// because a report a person cites has to be reproducible by the person who

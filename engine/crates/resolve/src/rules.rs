@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `taxonomy validate`, over a resolved taxonomy.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema) lists
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema) lists
 //! what the verb checks. Two of those items are decidable over one source and
 //! `headwater-meta` runs them before anything merges. Three decide a merge and
 //! [`crate::resolve`] runs them as it merges. The rest read the *result*, and
@@ -14,7 +14,7 @@
 //! in part here and in part nowhere, because the part that is missing needs a
 //! declaration that the language does not have. A validator that reported those
 //! as passes would be the silent pass that
-//! [spec 4](../../../../docs/spec/assurance-model.md) exists to remove, and
+//! [The assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
 //! one that reported them as failures would refuse every taxonomy there is.
 //! So each one states what it decided and what it did not, and
 //! `headwater taxonomy validate` prints the statement.
@@ -87,7 +87,7 @@ pub enum Ran {
 /// `budget` (#2088).
 pub const RULE_SET: u32 = 4;
 
-/// Every rule that [spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
+/// Every rule that [the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
 ///
 /// The list is data because a caller reports what it ran. It is also the answer
@@ -279,7 +279,7 @@ pub const WAITING: [(&str, &str); 0] = [];
 ///
 /// `headwater taxonomy validate` prints this beside its verdict, because a
 /// verdict with no statement of what was checked is the pass that
-/// [spec 4](../../../../docs/spec/assurance-model.md) refuses.
+/// [The assurance model](../../../../docs/spec/assurance-model.md) refuses.
 pub fn render(mode: ColorMode) -> String {
     let mut out = String::new();
     for (rule, ran) in RULES {

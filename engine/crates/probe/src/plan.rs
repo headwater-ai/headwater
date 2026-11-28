@@ -3,7 +3,7 @@
 //!
 //! # The plan is the half of the run identity that exists before the run
 //!
-//! [Spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! fixes six members of a run identity before anything is called: the taxonomy
 //! lock hash, the corpus tree hash, the probe selection hash, the read-set
 //! hash, the rotation seed and the harness version. This is where they are
@@ -655,7 +655,7 @@ pub struct Plan {
     /// Targets an `examines` edge names that are not documents of this corpus,
     /// in the text the resolver normalized.
     ///
-    /// [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// rules that "an external anchor is in no read set", because a read set is
     /// a list of corpus paths and an anchor names a target that is not one.
     /// They are listed here so that the exclusion has a location rather than

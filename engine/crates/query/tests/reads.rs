@@ -251,7 +251,7 @@ fn the_fixture_tree_answers_the_recorded_reads() {
 
 /// Two surfaces over one corpus answer identically.
 ///
-/// [Spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
+/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// binds a run to "same corpus, same lock, same injected clock, byte-identical
 /// output", and a read an agent depends on is held to the same bar. This is
 /// that comparison, run over this repository rather than over the tree written

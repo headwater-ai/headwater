@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The CommonMark scan.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) names
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) names
 //! the parser's spans a correctness root, and the reason is a silent pass: a
 //! mis-parsed heading lets a section contract hold with no finding anywhere. A
 //! scan by regular expression fails that way on the first `# heading` inside a
@@ -178,7 +178,7 @@ impl Body {
 
     /// Every sentence this document's own author wrote, in document order.
     ///
-    /// [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
     /// holds segmentation here rather than in a rule, with the spans and the
     /// author-owned text. See [`crate::sentences`].
     pub fn sentences(&self) -> Vec<crate::sentences::Sentence> {
@@ -387,7 +387,7 @@ fn close(open: &mut Vec<Block>, out: &mut Body) {
 
 /// Mark the inline quotations inside one closed block.
 ///
-/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 /// rules that a quotation is outside every voice rule "by construction", and
 /// that this is "not an exemption that a rule declares". A block quotation
 /// already arrives marked, because CommonMark has a token for it. A quotation

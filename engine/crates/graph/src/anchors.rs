@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //! External-anchor resolution: normalize a target string, then bind it.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names this a correctness root and says exactly how it fails: "a resolver
 //! that mis-normalizes makes `governs` edges silently miss". Nothing raises an
 //! error when it happens. Write-time impact detection fires on anchor identity
-//! ([spec 5](../../../../docs/spec/ai-integration.md)), so an anchor that
+//! ([AI integration](../../../../docs/spec/ai-integration.md)), so an anchor that
 //! normalizes to a second spelling of one target is a second node, and every
 //! document that governs the first one stops reaching the code that changed.
 //!
 //! # Three outcomes, and the third is never reported as the second
 //!
-//! [Spec 1](../../../../docs/spec/conceptual-model.md#external-anchor) fixes
+//! [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor) fixes
 //! the set: an anchor resolves, or it fails to resolve, or its target sits
 //! behind a declared withholding. The third is [`Binding::Withheld`]. Its one
 //! producer is the resolver over a pinned export, `headwater_import::harvest`,
@@ -96,7 +96,7 @@ pub enum Binding {
         ///
         /// Two components read it. `headwater_check::suspect` compares it
         /// against the `verified_revision` recorded on the edge, which is the
-        /// drift report [spec 7](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
+        /// drift report [distribution and federation](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
         /// asks for per edge, and which a `governs` edge now receives as
         /// well. And `Target::resolution` renders it into the
         /// cache key of every edge instance, so a verdict about an edge cannot

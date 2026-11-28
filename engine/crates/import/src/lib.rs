@@ -10,7 +10,7 @@
 //!
 //! # Why this is a correctness root
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! puts an importer beside the scaffolder and gives the same reason: "Edges
 //! marked `created_by: import` arrive in bulk from a system that this corpus
 //! does not govern, and nobody reads them one at a time. A wrong imported edge
@@ -81,7 +81,7 @@
 //!
 //! # This crate never fetches
 //!
-//! [Spec 0](../../../../docs/spec/vision-and-scope.md#non-negotiables)
+//! [The vision and scope](../../../../docs/spec/vision-and-scope.md#non-negotiables)
 //! forbids a network dependency at check time and no crate the checking loop
 //! reaches depends on the network. This crate takes the path of a directory
 //! that the caller already fetched and committed, on the shape `taxonomy
@@ -104,7 +104,7 @@ use headwater_resolve::release;
 use std::path::Path;
 
 /// The creator value a relation declares when an importer is what pays for its
-/// edges. [Spec 2](../../../../docs/spec/taxonomy-model.md#who-creates-each-edge)
+/// edges. [The taxonomy model](../../../../docs/spec/taxonomy-model.md#who-creates-each-edge)
 /// closes the set this comes from.
 pub const IMPORT: &str = "import";
 

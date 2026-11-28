@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The probe harness: the parts of it that are deterministic.
 //!
-//! [Spec 5](../../../../docs/spec/ai-integration.md#measuring-whether-any-of-this-works)
+//! [AI integration](../../../../docs/spec/ai-integration.md#measuring-whether-any-of-this-works)
 //! declares the probe suite and
 //! [its contract](../../../../docs/interfaces/headwater-probe.md) says where it
 //! sits: outside `check`. The session between `plan` and `record` reaches a
@@ -66,7 +66,7 @@
 //!
 //! # Four things keep this out of every gate, and none of them is a promise
 //!
-//! The list is the one [spec 12](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
+//! The list is the one [the check layer](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
 //! fixes for the sampler path, applied here:
 //!
 //! 1. **A crate boundary the compiler holds.** This crate names
@@ -134,7 +134,7 @@ pub use plan::Plan;
 
 headwater_check::enumerated! {
     /// What a probe asks, from the closed set
-    /// [spec 5](../../../../docs/spec/ai-integration.md#probe-categories)
+    /// [AI integration](../../../../docs/spec/ai-integration.md#probe-categories)
     /// declares.
     ///
     /// Four, and two earlier ones are deliberately absent. Fidelity is not a probe,
@@ -172,7 +172,7 @@ impl Category {
 
 headwater_check::enumerated! {
     /// The predicate a probe declares, from the closed set
-    /// [spec 5](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+    /// [AI integration](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
     /// fixes.
     ///
     /// Closed because a grader evaluates it. A question whose answer needs a rubric

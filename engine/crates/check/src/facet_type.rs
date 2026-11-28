@@ -40,7 +40,7 @@
 //! # Where the finding reports, and why it offers no fix
 //!
 //! At the value, because that is the text to change. No fix is offered:
-//! [spec 12](../../../../docs/spec/check-layer.md#fixability) makes one
+//! [The check layer](../../../../docs/spec/check-layer.md#fixability) makes one
 //! mechanical only where there is one correct outcome derivable without
 //! judgment, and the date a document entered its state is a fact the author
 //! knows and the engine does not.

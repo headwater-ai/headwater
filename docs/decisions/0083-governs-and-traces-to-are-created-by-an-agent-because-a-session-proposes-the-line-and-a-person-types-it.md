@@ -27,7 +27,7 @@ relations:
 
 ## Context
 
-`created_by` names the actor that a taxonomy expects to pay for an edge, from the closed set that [spec 2](../spec/taxonomy-model.md#who-creates-each-edge) states. Until this change the base package gave `governs` and `traces_to` the value `hook`. [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that no verb writes either edge, and that every such edge in this corpus is hand entry.
+`created_by` names the actor that a taxonomy expects to pay for an edge, from the closed set that [the taxonomy model](../spec/taxonomy-model.md#who-creates-each-edge) states. Until this change the base package gave `governs` and `traces_to` the value `hook`. [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that no verb writes either edge, and that every such edge in this corpus is hand entry.
 
 On 2026-09-26 no verb of the engine writes either edge. `headwater new --relates` refuses a relation whose `created_by` is not `scaffold`. `headwater check --fix` writes a reciprocal half and a `verified_revision`, and it proposes no edge. The write-time hook that [#953](https://github.com/headwater-ai/headwater/issues/953) builds prints the front-matter lines of a `governs` edge and writes nothing.
 

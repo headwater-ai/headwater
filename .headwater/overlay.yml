@@ -429,7 +429,7 @@ add:
   # states in prose, moved to where a check reads it. Each entry states why the
   # term is retired. None of them names a replacement, and that is the whole of
   # the judgment: a stock metaphor is repaired by naming the thing it stands in
-  # for, and no substitution does that ([spec 2](../docs/spec/taxonomy-model.md)).
+  # for, and no substitution does that ([the taxonomy model](../docs/spec/taxonomy-model.md)).
 
   regimes.language.ste_house:
     tag: en-US

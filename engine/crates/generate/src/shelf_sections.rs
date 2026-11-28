@@ -19,7 +19,7 @@
 //!
 //! A heading is prose, and this module writes none of it. The text is the value
 //! of the facet in the `name` role, which
-//! [spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
 //! carries in the closed role registry. Three candidates were argued and two
 //! are refused.
 //!
@@ -50,7 +50,7 @@
 //! the absence, and a citation into the missing section fails with no statement
 //! anywhere about why. So a shelf whose documents cannot all be named produces
 //! no file at all, and the plan reports the document that stopped it. That is
-//! [spec 4](../../../../docs/spec/assurance-model.md)'s rule against a silent
+//! [The assurance model](../../../../docs/spec/assurance-model.md)'s rule against a silent
 //! pass, applied to a write.
 //!
 //! # Two documents may not carry one name

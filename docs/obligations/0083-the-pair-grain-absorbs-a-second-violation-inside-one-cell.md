@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) refuses the document grain in one sentence: "the pair grain keeps yesterday's regression loud while the declared debt stays patient". Writing the payload found the limit of that claim. It holds across documents and across rules, and it does not hold inside one cell.
+[Distribution and federation](../spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) refuses the document grain in one sentence: "the pair grain keeps yesterday's regression loud while the declared debt stays patient". Writing the payload found the limit of that claim. It holds across documents and across rules, and it does not hold inside one cell.
 
 ## Obligation
 

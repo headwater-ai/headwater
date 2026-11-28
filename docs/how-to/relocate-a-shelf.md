@@ -31,7 +31,7 @@ You need three things.
 
 **Two things move in a shelf relocation, and they move in different steps.** The taxonomy moves first, at the `override`. The directory moves second, by hand. Between the two, every document on the shelf reads as untyped. After the second, every relative link that named the old path reads as broken. Both states are expected, and this guide shows you both.
 
-This guide moves this repository's own `decisions` shelf, from `docs/decisions/**` to `docs/adr/**`. [Spec 2](../spec/taxonomy-model.md#the-immutable-core) names that exact move as its worked example of what an overlay may do without breaking the core. Every command below ran, for real, against a scratch copy of this repository, on 2026-09-16. Replace `decisions` and `docs/adr/**` with your own shelf's name and the path you want.
+This guide moves this repository's own `decisions` shelf, from `docs/decisions/**` to `docs/adr/**`. [The taxonomy model](../spec/taxonomy-model.md#the-immutable-core) names that exact move as its worked example of what an overlay may do without breaking the core. Every command below ran, for real, against a scratch copy of this repository, on 2026-09-16. Replace `decisions` and `docs/adr/**` with your own shelf's name and the path you want.
 
 ## Steps
 

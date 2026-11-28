@@ -33,7 +33,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the parse stage of [spec 6](../spec/engine-architecture.md#pipeline), with the census that the stage emits. Three crates under `engine/crates/` build that stage: `doc`, `census` and `vcs`.
+This spec describes the inside of the parse stage of [the engine architecture](../spec/engine-architecture.md#pipeline), with the census that the stage emits. Three crates under `engine/crates/` build that stage: `doc`, `census` and `vcs`.
 
 The stage has two inputs. The first is the corpus root on disk. The second is the shelves and kinds of the resolved taxonomy, which the [Taxonomy resolution](taxonomy-resolution.md) subsystem writes into the lock. The stage gives a `Census`, with one `Row` for each file under the corpus root. Each row carries the parsed `Document` where the stage read one. [Graph build](graph-build.md) reads the documents through the census and opens no document file itself.
 
@@ -41,10 +41,10 @@ The `vcs` crate is in this subsystem because `census` and `graph` use it, as the
 
 Other documents state what the stage does, and this spec does not repeat them:
 
-- [Spec 6](../spec/engine-architecture.md#pipeline) states the promise of the parse stage and of the census.
-- [Spec 2](../spec/taxonomy-model.md#kind-resolution) states the four steps of kind resolution.
-- [Spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) states OB-COV-1, which the census discharges.
-- [Spec 12](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version) states why the check path runs no version control command.
+- [The engine architecture](../spec/engine-architecture.md#pipeline) states the promise of the parse stage and of the census.
+- [The taxonomy model](../spec/taxonomy-model.md#kind-resolution) states the four steps of kind resolution.
+- [The assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) states OB-COV-1, which the census discharges.
+- [The check layer](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version) states why the check path runs no version control command.
 - The [`headwater change`](../interfaces/headwater-change.md) contract states the manifest, and the [merge driver](../interfaces/headwater-merge-driver.md) contract states what the driver does with a merge attribute.
 - The [`headwater derived`](../interfaces/headwater-derived.md) contract states the population of derived files.
 
@@ -148,4 +148,4 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **Five readers stay linear in their input** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). They are the YAML loader, the sentence reader, the line reader, the edge scope and the audit of a rendered report. The cases of the first four are in `engine/crates/cli/tests/linear_scale.rs`, which [`headwater check`](../interfaces/headwater-check.md#description) governs. The YAML loader reads many front matter keys in linear time (`many_unknown_front_matter_keys_check_in_linear_time`). The sentence reader and the line reader do the same for many sentences in one paragraph and many links on one line (`many_sentences_in_one_paragraph_check_in_linear_time` and `many_links_on_one_line_check_in_linear_time`). The edge scope belongs to [graph build](graph-build.md#invariants) and [checks and cache](checks-and-cache.md#invariants). It finds a repeated triple in constant time (`many_unresolved_relation_targets_check_in_linear_time`). The audit of a rendered report reads many records on one document in linear time (`many_records_on_one_document_are_audited_in_linear_time` in `engine/crates/adapter/tests/fixtures.rs`). A column far into a long line counts from the start of that line (`a_column_past_many_checkpoints_counts_from_the_line_start` in `engine/crates/doc/src/lines.rs`). The YAML loader keeps the first span of each key in a map, so the error for a repeated key names its first occurrence (`keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first` and `a_key_repeated_three_times_names_the_first_in_both_errors` in `engine/crates/yaml/src/loader.rs`). At release scale, a release record of 200,000 keys is refused inside a time ceiling (`a_release_of_many_keys_is_refused_in_time_and_leaves_nothing` in `engine/crates/cli/tests/publish.rs`).
 - **The recorded census of the fixture tree and of this repository is the assertion.** Record it again with `HEADWATER_BLESS=1` and read the diff.
 
-The parser, the sentence splitter, the census walker and kind resolution are correctness roots ([spec 12](../spec/check-layer.md#the-correctness-roots)). A wrong answer from any one of them causes no error, and spec 12 states what each one owes.
+The parser, the sentence splitter, the census walker and kind resolution are correctness roots ([the check layer](../spec/check-layer.md#the-correctness-roots)). A wrong answer from any one of them causes no error, and spec 12 states what each one owes.

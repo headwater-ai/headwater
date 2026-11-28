@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the constructions a voice regime forbids.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! puts voice first among the Document-origin examples and says what separates
 //! that origin from the two generated ones: "Document checks are the ones that
 //! no graph standard can reach, because the body is not in the graph."
@@ -25,7 +25,7 @@
 //!
 //! # The patterns read author-owned sentences and nothing else
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 //! rules that "a quotation, a code span, a citation line, and a generated block
 //! are outside every voice rule by construction. This is not an exemption that
 //! a rule declares." Nothing below declares one:
@@ -35,7 +35,7 @@
 //! # Severity, and why no fix is offered
 //!
 //! Advisory, permanently, and the reason is fixability rather than precision.
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#voice) states it
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice) states it
 //! after Q5 measured the alternative: "a category may become blocking only when
 //! its remediation is mechanical and total ... A category whose remediation is
 //! a rewrite stays advisory permanently, whatever its false-positive rate turns
@@ -47,7 +47,7 @@
 //!
 //! [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) closed on
 //! a measurement of three ASD-STE100 structural rules, used as proxies, and
-//! [spec 13](../../../../docs/spec/open-obligations.md) records what stayed
+//! [The register of open obligations](../../../../docs/spec/open-obligations.md) records what stayed
 //! unmeasured: nobody has measured `future_intent`, `change_narration` or
 //! `phased_rollout`, "because no implementation of them exists". This file is
 //! that implementation. The other half is a human campaign, and no code

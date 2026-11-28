@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q19](../spec/decisions.md#q19--inbound-integration-an-external-system-of-record) rules that an imported edge carries full weight, and `headwater import` writes one. The far end of such an edge is an external item rather than a document, so it is an anchor. [Spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) rules that exactly one resolver owns each anchor kind. It also rules that a resolver reads repository content or a committed snapshot.
+[Q19](../spec/decisions.md#q19--inbound-integration-an-external-system-of-record) rules that an imported edge carries full weight, and `headwater import` writes one. The far end of such an edge is an external item rather than a document, so it is an anchor. [The taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) rules that exactly one resolver owns each anchor kind. It also rules that a resolver reads repository content or a committed snapshot.
 
 **This engine has one resolver and it reads the source tree.** `headwater_graph::anchors::SourceTree` is it, and `Resolvers::over` builds the whole set from a corpus. Nothing reads a committed snapshot, and nothing carries the snapshot to the graph build at all.
 
@@ -39,7 +39,7 @@ So the corpus owes a resolver that binds an item of a committed snapshot, and on
 
 ## Discharge
 
-**This record is discharged, and a resolver reads the committed snapshot.** `headwater_import::anchors` is the second resolver [spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) names. It binds an item identity that the pin holds, and it refuses one the pin does not hold.
+**This record is discharged, and a resolver reads the committed snapshot.** `headwater_import::anchors` is the second resolver [the taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) names. It binds an item identity that the pin holds, and it refuses one the pin does not hold.
 
 **The resolver set is built from a corpus and from what a caller adds to it.** `Resolvers::over` still takes a corpus, and `Resolvers::with` takes one resolver that the graph crate cannot build. The `load` function of the command line is the one place that call sits, so every verb that builds a graph has the resolver. `headwater-import` depends on `headwater-graph`, so the graph crate cannot name a snapshot resolver at all. The dependency order decided the shape, rather than a preference between two designs.
 

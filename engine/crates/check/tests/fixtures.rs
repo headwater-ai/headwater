@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The check fixture tree, and this repository's own run.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
 //! each rule, and `check.report` records every instance and every finding it
@@ -44,7 +44,7 @@ use std::path::{Path, PathBuf};
 /// The date every recorded report is evaluated at.
 ///
 /// A recorded report is a function of its inputs, and
-/// [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
+/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// makes the clock one of them: "same corpus, same lock, same injected clock,
 /// byte-identical output". A test that read today's date would record a file
 /// that a windowed rule rewrites as the calendar moves, which is a fixture

@@ -19,11 +19,11 @@ relations:
 
 # The implementation language — the evidence for Q1
 
-The evidence for [Q1](../spec/open-questions.md#1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [spec 6](../spec/engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.
+The evidence for [Q1](../spec/open-questions.md#1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [the engine architecture](../spec/engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.
 
 **Python and Node are out on distribution, not on speed.** Spec 6 requires a single binary and no toolchain per check. It also gives a 200 ms budget for the change-scoped run that a commit hook performs. An interpreter start costs a large fraction of that budget before any work begins. And a mix of Python, Node, and shell, each with its own container fallback, is the named cost that spec 6 refuses. That leaves Rust and Go.
 
-**The conclusion is Rust, and the reasons are not the ones that Q1's table gives.** Speed does not decide between these two. The three arguments that do decide it come from constraints that the specification already committed to, in spec 6 and [spec 12](../spec/check-layer.md).
+**The conclusion is Rust, and the reasons are not the ones that Q1's table gives.** Speed does not decide between these two. The three arguments that do decide it come from constraints that the specification already committed to, in spec 6 and [the check layer](../spec/check-layer.md).
 
 ## Speed is spent by the time the question reaches Rust and Go
 
@@ -137,7 +137,7 @@ Replace it with a risk-retirement spike in Rust alone. Each item below can falsi
 
 Item two is the one to run first. It is the argument that carries the most weight and the only one where Rust could fail to deliver what this document claims for it.
 
-Two things the results add to this document. The YAML cost is real and takes a shape this document did not predict. The parser's own documentation is wrong about column indexing and about how a blank value arrives. Only an empirical check finds either. And argument 2 turned out to be stronger than stated, because scope is better carried as a *type* than as a value a check returns. That correction belongs to [spec 12](../spec/check-layer.md) and is not a language argument, although only the type system makes it available.
+Two things the results add to this document. The YAML cost is real and takes a shape this document did not predict. The parser's own documentation is wrong about column indexing and about how a blank value arrives. Only an empirical check finds either. And argument 2 turned out to be stronger than stated, because scope is better carried as a *type* than as a value a check returns. That correction belongs to [the check layer](../spec/check-layer.md) and is not a language argument, although only the type system makes it available.
 
 ## What stays reversible
 

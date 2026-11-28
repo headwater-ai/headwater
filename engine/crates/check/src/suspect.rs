@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
 //! states the rule: "A snapshot pin reports drift on each affected edge, and
 //! not only on the pin. A snapshot carries the upstream identity and revision
 //! of every item in it, so an advance says which items changed. Every edge into
@@ -31,7 +31,7 @@
 //!
 //! A proposal against the whole snapshot names a file, and this names the
 //! document whose author can act, at the entry of the `relations:` block that
-//! carries the edge. That is [spec 4](../../../../docs/spec/assurance-model.md#absence-is-a-finding-class-of-its-own)'s
+//! carries the edge. That is [the assurance model](../../../../docs/spec/assurance-model.md#absence-is-a-finding-class-of-its-own)'s
 //! report-at-the-origin rule, and it is why the drift report is a check-layer
 //! output rather than a verb of its own.
 //!

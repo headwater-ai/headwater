@@ -20,7 +20,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/authoring-and-lifecycle.md#identifiers) states that allocation reads a tree and that a tree holds no history. So the highest value a run finds is a lower bound on every value ever allocated. That sentence is about deletion, and it is correct about deletion. A tree holds no concurrency either, and nobody wrote that consequence down.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers) states that allocation reads a tree and that a tree holds no history. So the highest value a run finds is a lower bound on every value ever allocated. That sentence is about deletion, and it is correct about deletion. A tree holds no concurrency either, and nobody wrote that consequence down.
 
 Every branch cut from one state reads the same corpus. So two branches mint the same number. Each branch is internally consistent and passes a strict run, the two file names differ, and the merge is silent. The pair first exists after the second merge, when no run reads either change. This corpus met the failure three times in one working day on 2026-09-06. `0048` landed twice. Two claims on `0049` were caught by a person who read other branches by hand, which is not a mechanism.
 

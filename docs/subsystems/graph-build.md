@@ -26,14 +26,14 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the graph build stage of [spec 6](../spec/engine-architecture.md#pipeline). One crate builds that stage, and it is `graph` under `engine/crates/`.
+This spec describes the inside of the graph build stage of [the engine architecture](../spec/engine-architecture.md#pipeline). One crate builds that stage, and it is `graph` under `engine/crates/`.
 
 The stage takes three inputs. The first is the census, with the parsed document of each row. The second is the relation and anchor declarations of the resolved lock. The third is the set of anchor resolvers over the corpus. The stage gives one value, `Graph`, to every consumer after it: checks, queries, projections, export and explain.
 
 Other documents state what the stage does, and this spec does not repeat them:
 
-- [Spec 6](../spec/engine-architecture.md#pipeline) states the promise of the stage, and [Nothing stores the graph](../spec/engine-architecture.md#nothing-stores-the-graph) states why every run builds the graph again.
-- [Spec 1](../spec/conceptual-model.md#external-anchor) states what a relation, an external anchor and a prose link are.
+- [The engine architecture](../spec/engine-architecture.md#pipeline) states the promise of the stage, and [Nothing stores the graph](../spec/engine-architecture.md#nothing-stores-the-graph) states why every run builds the graph again.
+- [The conceptual model](../spec/conceptual-model.md#external-anchor) states what a relation, an external anchor and a prose link are.
 - [HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md) states how a `code_path` pattern binds.
 - The [`headwater explain`](../interfaces/headwater-explain.md) contract states what a reader sees of an edge.
 
@@ -55,7 +55,7 @@ The census decides the node set. A row is a node when `Outcome::node` of the cen
 
 The identifier index has two parts. `Index::typed` is the node set. `Index::untyped` holds each other document that declares an identifier, and nothing in it is a node. It lets a report tell a target that is a document with no kind from a target that is nothing. The first is a defect of the target document, and the second is a defect of the link. So each report goes to the author who can repair it.
 
-Each node also carries the former identifiers that its document lists in the facet in the `former_identifier` role, and `Config::former_identifier_facet` names that facet. `Index::node` and `Index::near_miss` try the live identifier first and then the former ones. The node that they return carries its live identifier, so an edge to a former identifier binds to the live one ([spec 3](../spec/authoring-and-lifecycle.md#identifiers)).
+Each node also carries the former identifiers that its document lists in the facet in the `former_identifier` role, and `Config::former_identifier_facet` names that facet. `Index::node` and `Index::near_miss` try the live identifier first and then the former ones. The node that they return carries its live identifier, so an edge to a former identifier binds to the live one ([authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers)).
 
 `Index::near_miss` answers the second question: it finds the document with no kind that carries the identifier an edge names. The path index holds every row of the census. So a link to a file that the corpus excludes says so, and it is not reported as broken. `Defect` records what the index could not make of a document: no identifier, an identifier that is not a scalar, or a duplicate. A duplicate compares every live and every former identifier.
 
@@ -67,13 +67,13 @@ It reads `inverse` because an author can write either half of a pair. It carries
 
 ### Edges
 
-`edges::build` reads the `relations:` block of each node. An entry is a scalar target or a mapping with `to:` and instance attributes, and both produce the same edge ([spec 1](../spec/conceptual-model.md#the-authored-form)). One entry and a sequence of one entry are also the same. An entry whose value is null (`key:`, `~`, `null`) or an empty sequence declares no edge and no finding. A null item in a sequence also declares no edge. A mapping entry whose `to:` is null names no target, and the reader reports it as an entry with no `to`. A quoted `""` or `"~"` is text that the author wrote, so it stays a target.
+`edges::build` reads the `relations:` block of each node. An entry is a scalar target or a mapping with `to:` and instance attributes, and both produce the same edge ([the conceptual model](../spec/conceptual-model.md#the-authored-form)). One entry and a sequence of one entry are also the same. An entry whose value is null (`key:`, `~`, `null`) or an empty sequence declares no edge and no finding. A null item in a sequence also declares no edge. A mapping entry whose `to:` is null names no target, and the reader reports it as an entry with no `to`. A quoted `""` or `"~"` is text that the author wrote, so it stays a target.
 
 The identity of an edge is the triple of source identifier, relation name and normalized target (Q4). List order carries no meaning, so nothing downstream reads it. A repeated triple in one document is a `Problem::RepeatedTriple`. A document with no identifier gets one `Problem::SourceHasNoIdentifier`, and not one report per target.
 
 An edge carries the direction the author wrote and the direction the taxonomy declares. `Edge::declared_triple` gives both halves of a reciprocal pair the same triple. A reciprocity check then finds the missing half and does not need to know which name the author used.
 
-The declaration decides whether a target is a document or an anchor. Where the `to` set holds a kind and an anchor kind, the index goes first and the resolvers after it. No document states that order, so [spec 13](../spec/open-obligations.md) carries it. `Target` has four variants: `Document`, `Anchor`, `Withheld` and `Unbound`. `Unbound` names one of six reasons. The target is nothing, or it is a document with no kind. No resolver claims it, or its anchor did not resolve. Two anchor kinds claim one string, or the target is the path of a typed document.
+The declaration decides whether a target is a document or an anchor. Where the `to` set holds a kind and an anchor kind, the index goes first and the resolvers after it. No document states that order, so [the register of open obligations](../spec/open-obligations.md) carries it. `Target` has four variants: `Document`, `Anchor`, `Withheld` and `Unbound`. `Unbound` names one of six reasons. The target is nothing, or it is a document with no kind. No resolver claims it, or its anchor did not resolve. Two anchor kinds claim one string, or the target is the path of a typed document.
 
 The last reason is `Unbound::DocumentByPath` (#1410). A literal path to a document that has a kind and an identifier binds nothing, and the report names the identifier to write. An anchor onto that file would give the document a second name.
 
@@ -91,7 +91,7 @@ A literal pattern binds when its path exists. It binds to an excluded file as we
 
 ### Prose links
 
-`links::bind` binds every prose link to what it points at, and no link becomes an edge ([spec 1](../spec/conceptual-model.md#prose-links-are-not-relations)). A link inside a block quote is counted and never bound, because it is a claim of another author. A destination binds when the raw text or the percent-decoded text names a file, and it is broken only when neither does. A query string comes off before the path is bound, and a leading `/` is the root of the corpus. The fragment stays on the record and is not resolved, because a heading is the business of a check.
+`links::bind` binds every prose link to what it points at, and no link becomes an edge ([the conceptual model](../spec/conceptual-model.md#prose-links-are-not-relations)). A link inside a block quote is counted and never bound, because it is a claim of another author. A destination binds when the raw text or the percent-decoded text names a file, and it is broken only when neither does. A query string comes off before the path is bound, and a leading `/` is the root of the corpus. The fragment stays on the record and is not resolved, because a heading is the business of a check.
 
 ### Governed scope
 
@@ -113,4 +113,4 @@ A change to this crate must keep each of these. A test holds each one that names
 - **The relation names that a document can write and the names that a template can write are one set** (`engine/crates/graph/tests/vocabulary.rs`).
 - **The recorded graph of the fixture tree and of this repository is the assertion.** Record it again with `HEADWATER_BLESS=1` and read the diff.
 
-The anchor resolver and the identifier index are correctness roots ([spec 12](../spec/check-layer.md#the-correctness-roots)). A wrong answer from either one causes no error, and every check over the graph passes on the wrong graph. [HW-OBL-0064](../obligations/0064-two-identity-components-are-correctness-roots-that-spec-12.md) records that no fixture set is asked of either one yet.
+The anchor resolver and the identifier index are correctness roots ([the check layer](../spec/check-layer.md#the-correctness-roots)). A wrong answer from either one causes no error, and every check over the graph passes on the wrong graph. [HW-OBL-0064](../obligations/0064-two-identity-components-are-correctness-roots-that-spec-12.md) records that no fixture set is asked of either one yet.

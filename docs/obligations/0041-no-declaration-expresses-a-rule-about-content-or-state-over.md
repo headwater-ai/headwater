@@ -33,4 +33,4 @@ The language owes a declaration for a rule over content change and a rule over d
 
 ## Discharge
 
-The entry declares each as an obligation with a `gap` disposition, and each names an engine input that already exists. [Spec 12](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version) supplies the prior version as `needs_prior`, and `taxonomy audit` already measures state dwell. So the gap is a declaration rather than a capability, and it is the check class that the second entry adds to this library.
+The entry declares each as an obligation with a `gap` disposition, and each names an engine input that already exists. [The check layer](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version) supplies the prior version as `needs_prior`, and `taxonomy audit` already measures state dwell. So the gap is a declaration rather than a capability, and it is the check class that the second entry adds to this library.

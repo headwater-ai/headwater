@@ -39,7 +39,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the authoring subsystem of [spec 6](../spec/engine-architecture.md#subsystems). Two crates under `engine/crates/` build it: `scaffold` and `import`. The pipeline diagram of spec 6 does not draw this subsystem, because it does not read a corpus to give a verdict. It writes into a corpus.
+This spec describes the inside of the authoring subsystem of [the engine architecture](../spec/engine-architecture.md#subsystems). Two crates under `engine/crates/` build it: `scaffold` and `import`. The pipeline diagram of spec 6 does not draw this subsystem, because it does not read a corpus to give a verdict. It writes into a corpus.
 
 The subsystem has four writers. Each writer puts bytes into a document that the next `headwater check` reads as authored:
 
@@ -54,10 +54,10 @@ The bodies of the `new`, `capture`, `import`, `taxonomy migrate` and `check` ver
 
 Other documents state what the writers do, and this spec does not repeat them:
 
-- [Spec 3](../spec/authoring-and-lifecycle.md#templates-and-scaffolding) states what a template is and what the scaffolder determines, and its [capture cost](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) section states the assisted fraction.
-- [Spec 12](../spec/check-layer.md#fixability) states what a fix may offer, and its [correctness roots](../spec/check-layer.md#the-correctness-roots) section names the scaffolder and the importer.
-- [Spec 2](../spec/taxonomy-model.md#versioning-by-measured-compatibility) states the migration payload.
-- [HW-DR-0019](../decisions/0019-inbound-integration-an-external-system-of-record.md) states inbound integration, and [spec 7](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) states how a tier above a corpus reads a pinned export.
+- [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#templates-and-scaffolding) states what a template is and what the scaffolder determines, and its [capture cost](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) section states the assisted fraction.
+- [The check layer](../spec/check-layer.md#fixability) states what a fix may offer, and its [correctness roots](../spec/check-layer.md#the-correctness-roots) section names the scaffolder and the importer.
+- [The taxonomy model](../spec/taxonomy-model.md#versioning-by-measured-compatibility) states the migration payload.
+- [HW-DR-0019](../decisions/0019-inbound-integration-an-external-system-of-record.md) states inbound integration, and [distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) states how a tier above a corpus reads a pinned export.
 - The contracts of [`headwater new`](../interfaces/headwater-new.md), [`headwater capture`](../interfaces/headwater-capture.md), [`headwater import`](../interfaces/headwater-import.md), [`headwater check`](../interfaces/headwater-check.md) and [`headwater taxonomy`](../interfaces/headwater-taxonomy.md) state the behavior of each verb. The `taxonomy` contract states the `migrate` operation, and spec 2 states what a step of the payload is.
 
 The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)). The doc comments of the crates state it.

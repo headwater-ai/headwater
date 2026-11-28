@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Graph-origin check, generated from the endpoint sets of a relation.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists "endpoint kinds" among the Graph-origin examples. A relation declares
 //! `from` and `to`, and this rule is the whole of what those two keys mean at
 //! run time. `headwater_graph` carries both and reads neither, and says so:
@@ -12,7 +12,7 @@
 //! `cites_evidence` permits `evaluation` at its target end, and `traces_to`
 //! permits `governed_document`. A document's kind is `design_spec` or
 //! `review_record`, never `governed_document`, because
-//! [spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds) says no
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds) says no
 //! document is an abstract kind. So an endpoint is permitted when the kind at
 //! that end **descends from** a kind the relation names, and a comparison of
 //! the two strings would report every inherited endpoint in a corpus as a

@@ -32,7 +32,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the projections stage and the export stage of [spec 6](../spec/engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `generate` and `mark`.
+This spec describes the inside of the projections stage and the export stage of [the engine architecture](../spec/engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `generate` and `mark`.
 
 The stages have four inputs. They are the census of the corpus, the graph and its query surface, the lock, and the `projections` block that the lock carries. The stages give three outputs:
 
@@ -42,11 +42,11 @@ The stages have four inputs. They are the census of the corpus, the graph and it
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/engine-architecture.md#projections) states the projection kinds.
-- [Spec 7](../spec/distribution-and-federation.md#what-leaves-a-corpus) states the loss set, the export profile and what a filtered export claims.
+- [The engine architecture](../spec/engine-architecture.md#projections) states the projection kinds.
+- [Distribution and federation](../spec/distribution-and-federation.md#what-leaves-a-corpus) states the loss set, the export profile and what a filtered export claims.
 - [The `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) states the marker rule and the other rules that each projection obeys.
-- [Spec 7](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
-- [Spec 3](../spec/authoring-and-lifecycle.md) states the warrant of a generated document.
+- [Distribution and federation](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
+- [Authoring and lifecycle](../spec/authoring-and-lifecycle.md) states the warrant of a generated document.
 - [HW-DR-0063](../decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) states why the engine derives each required facet of a generated document.
 - [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) states the navigation format, and [HW-DR-0038](../decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) states how a rendered page links to the descriptor.
 - The [`headwater generate`](../interfaces/headwater-generate.md), [`headwater export`](../interfaces/headwater-export.md), [`headwater site`](../interfaces/headwater-site.md) and [derived artifacts](../interfaces/headwater-derived.md) contracts state what an author sees of each verb and each artifact.

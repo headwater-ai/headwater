@@ -99,7 +99,7 @@ Every count but one moves only when this corpus moves, and there is no excluded 
 
 ## The sweep
 
-**This is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. Two documents state the absence outright: [spec 4](../../../../spec/assurance-model.md) records that this register declares no coherence obligation, so a sweep discharges none, and [HW-OBL-0114](../../../../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) says the same from the obligation's side. All three artifacts are committed under [`sweep/`](sweep/):
+**This is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. Two documents state the absence outright: [The assurance model](../../../../spec/assurance-model.md) records that this register declares no coherence obligation, so a sweep discharges none, and [HW-OBL-0114](../../../../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) says the same from the obligation's side. All three artifacts are committed under [`sweep/`](sweep/):
 
 | File | What it is |
 |---|---|

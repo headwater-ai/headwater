@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/taxonomy-model.md#the-decision-relation-vocabulary) names four checks that the decision-relation vocabulary brings. One of them is a `does_not_comply_with` edge that points at a `current` standard. That edge is a registered deviation, and it carries an owner and an expiry.
+[The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) names four checks that the decision-relation vocabulary brings. One of them is a `does_not_comply_with` edge that points at a `current` standard. That edge is a registered deviation, and it carries an owner and an expiry.
 
 The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) is the first entry to model a compliance tradition, and it could not declare that edge. The relation is defined-but-unenabled package content, reached by `$package.optional.does_not_comply_with`, and `package.optional` holds nothing. The entry cannot enable it. The entry may not declare the name either, because the package collides with that address the day `package.optional` holds the relation. `OB-SS-3` of the entry carries the gap, and the argued form is the first finding at [line 148](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L148) of the doctrine.
 

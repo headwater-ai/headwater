@@ -23,11 +23,11 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) puts the shape of the provenance block with the engine rather than with a taxonomy. It also says that four engine rules turn on the warrant. The [meta-schema](https://github.com/headwater-ai/headwater/blob/main/engine/crates/meta/meta-schema.yml) declares no provenance block. Since [#1438](https://github.com/headwater-ai/headwater/issues/1438), `warrant.value.not_permitted` and `warrant.acceptance.unpaired` read the warrant and the acceptor in it. No check reads the shape of the block as a whole.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) puts the shape of the provenance block with the engine rather than with a taxonomy. It also says that four engine rules turn on the warrant. The [meta-schema](https://github.com/headwater-ai/headwater/blob/main/engine/crates/meta/meta-schema.yml) declares no provenance block. Since [#1438](https://github.com/headwater-ai/headwater/issues/1438), `warrant.value.not_permitted` and `warrant.acceptance.unpaired` read the warrant and the acceptor in it. No check reads the shape of the block as a whole.
 
 ## Obligation
 
-The query surface is the first code to read `provenance.warrant`, because [spec 5](../spec/ai-integration.md#intent-time-routing) makes a pointer state the `asserted` warrant beside the summary. So a read depends on a key that nothing validates. A document that misspells the key gets a pointer with no warning on it, and every rule that spec 3 promises is still absent.
+The query surface is the first code to read `provenance.warrant`, because [AI integration](../spec/ai-integration.md#intent-time-routing) makes a pointer state the `asserted` warrant beside the summary. So a read depends on a key that nothing validates. A document that misspells the key gets a pointer with no warning on it, and every rule that spec 3 promises is still absent.
 
 ## Discharge
 
@@ -39,6 +39,6 @@ The query surface is the first code to read `provenance.warrant`, because [spec 
 
 ## The recorder contract is the instance with no other field
 
-**A transcript is the artifact of this corpus whose whole value turns on the warrant.** [Spec 15](../spec/the-recorder-contract.md) states what a recorder writes, and every value in that list is a value a person can type. The lock digest and the selection digest are both printed by `headwater probe plan`. So a recorded transcript and a typed one are one file to every check here. `provenance.warrant` is the only field that separates them, and it is the field this record says has no shape. A shelf index prints it and `docs/probe-runs/` has no index, so the one reader it has does not reach the artifact that needs it.
+**A transcript is the artifact of this corpus whose whole value turns on the warrant.** [The recorder contract](../spec/the-recorder-contract.md) states what a recorder writes, and every value in that list is a value a person can type. The lock digest and the selection digest are both printed by `headwater probe plan`. So a recorded transcript and a typed one are one file to every check here. `provenance.warrant` is the only field that separates them, and it is the field this record says has no shape. A shelf index prints it and `docs/probe-runs/` has no index, so the one reader it has does not reach the artifact that needs it.
 
 That does not raise the priority of a shape. It names the reader a shape would serve. A rate is derived from the events rather than typed, so a forged rate needs a forged event log. The warrant is what a reader consults to decide whether to count the events at all.

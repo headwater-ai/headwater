@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `headwater generate`, and `--check` over what it wrote last time.
 //!
-//! [Spec 6](../../../../docs/spec/engine-architecture.md#projections) gives
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#projections) gives
 //! the contract in four lines. A projection is a generated artifact, the
 //! taxonomy declares each one, `generate` writes it, and `generate --check`
 //! fails when a committed output differs from what this corpus and this lock
@@ -11,7 +11,7 @@
 //!
 //! Spec 6 names the kinds the engine implements,
 //! [Q19](../../../../docs/spec/decisions.md) adds `transcription`, and
-//! [spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! adds `probe_result`. Collecting them for the meta-schema showed that they do
 //! not form one set. Eleven are declarable: a taxonomy names the kind and the
 //! output path, and
@@ -85,7 +85,7 @@
 //!
 //! They hold for different artifacts, which is what settles it. **The time is
 //! injected and never read**, exactly as
-//! [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
+//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
 //! none. An export that leaves the repository is the artifact spec 7 is talking
@@ -146,7 +146,7 @@ pub struct Identity {
 /// [`Identity`] is supplied: this module opens no file of its own.
 ///
 /// The two members are two of the three inputs
-/// [spec 5](../../../../docs/spec/ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
+/// [AI integration](../../../../docs/spec/ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
 /// makes a result a function of. The third is the grader version, which is the
 /// version of the crate that evaluates them and is nothing a caller passes.
 ///
@@ -942,7 +942,7 @@ pub struct Output {
 ///
 /// Reported rather than dropped. A generator that silently emitted nothing for
 /// half its declarations is the silent pass that
-/// [spec 4](../../../../docs/spec/assurance-model.md) removes everywhere
+/// [The assurance model](../../../../docs/spec/assurance-model.md) removes everywhere
 /// else, and the reason is the part a reader acts on.
 #[derive(Clone, Debug)]
 pub struct Unwritten {

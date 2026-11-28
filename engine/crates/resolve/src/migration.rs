@@ -2,11 +2,11 @@
 //! The migration payload a major version ships, and what a publisher may not
 //! ship in one.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility):
 //! "A major version ships a **migration payload**: machine-readable steps that
 //! declare what moved, what was renamed, and what must be re-stated. The steps
 //! are split into what the engine can apply mechanically and what needs human
-//! or agent judgment." [Spec 7](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
+//! or agent judgment." [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
 //! states the form. This module reads it.
 //!
 //! # The split runs through a step, and no field declares which side it is on
@@ -52,7 +52,7 @@
 //! neither refuses it nor certifies it and `taxonomy diff` is where it is
 //! reported ([#388](https://github.com/headwater-ai/headwater/issues/388)).
 //! Widening the source half as well would refuse the migration
-//! [spec 7](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
 //! most expects: content moving out of the base and into a bundle, stated to
 //! base-only consumers as a re-statement.
 //!
@@ -144,7 +144,7 @@ impl Subject {
         }
     }
 
-    /// The dimensions of [spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
+    /// The dimensions of [the taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
     /// that a step over this subject is a remedy for.
     ///
     /// A facet value names two because spec 2 rules that one contains the

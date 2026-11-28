@@ -48,7 +48,7 @@ relations:
 
 **No word-count rule joins the check layer either.** HW-DR-0069 refused a word count for a paragraph, and its reasons stand. ASD-STE100 states no word count for a paragraph. HW-DR-0069 measured that a word count finds no paragraph that the sentence count misses, and that it finds two that it should not. So the sample reaches a word count too.
 
-**The rest of HW-DR-0069 stands.** The paragraph in [spec 13](../spec/open-obligations.md) that raised the question is a hand-kept index, and [#835](https://github.com/headwater-ai/headwater/issues/835) owes the mechanism that replaces it. Identifier density stays refused as a proxy for a paragraph in the shape of a list. HW-DR-0069 carries the argument for both, and this record supersedes it without a change to either.
+**The rest of HW-DR-0069 stands.** The paragraph in [the register of open obligations](../spec/open-obligations.md) that raised the question is a hand-kept index, and [#835](https://github.com/headwater-ai/headwater/issues/835) owes the mechanism that replaces it. Identifier density stays refused as a proxy for a paragraph in the shape of a list. HW-DR-0069 carries the argument for both, and this record supersedes it without a change to either.
 
 **One topic to a paragraph stays a check that a person makes.** The `ste-editor` skill tells an author to hold a paragraph to one topic and to six sentences, by hand. That instruction stays, and no finding stands behind it.
 

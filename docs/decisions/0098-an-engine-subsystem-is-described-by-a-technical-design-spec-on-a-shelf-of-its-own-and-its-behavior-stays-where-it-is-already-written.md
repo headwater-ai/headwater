@@ -24,7 +24,7 @@ relations:
 
 [#1283](https://github.com/headwater-ai/headwater/issues/1283) measured the engine source on 2026-09-28. `headwater taxonomy audit` reports that no `governs` edge reaches 137 of the 184 files under `engine/crates/**/src/**/*.rs`. The `check` crate has 8 of 54 files reached, and `resolve` has 3 of 17. An edit to one of those files names no document.
 
-The gap is not only missing edges. No document describes the inside of a crate. [Spec 6](../spec/engine-architecture.md) describes the whole engine in eight sections: the pipeline, the checks, the projections and the performance targets. It is the only place that names the crate structure. Five spec parts are longer than 11,000 words, and spec 7 is about 17,600. Implementation detail and system promises share one document in each of them.
+The gap is not only missing edges. No document describes the inside of a crate. [The engine architecture](../spec/engine-architecture.md) describes the whole engine in eight sections: the pipeline, the checks, the projections and the performance targets. It is the only place that names the crate structure. Five spec parts are longer than 11,000 words, and spec 7 is about 17,600. Implementation detail and system promises share one document in each of them.
 
 The question was whether each crate needs a functional spec and a technical spec, or a technical spec alone. A reader meets the behavior of the engine through its verbs, and the verbs do not map one to one onto crates. The `governs` edges of the 25 interface contracts show this. The `query` crate serves five verbs: `explain`, `mcp`, `query`, `route` and `show`. The `census` crate serves three. The `taxonomy` verb reaches three crates: `audit`, `compat` and `resolve`.
 

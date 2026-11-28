@@ -48,7 +48,7 @@ The corpus owes a ruling, and the two available answers differ in what they cost
 
 **The practice is right and the rule is worded wrong.** A pull request is the acceptance, the block is part of what the human reviews, and a merge is the act that `accepted_by` names. Under this reading the stamp is a proposal until the merge and a fact after it.
 
-The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [spec 3](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
+The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
 
 Nothing reports any of this. [HW-OBL-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
 

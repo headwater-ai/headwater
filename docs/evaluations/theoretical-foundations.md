@@ -256,9 +256,9 @@ Fekete, Liarokapis, O'Neil, O'Neil and Shasha ("Making Snapshot Isolation Serial
 
 The transfer is precise and it is favorable. Detection of this anomaly needs a read set. A database adds read tracking to get one, and git has none at all. Headwater already computes a read set per check instance, because scope enforcement makes the cache key a hash of exactly the in-scope inputs. The ingredient is a byproduct of a decision taken for caching.
 
-**The transfer has a limit, and the same literature names it.** A read set is a list of the items that a transaction read. An item that no transaction read reaches no list, so a predicate over the *absence* of an item is on no list either. Databases call that a **phantom**, and Eswaran, Gray, Lorie and Traiger ("The Notions of Consistency and Predicate Locks in a Database System", *CACM* 1976) answered it with a predicate lock rather than with a read set. Headwater holds no predicate lock. A corpus-scoped verdict has the extent of the corpus for its subject rather than any member of it. Nothing in this design carries such a verdict across a merge ([spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
+**The transfer has a limit, and the same literature names it.** A read set is a list of the items that a transaction read. An item that no transaction read reaches no list, so a predicate over the *absence* of an item is on no list either. Databases call that a **phantom**, and Eswaran, Gray, Lorie and Traiger ("The Notions of Consistency and Predicate Locks in a Database System", *CACM* 1976) answered it with a predicate lock rather than with a read set. Headwater holds no predicate lock. A corpus-scoped verdict has the extent of the corpus for its subject rather than any member of it. Nothing in this design carries such a verdict across a merge ([the check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
 
-> **Change:** state that validity is not preserved under merge, as a property of a verdict rather than as a caution ([spec 4](../spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Report the read set with every run, and hold it against a later tree by the one test that [spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states. Fail toward re-running, as serializable snapshot isolation fails toward aborting. Carry no verdict whose subject is the extent of the corpus, because a read set is not a predicate lock.
+> **Change:** state that validity is not preserved under merge, as a property of a verdict rather than as a caution ([the assurance model](../spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Report the read set with every run, and hold it against a later tree by the one test that [the check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states. Fail toward re-running, as serializable snapshot isolation fails toward aborting. Carry no verdict whose subject is the extent of the corpus, because a read set is not a predicate lock.
 
 ---
 
@@ -294,19 +294,19 @@ Where they ended up:
 
 | Spec | What these changes added |
 |---|---|
-| [1 — Conceptual model](../spec/conceptual-model.md) | Purpose on kinds, family and nuclearity on relations, windowed participation expectations |
-| [2 — Taxonomy model](../spec/taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
-| [3 — Authoring](../spec/authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
-| [4 — Assurance](../spec/assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, cost-aware adaptive reporting, and what a verdict is about |
-| [5 — AI integration](../spec/ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
-| [6 — Engine](../spec/engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
-| [7 — Distribution](../spec/distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
-| [9 — The decision register](../spec/decisions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
-| [12 — Check layer](../spec/check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
+| [Conceptual model](../spec/conceptual-model.md) | Purpose on kinds, family and nuclearity on relations, windowed participation expectations |
+| [Taxonomy model](../spec/taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
+| [Authoring](../spec/authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
+| [Assurance](../spec/assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, cost-aware adaptive reporting, and what a verdict is about |
+| [AI integration](../spec/ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
+| [Engine](../spec/engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
+| [Distribution](../spec/distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
+| [The decision register](../spec/decisions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
+| [Check layer](../spec/check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
 
 ### What the theory did not settle
 
-The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 13](../spec/open-obligations.md):
+The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [the register of open obligations](../spec/open-obligations.md):
 
 - **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
 - **Whether the taxonomy language survives contact with authors.** The [walkthrough](schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.

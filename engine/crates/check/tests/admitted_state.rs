@@ -2,7 +2,7 @@
 //! The states a kind admits, and the corpus that separates a document standing
 //! at one from a document standing outside them.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/admitted-state/` is
 //! written to be wrong under the two mistakes this rule is easiest to make.

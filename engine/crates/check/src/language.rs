@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the controlled language a kind declares.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists normative language among the Document-origin examples, and a language
 //! regime is where a taxonomy says which prose rules its documents obey.
 //!
@@ -31,10 +31,10 @@
 //!
 //! - **Sentence length**, ASD-STE100 writing rule 6.3 for descriptive text.
 //!   Advisory: the remediation is a rewrite, and
-//!   [spec 4](../../../../docs/spec/assurance-model.md#where-promotion-cannot-finish)
+//!   [The assurance model](../../../../docs/spec/assurance-model.md#where-promotion-cannot-finish)
 //!   makes that permanently advisory whatever the precision turns out to be.
 //! - **No contraction.** An error, because the expansion is mechanical and
-//!   total, which is the bar [spec 12](../../../../docs/spec/check-layer.md#fixability)
+//!   total, which is the bar [the check layer](../../../../docs/spec/check-layer.md#fixability)
 //!   sets. A patch rides along for the endings whose expansion is one word.
 //!   [`EXPANSIONS`] is that table, and the paragraph below says which endings
 //!   are not in it.
@@ -53,7 +53,7 @@
 //! `he'd` is `he had` or `he would`. Only a reader of the sentence decides
 //! those, so they fail the mechanical-and-total bar that the two above meet.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#fixability) puts the bar on
+//! [The check layer](../../../../docs/spec/check-layer.md#fixability) puts the bar on
 //! the **fix** rather than on the rule, and [`crate::Finding`] carries the patch
 //! per finding, so the split needs no second rule and no second severity. A
 //! contraction in [`EXPANSIONS`] carries a patch. One outside it carries the

@@ -26,7 +26,7 @@ relations:
 
 `created_by` is required on every relation, and its value names the actor that a taxonomy expects to pay for the edge. The base package gives two of its five relations the value `hook`. They are `governs`, which ends on a `code_path` anchor, and `traces_to`, which ends on a document or on an anchor.
 
-[Spec 2](../spec/taxonomy-model.md#the-decision-relation-vocabulary) states the expectation as a fact about the engine. Its sentence is that a hook proposes `traces_to` and `governs` from the change. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) counts how many default relations lack a mechanical creator, reaches two, and names `conflicts_with` and `constrains`. It counts `governs` and `traces_to` on the other side of that line.
+[The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) states the expectation as a fact about the engine. Its sentence is that a hook proposes `traces_to` and `governs` from the change. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) counts how many default relations lack a mechanical creator, reaches two, and names `conflicts_with` and `constrains`. It counts `governs` and `traces_to` on the other side of that line.
 
 No verb of this engine writes either edge. `headwater new --relates` refuses a relation whose `created_by` is not `scaffold`. It then prints both relations in the block that names what a document may also declare and nobody did. `headwater check --fix` writes a reciprocal half of an edge that a document already declares, and it proposes none. The three harness hooks that [#72](https://github.com/headwater-ai/headwater/issues/72) shipped read the graph and write no front matter at all.
 
@@ -46,7 +46,7 @@ Since #953, the write-time hook covers one part of this. An edit to a path that 
 
 ## Discharge
 
-A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [spec 3](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.
+A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.
 
 Where no such verb is written, the base package owes a `created_by` value that is true, and the walkthrough owes the corrected count. `author` states the cost plainly, and `agent` states that the coherence sweep owns the proposal.
 

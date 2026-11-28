@@ -4,7 +4,7 @@
 //!
 //! # The silent pass this closes
 //!
-//! [Spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! exists to stop a run from reporting nothing about a document it never
 //! checked. This is that failure one level below the census. A typed document
 //! with eight entries under `relations:` and no identifier contributes **zero**

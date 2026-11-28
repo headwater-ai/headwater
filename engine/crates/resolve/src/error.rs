@@ -32,7 +32,7 @@ impl ResolveError {
 
 /// The two declarations an `add` collision names.
 ///
-/// [Spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// makes a collision "always a task for a human", and a task a person can act
 /// on shows both sides. The values are rendered in the canonical form
 /// [`crate::render`] writes the lock in, so what a reader compares is the text
@@ -55,7 +55,7 @@ pub struct Collision {
 pub enum ResolveErrorKind {
     /// The source does not load, or the meta-schema refuses it. The engine
     /// never applies a taxonomy that does not validate, and there is no
-    /// partial-load mode ([spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)).
+    /// partial-load mode ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema)).
     SourceRefused(String),
     /// A source that has to be a taxonomy carries operations, or the reverse.
     WrongRole { expected: &'static str },
@@ -255,7 +255,7 @@ impl std::fmt::Display for ResolveError {
 }
 
 /// Every `add` collision of one refused resolution, as the judgment task
-/// [spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// owes a consumer: both declarations, both files, the address, and the two
 /// operations that settle it.
 ///

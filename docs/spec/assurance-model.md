@@ -113,9 +113,9 @@ obligations:
     severity: high
 ```
 
-**The identifier is the key, and not a member.** An earlier draft wrote each entry as an item of a list, with the identifier under `id`. No address reaches inside a list ([spec 2](taxonomy-model.md#the--reference-sublanguage)), so no bundle could ever contribute an obligation. A bundle that adds a kind also adds the obligations that its rules serve. Keyed by the identifier, two bundles that add two obligations write two disjoint addresses, which is what the confluence rule of [spec 7](distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) needs.
+**The identifier is the key, and not a member.** An earlier draft wrote each entry as an item of a list, with the identifier under `id`. No address reaches inside a list ([the taxonomy model](taxonomy-model.md#the--reference-sublanguage)), so no bundle could ever contribute an obligation. A bundle that adds a kind also adds the obligations that its rules serve. Keyed by the identifier, two bundles that add two obligations write two disjoint addresses, which is what the confluence rule of [distribution and federation](distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) needs.
 
-**The severity here is the obligation's, and a finding carries a different one.** Two scales share one word. This one says how much the invariant matters, and the coverage report reads it to answer what fraction of obligations are verified by severity. A finding reports the severity of the check that produced it ([spec 12](check-layer.md#severity-is-the-checks-posture-is-the-controls)), on the scale `error`, `warn` and `info`. The [worked finding](#findings) below carries `error` against OB-014, which carries `medium`. Neither value is derivable from the other, and a reader who takes them for one field misreads both reports.
+**The severity here is the obligation's, and a finding carries a different one.** Two scales share one word. This one says how much the invariant matters, and the coverage report reads it to answer what fraction of obligations are verified by severity. A finding reports the severity of the check that produced it ([the check layer](check-layer.md#severity-is-the-checks-posture-is-the-controls)), on the scale `error`, `warn` and `info`. The [worked finding](#findings) below carries `error` against OB-014, which carries `medium`. Neither value is derivable from the other, and a reader who takes them for one field misreads both reports.
 
 ### Obligations are derived from observed defects, not invented
 
@@ -132,7 +132,7 @@ A validator check enforces this: an obligation with no cited defect class is a f
 
 ## Controls are data
 
-A control declares what discharges an obligation, when it runs, what posture it has, and which of the four classes above it acts in. A blocking control can also declare `spares`, the classes of change that it leaves out of its gate. The one class is `white_space` ([spec 12](check-layer.md#severity-is-the-checks-posture-is-the-controls)).
+A control declares what discharges an obligation, when it runs, what posture it has, and which of the four classes above it acts in. A blocking control can also declare `spares`, the classes of change that it leaves out of its gate. The one class is `white_space` ([the check layer](check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 
 ```yaml
 controls:
@@ -154,7 +154,7 @@ controls:
         reasoning: a stale document needs a human to decide what still holds
 ```
 
-**`posture` and `acts` are two members, because two vocabularies live here.** An earlier draft wrote `blocking` on the first control and `detective` on the second, under one member. `posture` is the end of the [promotion path](#promotion-advisory-to-blocking) below. It carries the sense that [spec 12](check-layer.md#severity-is-the-checks-posture-is-the-controls) gives the word: whether a finding blocks a gate. The engine reads it there: `headwater check --strict` fails on a live finding that a `blocking` control discharges, at any severity. `acts` is one of the four classes above, which says when a control acts. Control health cannot be read off a member that holds both. The second member is also the number that this section exists to expose, because most systems build the first two classes and claim the set.
+**`posture` and `acts` are two members, because two vocabularies live here.** An earlier draft wrote `blocking` on the first control and `detective` on the second, under one member. `posture` is the end of the [promotion path](#promotion-advisory-to-blocking) below. It carries the sense that [the check layer](check-layer.md#severity-is-the-checks-posture-is-the-controls) gives the word: whether a finding blocks a gate. The engine reads it there: `headwater check --strict` fails on a live finding that a `blocking` control discharges, at any severity. `acts` is one of the four classes above, which says when a control acts. Control health cannot be read off a member that holds both. The second member is also the number that this section exists to expose, because most systems build the first two classes and claim the set.
 
 **A mechanism names a rule, a phase of the engine, or something outside it, and the prefix decides which.** `check:` names a rule, and that is the binding a finding travels along. An obligation that a phase of the engine discharges needs the second prefix. A classification pass that accounts for every file discharges the first coverage obligation [below](#no-silent-passes-every-document-is-accounted-for) by running, and it produces no finding to bind. So the engine publishes the closed set of phases that `phase:` reaches, and a name outside that set is the finding of the next paragraph. Any other prefix names a mechanism outside the engine. That is legitimate, and the register reports only that this run did not observe it.
 
@@ -263,13 +263,13 @@ Precision is not what qualifies a rule to block. A rule can be right nearly ever
 
 This is measured rather than asserted. A passive-voice rule over this project's own specification produces 449 findings, at an adjudicated false-positive rate near 8% on a sample of 60. Not one of them should block ([evaluation](../evaluations/what-a-check-can-know.md)). The same measurement shows why the ordinary instrument cannot see this. Against 613 advisory findings the corpus holds four escape hatches, so the suppression-derived rate has almost no denominator. That is the blind spot above in its extreme form, and the adjudicated sample is the only instrument that reaches such a rule.
 
-The [shift ratio](#measuring-coherence-where-we-can-continuity-across-links) is already permanently advisory, and this states the general reason for it. The voice categories of [spec 3](authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from) are the other instances today.
+The [shift ratio](#measuring-coherence-where-we-can-continuity-across-links) is already permanently advisory, and this states the general reason for it. The voice categories of [authoring and lifecycle](authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from) are the other instances today.
 
 ### Promotion measures a rule, and not a producer of facts
 
 A second class of component sits outside the promotion path, for a different reason and with no exception attached. Both instruments above measure a **rule**. A component that produces graph facts has no false-positive rate to measure. A wrong fact makes every check over it return a correct verdict about a wrong graph, and no advisory posture ever finds that.
 
-The scaffolder and an importer are the two components of this class. Their instrument is a fixture set, and [spec 12](check-layer.md#the-correctness-roots) holds both as correctness roots. So an imported edge carries full weight from the first release. It satisfies a participation expectation, and it supports `evidenced` ([Q19](decisions.md#q19--inbound-integration-an-external-system-of-record)). To ship such an edge at a reduced posture would buy nothing and would measure the wrong artifact.
+The scaffolder and an importer are the two components of this class. Their instrument is a fixture set, and [the check layer](check-layer.md#the-correctness-roots) holds both as correctness roots. So an imported edge carries full weight from the first release. It satisfies a participation expectation, and it supports `evidenced` ([Q19](decisions.md#q19--inbound-integration-an-external-system-of-record)). To ship such an edge at a reduced posture would buy nothing and would measure the wrong artifact.
 
 ### Discharging coherence obligations: the assisted sweep
 
@@ -285,12 +285,12 @@ The fifth entry arrived from a measurement. [HW-OBL-0113](../obligations/0113-ev
 
 Four constraints keep this inside the rules that the rest of the system obeys:
 
-1. **It reports findings, never verdicts.** "No LLM in the validation path" ([spec 5](ai-integration.md#what-we-do-not-do)) governs decisions that gate. A coherence finding is a prompt for human attention, and it is marked as one.
+1. **It reports findings, never verdicts.** "No LLM in the validation path" ([AI integration](ai-integration.md#what-we-do-not-do)) governs decisions that gate. A coherence finding is a prompt for human attention, and it is marked as one.
 2. **It is sampled and detective**, like every coherence control — bounded slices on a schedule, never a blocking gate.
 3. **Findings cite evidence.** Each names the documents that it compared, and quotes the passages that it believes to be in conflict. So a human can adjudicate in seconds. An unfalsifiable finding is noise, and noise causes the team to switch the whole sweep off.
 4. **It never re-derives what the graph declares.** The sweep runs against the undeclared half by construction. A finding that restates an edge already in the front matter is a defect in the sweep, not a finding about the corpus.
 
-So the best outcome of a sweep is not a finding but an **edge**. The correct end state for a contradiction that the sweep surfaces is a declared `conflicts_with`. After that, the engine owns it permanently, and the sweep never needs to find it again. A coherence control whose findings never convert into declarations does the same work every cycle. That is the accumulation failure that [spec 5](ai-integration.md#what-we-do-not-do) rejects RAG for, now in our own assurance layer.
+So the best outcome of a sweep is not a finding but an **edge**. The correct end state for a contradiction that the sweep surfaces is a declared `conflicts_with`. After that, the engine owns it permanently, and the sweep never needs to find it again. A coherence control whose findings never convert into declarations does the same work every cycle. That is the accumulation failure that [AI integration](ai-integration.md#what-we-do-not-do) rejects RAG for, now in our own assurance layer.
 
 This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgment handles what is not. There is no pretense that either does the other's job.
 
@@ -298,7 +298,7 @@ This is the same division that the system draws everywhere. Deterministic toolin
 
 A sweep has three parts and the engine performs two of them. `headwater sweep plan` writes the briefing: the slice, every edge the graph already declares inside it, and the shape of the file that comes back. An agent then reads the documents and writes that file. `headwater sweep report` reads the file and states what the engine can confirm about it. The middle part needs a model, and no engine code reaches one.
 
-**No budget prices a sweep, and its return file is retained by nothing.** [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) rules why. [Spec 5](ai-integration.md#the-envelope-is-declared-and-the-harness-fails-closed) requires a probe run to carry a run identity fixed before it starts, and a committed transcript. The plan and report round trip above fixes one member of that identity, the taxonomy lock, and none of the other five. It pins no model, and the file an agent writes between the two calls is never committed. `.headwater/probe.yml` declares no tier for a sweep, and `headwater sweep plan` projects no cost against any ceiling. The retention window a probe transcript carries ([spec 15](the-recorder-contract.md#how-long-a-result-stays-citable-and-why-that-period-is-not-a-number-this-schema-produces)) does not reach a sweep's return file either. That file is not the committed input any evidence rule reads back.
+**No budget prices a sweep, and its return file is retained by nothing.** [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) rules why. [AI integration](ai-integration.md#the-envelope-is-declared-and-the-harness-fails-closed) requires a probe run to carry a run identity fixed before it starts, and a committed transcript. The plan and report round trip above fixes one member of that identity, the taxonomy lock, and none of the other five. It pins no model, and the file an agent writes between the two calls is never committed. `.headwater/probe.yml` declares no tier for a sweep, and `headwater sweep plan` projects no cost against any ceiling. The retention window a probe transcript carries ([the recorder contract](the-recorder-contract.md#how-long-a-result-stays-citable-and-why-that-period-is-not-a-number-this-schema-produces)) does not reach a sweep's return file either. That file is not the committed input any evidence rule reads back.
 
 Two properties of a returned finding are confirmable, and the claim itself is not. The engine confirms the **citation**. Every quoted passage is in the document that the finding attributes it to, and every path is a classified document of this corpus. The engine confirms the **novelty**. The graph does not already carry the edge that the finding proposes. That is constraint 4 above, applied by the machine rather than by the agent it asks. A finding that fails either test is refused, and the report names the test that it failed.
 
@@ -306,7 +306,7 @@ What no engine confirms is whether the two passages contradict each other. That 
 
 Nor does any engine confirm that the agent opened the slice. The extent that a plan and a report both state is the slice a caller named, and never the set of documents that somebody read. So a report over 12 of 169 documents is an upper bound on what was read. That is one more reason why the absence of a finding carries nothing.
 
-That split is what makes a sweep worth an hour of a model and unfit for a gate. A quotation that no document holds is the failure mode of a prose judgment, and the citation test refuses one before a reader meets it. The set of findings is still a sample. A second run returns a different set, and a model that nobody ran returns none. So absence carries no information, and no exit status may read the output. [Spec 12](check-layer.md#where-the-llm-coherence-sweep-fits) states what enforces that.
+That split is what makes a sweep worth an hour of a model and unfit for a gate. A quotation that no document holds is the failure mode of a prose judgment, and the citation test refuses one before a reader meets it. The set of findings is still a sample. A second run returns a different set, and a model that nobody ran returns none. So absence carries no information, and no exit status may read the output. [The check layer](check-layer.md#where-the-llm-coherence-sweep-fits) states what enforces that.
 
 The verification is reproducible and the sample is not. A sweep is therefore a reproducible reading of an unreproducible sample. An adopter may cite what the engine confirmed, and never the count of what a model returned.
 
@@ -336,7 +336,7 @@ This metric is advisory, permanently. There is no threshold at which a focus shi
 
 Every mechanism above validates something that exists. None of them can see the document that must exist and does not. Examples: the accepted proposal that nobody implemented, the incident with no postmortem, the decision that never reached a specification.
 
-**Participation expectations** ([spec 2](taxonomy-model.md#participation-expectations)) close that gap. A kind declares an expectation: its documents, in a given state, acquire a relation to a document of another kind inside a window. The engine reports the ones that did not.
+**Participation expectations** ([the taxonomy model](taxonomy-model.md#participation-expectations)) close that gap. A kind declares an expectation: its documents, in a given state, acquire a relation to a document of another kind inside a window. The engine reports the ones that did not.
 
 They are constrained deliberately:
 
@@ -380,17 +380,17 @@ Coverage answers "what did this run look at?". One question sits beside it and t
 
 Git does not catch this, because the conflict is semantic rather than textual. The name for it is a **semantic conflict**, and databases named the same anomaly first. Under snapshot isolation, two transactions that read overlapping data and write disjoint data each preserve an invariant that the pair violates. That is **write skew**, and git permits it for the same reason that snapshot isolation does. Both detect a write-write overlap and neither holds a read set ([HW-EVAL-theoretical-foundations §F.6](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
 
-It presses harder here than in most systems, and the reason is our own performance bet. Change-scoped evaluation is what makes a 200 ms hook possible ([spec 6](engine-architecture.md#performance-targets)). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
+It presses harder here than in most systems, and the reason is our own performance bet. Change-scoped evaluation is what makes a 200 ms hook possible ([the engine architecture](engine-architecture.md#performance-targets)). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
 
 Three consequences, and the machinery for all three exists.
 
-- **A run reports the state that it evaluated**, and the report is not optional. The corpus tree, the taxonomy lock hash, and the **read set** of the run ([spec 12](check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). A verdict about one tree is not a verdict about another one, and a report that omits the tree cannot say which.
-- **A merge is not free, and one document states the test.** [Spec 12](check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixes what a gate reads, what voids a verdict, and which verdicts no gate carries at all. This document names the consequence and never restates the mechanism. Two statements of one test are two tests.
+- **A run reports the state that it evaluated**, and the report is not optional. The corpus tree, the taxonomy lock hash, and the **read set** of the run ([the check layer](check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). A verdict about one tree is not a verdict about another one, and a report that omits the tree cannot say which.
+- **A merge is not free, and one document states the test.** [The check layer](check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixes what a gate reads, what voids a verdict, and which verdicts no gate carries at all. This document names the consequence and never restates the mechanism. Two statements of one test are two tests.
 - **The engine never orders the landing.** A merge queue tests the merged state before it lands, which answers this completely and costs a serialized queue. That belongs to the forge ([Checks and cache](../subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)), and the engine emits what such a gate consumes.
 
 **The test fails toward re-running.** A verdict declared void that would have held costs one run. A verdict carried that should have been void ships an invalid corpus and reports it green. That is [principle 7](vision-and-scope.md#design-principles) read the way that an exporter reads it: degrade toward the cheaper error, and say which one that is.
 
-**A probe result is a verdict too, and the same rule governs it.** An efficacy result describes one state of the corpus, under one model and one probe selection ([spec 5](ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)). It therefore carries a read set, and `headwater probe stale` reports which recorded results a change voided. Nothing gates on that report, because a stale measurement misleads a reader and breaks nothing. An exit status that carried the answer would put the behavior of a model on a build. Nobody re-runs a probe on a proposed change, and a trend that does not mark its stale points is a line through incomparable numbers.
+**A probe result is a verdict too, and the same rule governs it.** An efficacy result describes one state of the corpus, under one model and one probe selection ([AI integration](ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)). It therefore carries a read set, and `headwater probe stale` reports which recorded results a change voided. Nothing gates on that report, because a stale measurement misleads a reader and breaks nothing. An exit status that carried the answer would put the behavior of a model on a build. Nobody re-runs a probe on a proposed change, and a trend that does not mark its stale points is a line through incomparable numbers.
 
 ## Findings
 
@@ -415,9 +415,9 @@ Uniform findings make the rest cheap: one renderer per output format (human, Mar
 
 Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](distribution-and-federation.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
 
-Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([spec 7](distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
+Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([distribution and federation](distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
 
-A finding can now fall under more than one escape mechanism at once — a waived rule, a `migration-pending` document ([spec 7](distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)), and a file-scoped suppression. Coverage accounting applies one, by fixed precedence — **waiver, then migration-pending, then suppression** — and counts the finding in exactly that bucket. So the three inventories partition the escaped findings, and no finding is counted three times. The wider mechanism wins because it carries the wider accountability. A waiver has an owner and is visible to the publisher. A migration state has an expiry and a task list, and a suppression is one author's local judgment.
+A finding can now fall under more than one escape mechanism at once — a waived rule, a `migration-pending` document ([distribution and federation](distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)), and a file-scoped suppression. Coverage accounting applies one, by fixed precedence — **waiver, then migration-pending, then suppression** — and counts the finding in exactly that bucket. So the three inventories partition the escaped findings, and no finding is counted three times. The wider mechanism wins because it carries the wider accountability. A waiver has an owner and is visible to the publisher. A migration state has an expiry and a task list, and a suppression is one author's local judgment.
 
 ## The adaptive layer reports cost, not just coverage
 
@@ -426,10 +426,10 @@ The adaptive class exists to decide if the other three are worth what they cost.
 | Metric | Source | Question it answers |
 |---|---|---|
 | **Coverage** | Obligation register | What fraction of obligations are discharged, by severity? |
-| **Assisted fraction** | Scaffolder and agent instrumentation | How much of authoring does the tooling carry, and does that rise or fall? ([spec 3](authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) |
-| **Efficacy** | Probe suite | Does the instruction surface change agent behavior at all? ([spec 5](ai-integration.md)) |
+| **Assisted fraction** | Scaffolder and agent instrumentation | How much of authoring does the tooling carry, and does that rise or fall? ([authoring and lifecycle](authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) |
+| **Efficacy** | Probe suite | Does the instruction surface change agent behavior at all? ([AI integration](ai-integration.md)) |
 
-**Efficacy is reported as an interval and never as a point.** A probe outcome is a sample, so two runs of one probe differ without anything being wrong. An interval is what separates ordinary variance from drift in the model, the corpus or the harness ([spec 5](ai-integration.md#drift-and-variance-are-separated-by-an-interval)). A point estimate reports the two as one number and hides both.
+**Efficacy is reported as an interval and never as a point.** A probe outcome is a sample, so two runs of one probe differ without anything being wrong. An interval is what separates ordinary variance from drift in the model, the corpus or the harness ([AI integration](ai-integration.md#drift-and-variance-are-separated-by-an-interval)). A point estimate reports the two as one number and hides both.
 
 **The layer reports the cost of its own instrument.** Probes cost money per run, and a cost report that omits the cost of measuring is the failure that this section exists to prevent. So each probe tier declares a budget. The harness refuses a run whose projected cost exceeds it, and every run reports realized cost beside its result.
 
@@ -437,7 +437,7 @@ Coverage alone is a number that only goes up. A system that optimizes it will ha
 
 ## Accuracy audit
 
-The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The name is deliberate. Conformance is what [spec 7](distribution-and-federation.md#conformance) evaluates about an adopter, and it is a different question with its own command. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theater. An audit whose output is a typed, tracked document is a control.
+The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The name is deliberate. Conformance is what [distribution and federation](distribution-and-federation.md#conformance) evaluates about an adopter, and it is a different question with its own command. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theater. An audit whose output is a typed, tracked document is a control.
 
 ## The system's own assurance
 

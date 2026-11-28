@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Measured compatibility between two taxonomies, over one corpus.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 //! fixes six dimensions and states that the required version bump is a
 //! consequence of the result rather than a publisher's guess about it. This
 //! crate is the comparison and nothing else: every input arrives already built,
@@ -56,7 +56,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub mod migrate;
 pub mod payload;
 
-/// The six dimensions, in the order [spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
+/// The six dimensions, in the order [the taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 /// tabulates them. The set belongs to the engine and no taxonomy may vary it.
 pub const DIMENSIONS: [&str; 6] = [
     "classification",
@@ -780,7 +780,7 @@ pub struct Report {
     /// What became of the base.
     ///
     /// This is the "what changed in the base" line of
-    /// [spec 7](../../../../docs/spec/distribution-and-federation.md#upgrading),
+    /// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#upgrading),
     /// and it is reported and never gated on. Two publishes of one package
     /// resolve identically and two that differ in a description do not, and
     /// neither fact decides a dimension. See the module comment.

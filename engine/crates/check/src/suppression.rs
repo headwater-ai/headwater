@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Suppression, and the inventory that makes it observable.
 //!
-//! [Spec 4](../../../../docs/spec/assurance-model.md#suppression) states the
+//! [The assurance model](../../../../docs/spec/assurance-model.md#suppression) states the
 //! whole mechanism in one sentence, and every clause of it is a constraint here.
 //! "Suppression is permitted, bounded, and observable. It is scoped to a file or
 //! block, it carries an expiry, and it states a reason from a closed set." The
@@ -10,7 +10,7 @@
 //!
 //! # Why the two reasons are not one field of prose
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#voice) gives the
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice) gives the
 //! reason: "a reason field that only holds prose collects no statistic at all".
 //! The promotion machinery of spec 4 runs on a false-positive rate, and a rate
 //! needs a numerator that says *wrong* rather than *tolerated*. So the reason is
@@ -19,7 +19,7 @@
 //!
 //! # This is the runner's, and a check never sees it
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#suppression-is-the-runners)
+//! [The check layer](../../../../docs/spec/check-layer.md#suppression-is-the-runners)
 //! puts the filter here: "checks know nothing about suppressions. The runner
 //! filters findings, records exactly what it filtered, and feeds the suppression
 //! inventory into the coverage report. A check that handled its own suppressions

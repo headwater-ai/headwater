@@ -44,7 +44,7 @@ This is the rule that the rest of the file exists to protect.
 
 **A level says what an adopter has wired up. It never says how hard a rule bites.**
 
-A rung that reads "at level 4 these checks block" launders promotion. [Spec 4](../spec/assurance-model.md#promotion-advisory-to-blocking) requires a stated observation window, a false-positive rate under a declared threshold, an unambiguous mechanical remediation, and an adjudicated sample before any rule blocks. A ladder that promotes by declaration skips all four while looking rigorous. It would also be unenforceable in two cases that the specification already names:
+A rung that reads "at level 4 these checks block" launders promotion. [The assurance model](../spec/assurance-model.md#promotion-advisory-to-blocking) requires a stated observation window, a false-positive rate under a declared threshold, an unambiguous mechanical remediation, and an adjudicated sample before any rule blocks. A ladder that promotes by declaration skips all four while looking rigorous. It would also be unenforceable in two cases that the specification already names:
 
 - A control whose error classes are not both recoverable [ships at its final posture](../spec/assurance-model.md#where-promotion-does-not-apply) and never walks the path at all. The withholding rule of an export profile is the instance today.
 - A control whose remediation needs judgment is [permanently advisory](../spec/assurance-model.md#where-promotion-cannot-finish), whatever its measured precision. The voice categories and the shift ratio are the instances today. No level can ever promote them, so no level may claim to.
@@ -53,7 +53,7 @@ Level 4 below is therefore phrased as a fact about process rather than about rul
 
 ## A level is never a second vocabulary
 
-[Spec 8](../spec/design-departures.md) refuses documentation profiles as a primary abstraction, because a profile that names its own concepts becomes a parallel classification system that a team must hold in step with the taxonomy. A maturity ladder can fail in exactly that way.
+[The design departures](../spec/design-departures.md) refuses documentation profiles as a primary abstraction, because a profile that names its own concepts becomes a parallel classification system that a team must hold in step with the taxonomy. A maturity ladder can fail in exactly that way.
 
 The guard is a rule about what a rung may contain. **A rung is a set of conformance rules that already exist.** Where a level seems to need a concept that is not a conformance rule, that is a finding against the conformance rule set, and the remedy is a rule rather than a level vocabulary.
 
@@ -79,7 +79,7 @@ This is the state that [first contact](../spec/distribution-and-federation.md#fi
 
 **Needs:** the check layer.
 
-A document with zero check instances is a finding ([spec 12](../spec/check-layer.md#instances-and-why-coverage-needs-them)). Classification is the floor that makes every later number a fraction of something real.
+A document with zero check instances is a finding ([the check layer](../spec/check-layer.md#instances-and-why-coverage-needs-them)). Classification is the floor that makes every later number a fraction of something real.
 
 ### L2 — Regenerated
 
@@ -99,7 +99,7 @@ A document with zero check instances is a finding ([spec 12](../spec/check-layer
 
 **Needs:** the authoring surface.
 
-The hooks are part of the rung rather than an optional extra. Everything distinctive runs on the edges of the graph, and author-maintained links decay because the payer is not the beneficiary ([spec 5](../spec/ai-integration.md)). A corpus that declares relations and installs no scaffolding reaches this rung on paper and not in fact.
+The hooks are part of the rung rather than an optional extra. Everything distinctive runs on the edges of the graph, and author-maintained links decay because the payer is not the beneficiary ([AI integration](../spec/ai-integration.md)). A corpus that declares relations and installs no scaffolding reaches this rung on paper and not in fact.
 
 ### L4 — Gated
 
@@ -138,7 +138,7 @@ Read the first sentence again. The rung is that the process ran, and the outcome
 
 The **axes** are settled, because each one is forced by a mechanism that the specification already fixed. A ladder cannot set posture, cannot invent a vocabulary, and has nothing to select over except the conformance rule set.
 
-The **rung contents are a guess**, and this file says so rather than waiting to be corrected. [13 — Open obligations](../spec/open-obligations.md#what-waits-on-a-first-adopter) records the bundle set as a guess about how adopters cluster, held open because no adopter exists yet. A ladder is the same class of guess one level out, and it gets the same treatment. It is data in a package, so the first real adopter revises it at the cost of a release.
+The **rung contents are a guess**, and this file says so rather than waiting to be corrected. [Open obligations](../spec/open-obligations.md#what-waits-on-a-first-adopter) records the bundle set as a guess about how adopters cluster, held open because no adopter exists yet. A ladder is the same class of guess one level out, and it gets the same treatment. It is data in a package, so the first real adopter revises it at the cost of a release.
 
 Three questions are open and none of them blocks the rest:
 

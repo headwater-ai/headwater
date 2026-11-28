@@ -47,29 +47,29 @@ The single question underneath is this: **what leaves the corpus graph, and what
 
 Twelve rulings constrain this evaluation, and it may not revisit any of them.
 
-**The Markdown is the corpus.** [Spec 0](../spec/vision-and-scope.md#non-negotiables) forbids a proprietary store and requires that the corpus degrades to readable Markdown. [Q17](../spec/open-questions.md#17--governed-access-and-the-solution-layer) refused the inversion of that on four grounds and named the coherent alternative a pivot.
+**The Markdown is the corpus.** [The vision and scope](../spec/vision-and-scope.md#non-negotiables) forbids a proprietary store and requires that the corpus degrades to readable Markdown. [Q17](../spec/open-questions.md#17--governed-access-and-the-solution-layer) refused the inversion of that on four grounds and named the coherent alternative a pivot.
 
 **No network at check time**, and the same verdict on a laptop as in continuous integration.
 
-**Determinism.** Same corpus, same lock, byte-identical output ([spec 6](../spec/engine-architecture.md#implementation-constraints)).
+**Determinism.** Same corpus, same lock, byte-identical output ([the engine architecture](../spec/engine-architecture.md#implementation-constraints)).
 
 **One source of truth per fact, not per store.** [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already applied [principle 2](../spec/vision-and-scope.md#design-principles) to this exact case and concluded that nothing is authoritative *as a store*.
 
 **Derived artifacts are regenerable, and the system checks them against regeneration** ([principle 3](../spec/vision-and-scope.md#design-principles)).
 
-**Explicit incompleteness** ([principle 5](../spec/vision-and-scope.md#design-principles)), and its operational form in [spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for): the census fixes the denominator before any check runs.
+**Explicit incompleteness** ([principle 5](../spec/vision-and-scope.md#design-principles)), and its operational form in [the assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for): the census fixes the denominator before any check runs.
 
 **The internal model is a property graph.** [Q4](../spec/open-questions.md#4--relation-storage) made a relation instance an object with declared attributes.
 
 **An edge is identified by the source identifier, the relation name, and the normalized target** ([Q4](../spec/open-questions.md#4--relation-storage)). No position and no path is part of that identity.
 
-**Findings anchor to a line**, and [spec 12](../spec/check-layer.md#findings) states that spans do not survive an RDF round trip.
+**Findings anchor to a line**, and [the check layer](../spec/check-layer.md#findings) states that spans do not survive an RDF round trip.
 
 **Headwater owns the schema language, and standard formats come out of it** ([Q2](../spec/open-questions.md#2--schema-format), [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate)).
 
 **The solution layer is an ordinary corpus** that authors its own cross-estate facts ([Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts)).
 
-**A projection is generated, checked, and declared** ([spec 1](../spec/conceptual-model.md#projections)).
+**A projection is generated, checked, and declared** ([the conceptual model](../spec/conceptual-model.md#projections)).
 
 Those twelve settle more of the three questions than any of the three entries noticed.
 
@@ -113,7 +113,7 @@ They sharpen the requirement rather than supply it. Both declare a positive set 
 
 **Digital libraries ran this experiment for two decades and the harvesters won.** The two candidate architectures were distributed broadcast search over Z39.50 and metadata harvesting over OAI-PMH. Europeana aggregates from more than 3,700 providers through its Metis ingestion service, partly through intermediary aggregators. DPLA harvests over the same protocol. ResourceSync, built on sitemaps, is the successor for the cases that need faster synchronization.
 
-The tiered shape of Europeana matters here. Providers feed intermediary aggregators, and those feed the top tier. That is [spec 7](../spec/distribution-and-federation.md#federation)'s federation tiers, arrived at by an unrelated community under load.
+The tiered shape of Europeana matters here. Providers feed intermediary aggregators, and those feed the top tier. That is [distribution and federation](../spec/distribution-and-federation.md#federation)'s federation tiers, arrived at by an unrelated community under load.
 
 **GraphQL federation is the counter-example, and it proves the rule.** Apollo's router does fan out at query time, and it works. It works on three conditions. Composition of the subgraph schemas is a **build-time** step that produces a static supergraph artifact. Entities join on a declared `@key`, and a cross-subgraph reference carries only the key fields. Every subgraph is a live service under one operator.
 
@@ -135,7 +135,7 @@ Three artifacts, and none of them is canonical for anything.
 
 **The cache is disposable by test, not by intention.** `headwater check --no-cache` produces output byte-identical to `headwater check`. A cache that can change a verdict is a store wearing another name. The test is cheap, it runs in the engine's own suite, and it is the only thing that keeps the distinction true under maintenance.
 
-**No embedded database, and the trigger to revisit is named.** The refusal is not on principle. The [Q1 spike](language-spike-results.md) ran a warm change-scoped pass over 1,000 documents in about 2 ms, against a 200 ms budget. Nothing in the current design asks a question that the in-memory graph cannot answer inside [spec 6](../spec/engine-architecture.md#performance-targets)'s budgets. The trigger is a named query workload that misses a budget, measured rather than anticipated.
+**No embedded database, and the trigger to revisit is named.** The refusal is not on principle. The [Q1 spike](language-spike-results.md) ran a warm change-scoped pass over 1,000 documents in about 2 ms, against a 200 ms budget. Nothing in the current design asks a question that the in-memory graph cannot answer inside [the engine architecture](../spec/engine-architecture.md#performance-targets)'s budgets. The trigger is a named query workload that misses a budget, measured rather than anticipated.
 
 **`headwater export` is a projection, declared like every other projection.** This moves the "should it be committed" question out of the engine and into the taxonomy, which is [principle 1](../spec/vision-and-scope.md#design-principles). An adopter who declares an output path gets an export that `generate --check` holds to regeneration. An adopter who declares none gets no file.
 
@@ -145,7 +145,7 @@ Three artifacts, and none of them is canonical for anything.
 
 **A round-trip test is the wrong instrument for a lossy export, and a census replaces it.** This is the largest correction that Q6 receives. You cannot round-trip a projection that is lossy by design, so the standing promise of "round-trip fidelity tests" for RDF was never satisfiable.
 
-What replaces it is the doctrine that [spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) already applies one layer in. Every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target vocabulary cannot carry, each with a reason. Every export run emits a **projection census**. Every node and every edge in the graph is either present in the output or accounted for by a declared loss reason. An unaccounted omission is a projector defect, and it fails the run.
+What replaces it is the doctrine that [the assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) already applies one layer in. Every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target vocabulary cannot carry, each with a reason. Every export run emits a **projection census**. Every node and every edge in the graph is either present in the output or accounted for by a declared loss reason. An unaccounted omission is a projector defect, and it fails the run.
 
 The native export keeps the round trip, because its declared loss set is empty and a round trip is exactly what proves that claim.
 
@@ -170,7 +170,7 @@ The leaning survives on its ownership half and loses its architecture. Headwater
 
 **LinkML lands last, and the entry's title is what obscured that.** "LinkML and SHACL as substrate" put the two together and put LinkML first. Once emitters may not chain, LinkML stops being the route to JSON Schema and SHACL, and becomes one sibling among six. It is the sibling with the weakest case, because its distinctive value is a generator fan-out for formats that no named consumer has asked for.
 
-**`exportable_as` is a set per target, with a partition rule and an equivalence bar.** [Spec 12](../spec/check-layer.md) promised that the declared subset "cannot drift from the truth". Three rules make that true.
+**`exportable_as` is a set per target, with a partition rule and an equivalence bar.** [The check layer](../spec/check-layer.md) promised that the declared subset "cannot drift from the truth". Three rules make that true.
 
 - A check declares the emitter targets that it exports to. `none` is legal, and it is the common case.
 - The exported set and the unexported set **partition** the check registry, and the engine generates both from it. Neither list is authored, so neither can drift from the other.
@@ -183,25 +183,25 @@ That placement makes the standing worry concrete. OKF's own conformance check is
 
 ### Q9 — harvest, and there is no merged graph
 
-Three points were open. All three close, and one of them closes by fixing a sentence in [spec 1](../spec/conceptual-model.md#the-corpus).
+Three points were open. All three close, and one of them closes by fixing a sentence in [the conceptual model](../spec/conceptual-model.md#the-corpus).
 
 **The monorepo half was answered all along, in the wrong words.** Spec 1 said that a repository has exactly one corpus. The binding constraint is not the repository. A corpus is one taxonomy and one root, and a repository holds one or more of them. A monorepo with several independent documentation sets is not one corpus under strain. It is several corpora that share a working tree.
 
-Nothing in the engine changes. The lock is per corpus root. The census walks one root. A path resolves to exactly one corpus by the determinism rule that shelf patterns already use. The most specific root wins, and a tie is a validation error. Identifiers are namespaced at minting ([spec 3](../spec/authoring-and-lifecycle.md#identifiers)), so two corpora in one tree cannot collide. The sentence named the wrong container, and that is the whole defect.
+Nothing in the engine changes. The lock is per corpus root. The census walks one root. A path resolves to exactly one corpus by the determinism rule that shelf patterns already use. The most specific root wins, and a tie is a validation error. Identifiers are namespaced at minting ([authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers)), so two corpora in one tree cannot collide. The sentence named the wrong container, and that is the whole defect.
 
-**The aggregator is in scope, and it is not a component.** It is a solution corpus plus one anchor kind. [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already admitted the solution layer as an ordinary corpus. What was missing is how it reaches the corpora below it, and the answer is machinery that [spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) already has. An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned, committed exports, in the way that `code_path`'s resolver reads a source tree and [Q19](../spec/open-questions.md#19--inbound-integration-an-external-system-of-record)'s resolver reads a committed snapshot.
+**The aggregator is in scope, and it is not a component.** It is a solution corpus plus one anchor kind. [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already admitted the solution layer as an ordinary corpus. What was missing is how it reaches the corpora below it, and the answer is machinery that [the taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) already has. An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned, committed exports, in the way that `code_path`'s resolver reads a source tree and [Q19](../spec/open-questions.md#19--inbound-integration-an-external-system-of-record)'s resolver reads a committed snapshot.
 
 **There is no merged graph, and the question about where merged graphs live dissolves.** Merging is anchor resolution. Anchor resolution produces nothing that outlives the run. The solution corpus holds its own documents and its own declared edges, and it resolves anchors against exports that it pinned. Q9 had already concluded that a merged graph is "canonical for nothing". The step it did not take is the obvious one. An artifact that is canonical for nothing, that nothing reviews, and that every run can rebuild, does not need to exist.
 
 **Harvest, never fan-out.** The solution corpus pins each source export by identity and content hash. It never queries a live endpoint. Three independent arguments agree.
 
-- [Spec 0](../spec/vision-and-scope.md#non-negotiables) forbids a network dependency at check time, and a fan-out query is exactly one.
-- [Spec 6](../spec/engine-architecture.md#performance-targets) gives a route query 100 ms. A fan-out across estates does not fit, and an agent-facing call that does not fit is a call that developers remove.
-- SPARQL's `SILENT` is the documented shape of what fan-out does when a source is unreachable. It returns a smaller answer and reports nothing. That is the silent pass that [spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) exists to forbid.
+- [The vision and scope](../spec/vision-and-scope.md#non-negotiables) forbids a network dependency at check time, and a fan-out query is exactly one.
+- [The engine architecture](../spec/engine-architecture.md#performance-targets) gives a route query 100 ms. A fan-out across estates does not fit, and an agent-facing call that does not fit is a call that developers remove.
+- SPARQL's `SILENT` is the documented shape of what fan-out does when a source is unreachable. It returns a smaller answer and reports nothing. That is the silent pass that [the assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) exists to forbid.
 
 So a source export that the aggregator cannot read is a **finding that names the pin**. It is never a narrower answer delivered without notice.
 
-**A pin is the third instance of one pattern, and that is worth saying once.** A taxonomy pin ([spec 7](../spec/distribution-and-federation.md#consuming)), a requirements snapshot pin ([Q19](../spec/open-questions.md#19--inbound-integration-an-external-system-of-record)), and a source-export pin are the same mechanism. Each fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each raises a change proposal and never a mutation. [Spec 7](../spec/distribution-and-federation.md#upstream-awareness)'s upstream awareness covers all three with no change.
+**A pin is the third instance of one pattern, and that is worth saying once.** A taxonomy pin ([distribution and federation](../spec/distribution-and-federation.md#consuming)), a requirements snapshot pin ([Q19](../spec/open-questions.md#19--inbound-integration-an-external-system-of-record)), and a source-export pin are the same mechanism. Each fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each raises a change proposal and never a mutation. [Distribution and federation](../spec/distribution-and-federation.md#upstream-awareness)'s upstream awareness covers all three with no change.
 
 ## What this fixes for Q17, which it does not decide
 
@@ -223,7 +223,7 @@ Q17 keeps everything else: whether to build access control at all, the identity 
 
 **Whether a solution corpus vendors each source export or references it.** A vendored copy keeps checks offline and grows the repository. A reference keeps the repository small and puts a fetch before the check. The evidence that closes this is the size of one real harvest, and no aggregator exists yet.
 
-**Whether the aggregator tier needs conformance rules of its own.** `headwater conformance` ([spec 7](../spec/distribution-and-federation.md#conformance)) evaluates one repository. Whether a tier that harvests owes a separate set is unargued, and nothing depends on it today.
+**Whether the aggregator tier needs conformance rules of its own.** `headwater conformance` ([distribution and federation](../spec/distribution-and-federation.md#conformance)) evaluates one repository. Whether a tier that harvests owes a separate set is unargued, and nothing depends on it today.
 
 **The `$`-reference grammar** stays where [Q2](../spec/open-questions.md#2--schema-format) left it. It is not this group's to settle, and the emitters do not touch it.
 
@@ -246,19 +246,19 @@ Fourteen changes follow, and all are applied.
 
 | Where | Change |
 |---|---|
-| [Spec 1](../spec/conceptual-model.md#the-corpus) | A corpus is one taxonomy and one root. A repository holds one or more, and a path resolves to exactly one |
-| [Spec 1](../spec/conceptual-model.md#the-corpus) | The graph is rebuilt every run. The cache is disposable, and a cache that changes a verdict is a defect |
-| [Spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) | An anchor resolver reads repository content or a committed snapshot, and never a live service |
-| [Spec 6](../spec/engine-architecture.md#nothing-stores-the-graph) | The three derived artifacts, their lifetimes, and what each may claim |
-| [Spec 6](../spec/engine-architecture.md#nothing-stores-the-graph) | No embedded database, with the revisit trigger stated |
-| [Spec 6](../spec/engine-architecture.md#projections) | The export is a declared projection. Two classes of export, the loss set, and the projection census |
-| [Spec 6](../spec/engine-architecture.md#checks) | The `Exportable as` column becomes a target set, and points at spec 12 |
-| [Spec 6](../spec/engine-architecture.md#cli) | `headwater export` joins the command list, which never carried it |
-| [Spec 7](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | The aggregator is a solution corpus plus one anchor kind. There is no merged graph |
-| [Spec 7](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | Harvest and never fan-out, with an unreadable pin as a finding |
-| [Spec 7](../spec/distribution-and-federation.md#upstream-awareness) | One pin pattern, three instances |
+| [The conceptual model](../spec/conceptual-model.md#the-corpus) | A corpus is one taxonomy and one root. A repository holds one or more, and a path resolves to exactly one |
+| [The conceptual model](../spec/conceptual-model.md#the-corpus) | The graph is rebuilt every run. The cache is disposable, and a cache that changes a verdict is a defect |
+| [The taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) | An anchor resolver reads repository content or a committed snapshot, and never a live service |
+| [The engine architecture](../spec/engine-architecture.md#nothing-stores-the-graph) | The three derived artifacts, their lifetimes, and what each may claim |
+| [The engine architecture](../spec/engine-architecture.md#nothing-stores-the-graph) | No embedded database, with the revisit trigger stated |
+| [The engine architecture](../spec/engine-architecture.md#projections) | The export is a declared projection. Two classes of export, the loss set, and the projection census |
+| [The engine architecture](../spec/engine-architecture.md#checks) | The `Exportable as` column becomes a target set, and points at spec 12 |
+| [The engine architecture](../spec/engine-architecture.md#cli) | `headwater export` joins the command list, which never carried it |
+| [Distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | The aggregator is a solution corpus plus one anchor kind. There is no merged graph |
+| [Distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | Harvest and never fan-out, with an unreadable pin as a finding |
+| [Distribution and federation](../spec/distribution-and-federation.md#upstream-awareness) | One pin pattern, three instances |
 | [HW-EVAL-adjacent-work §N](../evaluations/adjacent-work.md#n--transmission-harvest-and-the-declared-subset) | The ten sources above, and what each confirms, sharpens, or contradicts |
-| [Spec 12](../spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule) | `exportable_as` as a target set, the partition rule, and the equivalence bar |
-| [Spec 12](../spec/check-layer.md#the-correctness-roots) | The graph projector's correctness root is the census, and the Q6 reference is updated |
+| [The check layer](../spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule) | `exportable_as` as a target set, the partition rule, and the equivalence bar |
+| [The check layer](../spec/check-layer.md#the-correctness-roots) | The graph projector's correctness root is the census, and the Q6 reference is updated |
 
 The [glossary](../spec/glossary.md) gains **export**, **loss set**, **projection census**, and **pinned export**, and its **corpus**, **cache**, and **aggregator** entries are corrected.

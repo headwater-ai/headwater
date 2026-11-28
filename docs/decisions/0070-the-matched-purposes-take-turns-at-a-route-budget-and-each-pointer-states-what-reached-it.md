@@ -24,7 +24,7 @@ provenance:
 
 [Issue #915](https://github.com/headwater-ai/headwater/issues/915) asks for two rulings on `headwater route`. This record rules on the first. [HW-DR-0071](0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) rules on the second.
 
-[Spec 5](../spec/ai-integration.md#intent-time-routing) said that lexical ranking orders results within the matched purpose. `engine/crates/query/src/route.rs` implemented that sentence as one total order, with the purpose score first. So the purpose with the highest score took every slot of the budget while it had candidates.
+[AI integration](../spec/ai-integration.md#intent-time-routing) said that lexical ranking orders results within the matched purpose. `engine/crates/query/src/route.rs` implemented that sentence as one total order, with the purpose score first. So the purpose with the highest score took every slot of the budget while it had candidates.
 
 [The evaluation of the pointer probe](../evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) records the cost. The task "Decide which shelf a new document belongs on, and where its identifier comes from." scores `obligation` 7 and `behavior` 3. On the tree of #914, the first 12 of 220 pointers were all obligation records, and the default five held one kind. A comment on the issue adds a second task, from the cold-agent probe. That task scores six purposes, with `behavior` fifth, and `docs/spec/check-layer.md` ranked 127th of 343. It was still the first design spec in that route.
 

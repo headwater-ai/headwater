@@ -30,7 +30,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/engine-architecture.md#library) said that editor integrations consume the library directly, and that they do not start a subprocess. Both editor plugins that this repository ships start a subprocess. `integrations/vscode/client.js` spawns `headwater mcp --root <root>` for each query. `integrations/jetbrains/src/main/java/ai/headwater/jetbrains/Client.java` does the same with a `ProcessBuilder`. No decision recorded that choice, so the specification and the code disagreed ([#1318](https://github.com/headwater-ai/headwater/issues/1318)).
+[The engine architecture](../spec/engine-architecture.md#library) said that editor integrations consume the library directly, and that they do not start a subprocess. Both editor plugins that this repository ships start a subprocess. `integrations/vscode/client.js` spawns `headwater mcp --root <root>` for each query. `integrations/jetbrains/src/main/java/ai/headwater/jetbrains/Client.java` does the same with a `ProcessBuilder`. No decision recorded that choice, so the specification and the code disagreed ([#1318](https://github.com/headwater-ai/headwater/issues/1318)).
 
 The owner had two ways to remove the disagreement. One was to move the plugins to a library binding. The other was to amend the design and record the subprocess approach. On 2026-09-29 the owner answered "Amend the design" on the issue.
 

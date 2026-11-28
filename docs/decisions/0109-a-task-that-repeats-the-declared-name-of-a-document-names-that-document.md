@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Issue #1470](https://github.com/headwater-ai/headwater/issues/1470) found that `headwater route` did not offer a decision record for a query of its own title. The title is the facet in the `name` role, so a person who types it has named the record. The route still made the record win the purpose gate of [spec 5](../spec/ai-integration.md#intent-time-routing), and then the turns of [HW-DR-0070](0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md).
+[Issue #1470](https://github.com/headwater-ai/headwater/issues/1470) found that `headwater route` did not offer a decision record for a query of its own title. The title is the facet in the `name` role, so a person who types it has named the record. The route still made the record win the purpose gate of [AI integration](../spec/ai-integration.md#intent-time-routing), and then the turns of [HW-DR-0070](0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md).
 
 The measurement routed the title of each record on `docs/decisions/` and `docs/process/decisions/`, with the leading number removed. On `9c9c6749`, 45 of 133 records were outside the default budget of five for their own title. For 35 of the 45, the route offered the record at no budget at all. A title such as `Relation storage` holds no word of a `rationale` question, so no decision was a candidate. HW-DR-0101 matched six purposes, and `rationale` was last, so the record stood 6th at a budget of 100,000. The adjudication measured 46 of 132 on `3aa0024c`, before this record was added.
 

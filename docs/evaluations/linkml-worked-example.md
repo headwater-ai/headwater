@@ -19,7 +19,7 @@ relations:
 
 # The Headwater taxonomy in LinkML — a worked example
 
-Evidence for [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate). [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
+Evidence for [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate). [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [the taxonomy model](../spec/taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
 
 ## The schema
 
@@ -303,4 +303,4 @@ Take **option 3** into the Q2 walkthrough as the leading candidate, with these c
 - It removes the Q1 tension entirely. A Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling.
 - The SHACL question resolves itself. SHACL becomes an output artifact for external consumers, so its poor error messages never reach a Headwater author.
 - The cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents Headwater accepts, which is a real and ongoing cost.
-- The shape/graph boundary needs to be stated in [spec 6](../spec/engine-architecture.md) as an architectural seam, because it is one.
+- The shape/graph boundary needs to be stated in [the engine architecture](../spec/engine-architecture.md) as an architectural seam, because it is one.

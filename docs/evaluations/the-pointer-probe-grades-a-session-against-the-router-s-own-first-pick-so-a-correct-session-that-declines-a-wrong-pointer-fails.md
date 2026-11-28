@@ -25,7 +25,7 @@ relations:
 
 The issue offers two judgments. The first is a model-behavior gap outside the reach of the corpus, as [the evaluation of #896](the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md) said for an earlier case. The second is a navigability gap that a corpus change can close. The evidence below supports neither. The session was right, the pointer was wrong, and the probe cannot tell the two apart.
 
-The evidence has two sources. The first is the raw harness log of the session, which holds every tool result and the final message. The committed transcript holds neither, because [spec 15](../spec/the-recorder-contract.md) keeps a digest or an empty string in place of a result. The second is a replay of the router over this tree, quoted below so that a later reader can repeat it.
+The evidence has two sources. The first is the raw harness log of the session, which holds every tool result and the final message. The committed transcript holds neither, because [the recorder contract](../spec/the-recorder-contract.md) keeps a digest or an empty string in place of a result. The second is a replay of the router over this tree, quoted below so that a later reader can repeat it.
 
 ## What the session saw, and what it answered
 

@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The content-hashed lock: one resolution, written down, with a digest over it.
 //!
-//! [Spec 6](../../../../docs/spec/engine-architecture.md#pipeline): "Resolve
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#pipeline): "Resolve
 //! merges the base taxonomy and overlays, validates against the meta-schema, and
 //! writes a content-hashed lock. Everything downstream reads the lock, never the
 //! sources. Thus a check result depends on a hash that a reviewer can see in a
-//! diff." [Spec 7](../../../../docs/spec/distribution-and-federation.md#consuming)
+//! diff." [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#consuming)
 //! adds the posture: "The lock is committed. Thus the corpus is checked against a
 //! resolved, reviewable, reproducible taxonomy, and CI needs no network to check
 //! anything."
 //!
 //! # What makes two resolutions the same result
 //!
-//! [13 — Open obligations](../../../../docs/spec/open-obligations.md) filed this
+//! [Open obligations](../../../../docs/spec/open-obligations.md) filed this
 //! question against the lock, and it is the one decision this crate makes rather
 //! than implements. Spec 2 requires that any legal order of an overlay set gives
 //! "the same resolved taxonomy", and it writes the result to a lock with a
@@ -52,7 +52,7 @@
 //!
 //! # The adoption payload rides here, and it is the one authored part
 //!
-//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 //! puts the migration state in the lock: from-version, to-version, an owner, an
 //! expiry and the open task list. [Q12](../../../../docs/spec/decisions.md#q12--migration-path-for-an-existing-corpus)
 //! makes first contact the same state with the from-version absent, and it says

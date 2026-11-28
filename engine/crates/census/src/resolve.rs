@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Kind resolution, and the derivation it records.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution) states
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution) states
 //! four steps, and `headwater explain <path>` prints the derivation: "which
 //! shelf matched, which rule fired, and the kind's declared purpose.
 //! Classification is never a black box, for a human or an agent." So the
@@ -17,14 +17,14 @@
 //! cannot implement a step whose input has no form, and inventing one here would
 //! make the engine the authority on a declaration the taxonomy owns. The step is
 //! therefore absent rather than approximated, and
-//! [13 — Open obligations](../../../../docs/spec/open-obligations.md) carries
+//! [Open obligations](../../../../docs/spec/open-obligations.md) carries
 //! the finding.
 //!
 //! # Why an unresolved kind is not an error
 //!
 //! Resolution returns an [`Outcome`], never a `Result`. A document that no shelf
 //! claims and a document whose discriminator is missing are both ordinary states
-//! of a corpus, and [spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! of a corpus, and [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! requires that they be counted rather than dropped. A `Result` would invite a
 //! caller to use `?`, and the file would leave the denominator at that line.
 

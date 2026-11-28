@@ -14,7 +14,7 @@
 //!
 //! An entry is a target reference, or a mapping with `to:` and instance
 //! attributes. The scalar is sugar for the mapping, and both produce the same
-//! edge ([spec 1](../../../../docs/spec/conceptual-model.md#the-authored-form)).
+//! edge ([the conceptual model](../../../../docs/spec/conceptual-model.md#the-authored-form)).
 //! A single entry and a sequence of one are also the same thing: `supersedes:
 //! DR-0031` and `supersedes: [DR-0031]` differ in YAML and not in the corpus.
 //!
@@ -30,13 +30,13 @@
 //!
 //! # What decides whether a target is a document or an anchor
 //!
-//! The declaration does. [Spec 1](../../../../docs/spec/conceptual-model.md#external-anchor)
+//! The declaration does. [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor)
 //! says a relation endpoint is a declared kind or a declared anchor kind and
 //! never a bare string, so the endpoint set at the authored target end says
 //! which. Where that set holds both — `traces_to` declares `to: [governed_document,
 //! code_path]` — the index is consulted first and the resolvers after it. That
 //! order is an engine decision and no document states it, so
-//! [13 — Open obligations](../../../../docs/spec/open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries it. The index matches an identifier and never a path, so a path
 //! reaches the resolvers. Where the `source-tree` resolver binds it as one
 //! literal pattern, and that pattern is the path of a typed document with an
@@ -112,7 +112,7 @@ pub const CUE: &str = "cue";
 /// The instance attribute that carries the pinned revision an imported edge was
 /// checked against.
 ///
-/// [Spec 2](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
 /// declares it by this name, owned by the edge. It is here beside [`CUE`] for
 /// the reason [`CUE`] is here: two crates read it and neither may depend on the
 /// other. `headwater_import::write` writes it, `headwater_check::suspect`
@@ -233,7 +233,7 @@ pub enum Unbound {
         detail: String,
     },
     /// The anchor kind is declared, and its resolver is not one this run has.
-    /// [Spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits):
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits):
     /// an anchor that no resolver claims is a finding.
     NoResolver {
         anchor_kind: String,
@@ -438,7 +438,7 @@ impl Target {
     /// the file and one not, produce one identity and two verdicts.
     ///
     /// A cache key needs the second value rather than the first.
-    /// [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// puts "the content hash of every document **and edge** that an instance
     /// read" in a read set, and a read set is a list of corpus paths. An anchor
     /// names something outside the corpus, so no path in that list moves when

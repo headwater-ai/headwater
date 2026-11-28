@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The scaffolder: what `headwater new <kind>` proposes, and what it refuses.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names this a correctness root: "Edges marked `created_by: scaffold` are
 //! corpus facts that nobody reviews individually. A scaffolder bug manufactures
 //! wrong edges at exactly the scale that the assisted-fraction metric
@@ -10,7 +10,7 @@
 //!
 //! # 1. The template comes from the taxonomy, and it is not a file
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#templates-and-scaffolding):
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#templates-and-scaffolding):
 //! "Each kind declares a template. The template is not a suggestion file for
 //! humans to copy. It is generated from the kind declaration." So nothing here
 //! reads a template file, and nothing here carries prose of its own beyond a
@@ -320,7 +320,7 @@ pub struct Half {
     pub members: Option<Vec<String>>,
     /// Instance attributes the half carries, in the order they are written.
     ///
-    /// [Spec 2](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
     /// lets a relation type declare attributes its instances may take, and an
     /// entry that carries one is a mapping with `to` rather than a bare
     /// identifier. An empty list writes the bare form, which is what every half
@@ -1849,7 +1849,7 @@ fn mint(
 ///
 /// An endpoint that names an abstract parent admits every kind under it, which
 /// is what makes the base relations reach a bundle's kinds with no edit
-/// ([spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds)).
+/// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds)).
 fn admits(sources: &Sources<'_>, endpoints: &[String], kind: &str) -> bool {
     endpoints
         .iter()

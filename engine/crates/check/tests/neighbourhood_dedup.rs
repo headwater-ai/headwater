@@ -14,7 +14,7 @@
 //!
 //! A doubled read is not harmless. The read set goes into the cache key and
 //! into the published gate input
-//! ([spec 12](../../../../docs/spec/check-layer.md), *Determinism,
+//! ([the check layer](../../../../docs/spec/check-layer.md), *Determinism,
 //! concretely*), so a repeat there changes bytes that a reader compares.
 //!
 //! The tree under `fixtures/neighbourhood-dedup/` holds the shapes below.

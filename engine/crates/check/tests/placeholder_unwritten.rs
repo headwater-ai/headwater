@@ -2,7 +2,7 @@
 //! A document that still holds the text the scaffolder wrote for a person to
 //! replace, and the readings of that question that are easy to get wrong.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/placeholder/` is
 //! [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).

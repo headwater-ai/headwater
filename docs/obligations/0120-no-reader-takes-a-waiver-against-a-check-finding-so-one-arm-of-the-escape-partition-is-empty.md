@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[Spec 4](../spec/assurance-model.md#suppression) fixes a precedence over three escape mechanisms: waiver, then migration-pending, then suppression. The three inventories partition the escaped findings, so no finding is counted three times. [Spec 7](../spec/distribution-and-federation.md#waivers) defines one waiver mechanism with two populations: a waiver may name a conformance rule or a check rule. The four required fields and the mandatory expiry are the same in each.
+[The assurance model](../spec/assurance-model.md#suppression) fixes a precedence over three escape mechanisms: waiver, then migration-pending, then suppression. The three inventories partition the escaped findings, so no finding is counted three times. [Distribution and federation](../spec/distribution-and-federation.md#waivers) defines one waiver mechanism with two populations: a waiver may name a conformance rule or a check rule. The four required fields and the mandatory expiry are the same in each.
 
 `headwater conformance` is the reader of the first population. It reads the `conformance.waivers` block of the consumer declaration and honors a live waiver over a conformance rule. It reports an expired waiver and does not honor it. The reader of the second population is the coverage account of `headwater check`, and it does not exist. No module under `engine/crates/check/src` reads a waiver. The coverage line of a run states the absence rather than a count: "no waiver reaches a check finding", then the migration-pending and suppressed counts. The module comments of `engine/crates/check/src/adoption.rs` and `engine/crates/check/src/suppression.rs` say that the waiver arm is absent.
 

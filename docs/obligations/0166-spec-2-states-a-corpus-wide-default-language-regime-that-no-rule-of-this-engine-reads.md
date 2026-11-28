@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/taxonomy-model.md#language-is-declared-not-assumed) tells a reader that the corpus declares one default language regime, and that a kind may bind a different profile. The first half of that sentence describes nothing this engine implements.
+[The taxonomy model](../spec/taxonomy-model.md#language-is-declared-not-assumed) tells a reader that the corpus declares one default language regime, and that a kind may bind a different profile. The first half of that sentence describes nothing this engine implements.
 
 `Shape::language_of` in `engine/crates/check/src/shape.rs` walks the ancestry of a kind for a `language` declaration, and it answers with nothing where it finds none. There is no fallback to a regime named `default`. The name `default` is an ordinary regime name, and it carries no meaning beyond being the only name the base package uses.
 

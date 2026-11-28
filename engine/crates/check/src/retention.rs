@@ -2,10 +2,10 @@
 //! The third check that reads a lifecycle regime, and the first that is about
 //! a document the corpus no longer holds.
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! rules that "terminal states marked `retain_terminal: true` may never be
 //! deleted. Lineage is the point."
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#shape)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#shape)
 //! declares the member on a lifecycle regime, the meta-schema types it
 //! `boolean`, `taxonomy validate` refuses a value that is not one, and both
 //! regimes of the base package have written `true` since 1.0.0. Nothing read

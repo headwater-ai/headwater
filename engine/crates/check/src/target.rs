@@ -3,7 +3,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
+//! [The check layer](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
 //! lists "a dangling edge" among the structural findings of phase A, beside an
 //! unparseable file, an unclassifiable path and an ambiguous shelf match. The
 //! graph detected one and printed it under its own heading, and it reached no

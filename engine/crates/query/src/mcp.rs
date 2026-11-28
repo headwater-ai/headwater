@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The agent-facing surface of the same library: MCP over a line of JSON.
 //!
-//! [Spec 6](../../../../docs/spec/engine-architecture.md#mcp-server): "The
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#mcp-server): "The
 //! MCP server is the surface of the library that an agent reads." So the tools
 //! here call the reads beside them and render with the same functions the CLI
 //! renders with. Two renderings of one answer is the drift this repository
@@ -10,7 +10,7 @@
 //!
 //! # Two classes, and a switch between them
 //!
-//! [Spec 5](../../../../docs/spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
+//! [AI integration](../../../../docs/spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
 //! lists three classes: query, working-tree write, and landed write. This
 //! module registers the first, registers the second where the operator asked
 //! for it, and can register the third under no argument at all. Spec 5 says why
@@ -95,7 +95,7 @@
 //! reading the graph, so it needs a clock, a cache and a corpus walk. Every one
 //! of those is a decision, and a tool that took them again would put a second
 //! set of defaults behind a protocol. So none of the three is taken here.
-//! [Spec 5](../../../../docs/spec/ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken)
+//! [AI integration](../../../../docs/spec/ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken)
 //! is where they are decided, and this is what the decisions come to in code.
 //!
 //! **The clock arrives.** [`Server::now`] is read once, when the server starts,
@@ -284,7 +284,7 @@ pub struct Writing<'a> {
 
 /// What a verb wrote, held rather than printed.
 ///
-/// [Spec 5](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+/// [AI integration](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
 /// fixes two streams and a status for every verb of this engine: "Standard
 /// output carries the one artifact… Standard error carries the account of what
 /// the engine did." A protocol call has one result rather than two streams, so

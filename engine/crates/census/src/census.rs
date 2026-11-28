@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The census: every file under the corpus root, and what became of it.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
+//! [The check layer](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
 //! states what it is for: "The denominator is fixed before any checks start.
 //! Thus a document that fails to parse is counted, reported, and visibly
-//! unchecked." [Spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! unchecked." [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! states the obligation it discharges: OB-COV-1, every file under the corpus
 //! root is classified, or reported as unclassifiable.
 //!
@@ -13,7 +13,7 @@
 //! A file with no front-matter block is an **untyped document**. It is an
 //! ordinary state of a corpus: somebody has written a file that nobody has typed
 //! yet, and the whole first-contact story of
-//! [spec 7](../../../../docs/spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)
 //! is about a corpus in that state.
 //!
 //! A file whose block will not load is a file the engine **could not read**.
@@ -35,7 +35,7 @@
 //! engine wrote would become a finding against the corpus, on every run.
 //!
 //! None of the three outcomes an author could act on is true of it.
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! exempts a generated projection from acceptance and holds it to regeneration
 //! instead, so `untyped` is wrong: nobody is going to type it. `excluded` is
 //! wrong: no declaration excludes it, and the corpus root is where it belongs.
@@ -164,7 +164,7 @@ pub struct Row {
     /// The document this row read, when it read one.
     ///
     /// The census is the denominator, and the graph build is the next phase
-    /// over it ([spec 6](../../../../docs/spec/engine-architecture.md)). A
+    /// over it ([the engine architecture](../../../../docs/spec/engine-architecture.md)). A
     /// phase that re-opened each file would read a corpus that the census had
     /// already read, and the two accounts could then differ — by an edit
     /// between the two passes, or by one rule drifting from the other. So the
@@ -176,7 +176,7 @@ pub struct Row {
     /// The digest of the bytes this row read, and `None` where it read none.
     ///
     /// This is the content hash that
-    /// [spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// puts in a cache key and in the read set of a run: "the content hash of
     /// every document and edge that an instance read". It is taken here, of
     /// the bytes this walk read, for the reason the row carries the document
@@ -1188,7 +1188,7 @@ mod tests {
     /// A document that names the marker in its prose is an authored document,
     /// and this repository's own specification is one. Classifying it as
     /// generated would drop it out of every check silently, which is the shape
-    /// of defect [spec 4](../../../../docs/spec/assurance-model.md) exists to
+    /// of defect [the assurance model](../../../../docs/spec/assurance-model.md) exists to
     /// prevent.
     #[test]
     fn a_document_that_quotes_the_marker_below_the_first_line_stays_typed() {

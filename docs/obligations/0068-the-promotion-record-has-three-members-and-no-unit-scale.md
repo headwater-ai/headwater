@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 4](../spec/assurance-model.md#promotion-advisory-to-blocking) says that the promotion criteria are recorded with the control, and it names an observation window, a false-positive threshold and an adjudicated sample. The meta-schema declares all three, and each one is prose.
+[The assurance model](../spec/assurance-model.md#promotion-advisory-to-blocking) says that the promotion criteria are recorded with the control, and it names an observation window, a false-positive threshold and an adjudicated sample. The meta-schema declares all three, and each one is prose.
 
 ## Obligation
 

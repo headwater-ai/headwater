@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names four terms of the assisted fraction. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. A section counts as its heading and never as its prose.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names four terms of the assisted fraction. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. A section counts as its heading and never as its prose.
 
 `headwater new` over every concrete kind of this repository is a reading of that denominator. Eight kinds scaffold and `specification` refuses, which [HW-OBL-0107](0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) already holds. No run named a relation, so no run proposed an edge.
 

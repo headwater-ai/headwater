@@ -2,7 +2,7 @@
 //! A Shape-origin check, generated from `identifier_schemes` and the kinds that
 //! name them.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists "identifier pattern" third among the Shape-origin examples. A kind
 //! declares `identifier: {scheme: spec_id}`, the scheme declares
 //! `pattern: "{namespace}-SPEC-{slug}"` and `namespace: HW`, and the check is

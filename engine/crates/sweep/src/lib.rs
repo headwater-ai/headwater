@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The LLM-assisted coherence sweep: the half of it that is deterministic.
 //!
-//! [Spec 4](../../../../docs/spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep)
 //! declares the sweep and
-//! [spec 12](../../../../docs/spec/check-layer.md#where-the-llm-coherence-sweep-fits)
+//! [The check layer](../../../../docs/spec/check-layer.md#where-the-llm-coherence-sweep-fits)
 //! says where it sits: "It runs as a separate sampler, with the same finding
 //! shape and the same reporting pipeline. Its provenance is marked `agent`, it
 //! never gates, and it is never cached as if it is reproducible."

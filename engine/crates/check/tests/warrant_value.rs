@@ -2,7 +2,7 @@
 //! A warrant outside spec 3's closed set, and an acceptor the warrant does not
 //! pair with.
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 //! states both halves in one paragraph: the warrant's "value set is closed",
 //! and "each value requires a different part of the block, and the engine
 //! checks the pairing". Before these two rules nothing read either half. A

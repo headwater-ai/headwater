@@ -33,7 +33,7 @@ The corpus owes a reading that separates two files whose bytes did not parse. On
 
 The engine states the trade in a doc comment on `Held::Unmatched`, and nowhere a reader of this corpus meets it. The argument there is that the case costs nothing. A document whose committed front matter does not parse fails the run that committed it. The argument is sound and it is not a measurement. It holds only where the commit that added the document ran the gate, and `git commit --no-verify` is one line.
 
-[Spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids a silent pass, and this one is silent in the strict sense. No instance is created over the path, so no skip is reported. The only line about it is a count of paths that matched nothing.
+[The assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids a silent pass, and this one is silent in the strict sense. No instance is created over the path, so no skip is reported. The only line about it is a count of paths that matched nothing.
 
 ## Discharge
 

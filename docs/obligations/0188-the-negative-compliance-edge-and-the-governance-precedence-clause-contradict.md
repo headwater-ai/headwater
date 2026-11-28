@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/taxonomy-model.md#the-decision-relation-vocabulary) spells `does_not_comply_with` from the deviating document to the standard, inside the governance family. The derived precedence of that family makes the source of the edge govern. So the document that violates a standard governs the reading of the standard it violates.
+[The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) spells `does_not_comply_with` from the deviating document to the standard, inside the governance family. The derived precedence of that family makes the source of the edge govern. So the document that violates a standard governs the reading of the standard it violates.
 
 The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) met this when it spelled its positive edge. It spells that edge from the standard, which is the only spelling the precedence clause permits. The two edges of one tradition then point opposite ways. The second finding at [line 154](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L154) of the doctrine holds the argument.
 

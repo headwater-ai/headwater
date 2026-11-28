@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Kind resolution, and the census that fixes the denominator.
 //!
-//! Two components, and [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! Two components, and [the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names both a correctness root. They share a crate because they share one
 //! failure: each one produces a **systematically green** result when it is
 //! wrong. A walk that misses a subtree reports nothing about it. A resolution
@@ -38,7 +38,7 @@
 //!
 //! **Findings.** The census reports outcomes and never severities. Whether an
 //! untyped document blocks a run is a control's business, not a check's
-//! ([spec 12](../../../../docs/spec/check-layer.md)), and the census is
+//! ([the check layer](../../../../docs/spec/check-layer.md)), and the census is
 //! neither. It is the denominator that a later phase computes coverage against.
 //!
 //! **The overlay resolver.** [`shelves::Taxonomy`] reads an already-resolved

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) draws every scope over the corpus, and it names five of them. The register makes two findings that no document is about. An obligation with no disposition and a control whose mechanism the engine does not implement are both defects of the taxonomy. Neither one has a document to point at, and neither creates a check instance, so neither accounts anything against the census.
+[The check layer](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) draws every scope over the corpus, and it names five of them. The register makes two findings that no document is about. An obligation with no disposition and a control whose mechanism the engine does not implement are both defects of the taxonomy. Neither one has a document to point at, and neither creates a check instance, so neither accounts anything against the census.
 
 ## Obligation
 
@@ -32,4 +32,4 @@ Either spec 12 names the fifth grain, or these two rules move out of the check l
 
 The engine states the grain as `Taxonomy` and reports it beside the other four. A corpus-grained verdict moves when a document moves, and a taxonomy-grained one moves when the lock moves. To fold the second into the first would put a document in a read set that no document was read for.
 
-**This record is discharged.** The `Scope` block of [spec 12](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) names `Taxonomy` as a grain, and it does not name `Shelf`, which no code has. The test `the_scope_block_of_spec_12_names_every_grain_the_engine_has` in `engine/crates/check/tests/spec_twelve_scope.rs` holds the grain lines of that block to the variants of `Grain`, in both directions. [#1572](https://github.com/headwater-ai/headwater/issues/1572) made both changes.
+**This record is discharged.** The `Scope` block of [the check layer](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) names `Taxonomy` as a grain, and it does not name `Shelf`, which no code has. The test `the_scope_block_of_spec_12_names_every_grain_the_engine_has` in `engine/crates/check/tests/spec_twelve_scope.rs` holds the grain lines of that block to the variants of `Grain`, in both directions. [#1572](https://github.com/headwater-ai/headwater/issues/1572) made both changes.

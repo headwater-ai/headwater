@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 7](../spec/distribution-and-federation.md#an-assembly-has-two-consumption-forms) prints a worked assembly recipe in a fenced block. Until 2026-09-06 that block read `from.package: headwater/standard@3.4.0` and selected `[design-spec, decision-record, standards-spec]`.
+[Distribution and federation](../spec/distribution-and-federation.md#an-assembly-has-two-consumption-forms) prints a worked assembly recipe in a fenced block. Until 2026-09-06 that block read `from.package: headwater/standard@3.4.0` and selected `[design-spec, decision-record, standards-spec]`.
 
 **Both halves were wrong and nothing reported either.** The package stood at `4.0.0`, so the version had been stale across at least four minor releases. The selection did not resolve at all. `design-spec` and `decision-record` between them name purposes, kinds and a voice regime that `evidence-and-obligation` declares. Referential integrity refuses the triple over seven dangling names. So the specification printed a recipe the engine refuses, in the section that a first adopter reads to learn what a recipe is.
 

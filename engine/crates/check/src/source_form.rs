@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the source form a language regime fixes.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! separates Document checks from the generated ones because "the body is not
 //! in the graph". This rule reads something one step further out still: not the
 //! body, but the shape of the file the body was written into.

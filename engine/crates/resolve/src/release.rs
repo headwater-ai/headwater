@@ -2,7 +2,7 @@
 //! A published package, and the check a consumer runs over one that arrived
 //! from somewhere else.
 //!
-//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#publishing):
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing):
 //! "Publishing is a release: a semantic version, a changelog, an integrity
 //! digest, and a migration payload for any major bump. Distribution is over the
 //! registry or repository that the organization already uses. The engine
@@ -12,7 +12,7 @@
 //!
 //! # This crate never fetches, and that is a structural guarantee
 //!
-//! [Spec 0](../../../../docs/spec/vision-and-scope.md#non-negotiables)
+//! [The vision and scope](../../../../docs/spec/vision-and-scope.md#non-negotiables)
 //! forbids a network dependency at check time, and no crate the checking loop
 //! reaches depends on the network. This crate reads a directory. When
 //! `headwater taxonomy vendor` is given a location, `headwater-fetch` turns it
@@ -793,7 +793,7 @@ pub fn pinned(dir: Option<&Path>, pinned: &str) -> Pinned {
 /// Whether this engine is inside the range a package declares.
 ///
 /// A package that declares no range is taken, and the absence is what
-/// [spec 7](../../../../docs/spec/distribution-and-federation.md#publishing)
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// means by a publisher that states no floor. A range that this engine cannot
 /// read is refused rather than ignored: an unreadable range read as no range is
 /// a claim the publisher made and the consumer dropped.

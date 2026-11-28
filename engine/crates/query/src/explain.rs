@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `explain`: why the engine typed a document as it did, and what follows.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution):
 //! "`headwater explain <path>` prints this derivation — which shelf matched,
 //! which rule fired, and the kind's declared purpose. It also prints which
 //! facets and sections are consequently required, and which relations are

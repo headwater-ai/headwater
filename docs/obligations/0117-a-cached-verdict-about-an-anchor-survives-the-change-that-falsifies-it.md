@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states the rule this record is about. "The key is a hash of exactly those inputs, and a key that omits one is a correctness bug." The same section names the shape of the failure. "A cache that serves a verdict across that edit is the correctness bug a complete key exists to prevent."
+[The check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states the rule this record is about. "The key is a hash of exactly those inputs, and a key that omits one is a correctness bug." The same section names the shape of the failure. "A cache that serves a verdict across that edit is the correctness bug a complete key exists to prevent."
 
 `relation.target.unresolved` is edge-scoped, and the read set of one instance is the document that declared the edge. The target document joins it where the target is a document. A target that is not a document contributes no input at all. A read set is a list of corpus paths, and an anchor names something outside the corpus. So the key over an instance about an anchor names no byte of the thing the anchor points at.
 

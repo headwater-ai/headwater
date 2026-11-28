@@ -84,7 +84,7 @@ impl Address {
     /// This is the predicate the confluence check runs. Two `add` operations at
     /// disjoint addresses commute, so a resolver that can decide this can prove
     /// that every subset of an add-only bundle set resolves
-    /// ([spec 7](../../../../docs/spec/distribution-and-federation.md)).
+    /// ([distribution and federation](../../../../docs/spec/distribution-and-federation.md)).
     pub fn is_disjoint_from(&self, other: &Address) -> bool {
         !self.is_prefix_of(other) && !other.is_prefix_of(self)
     }

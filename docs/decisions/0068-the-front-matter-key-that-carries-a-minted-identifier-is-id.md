@@ -41,6 +41,6 @@ The front-matter key `id` carries the value that a kind's `identifier: {scheme: 
 
 **`.headwater/README.md`'s guess table loses the row for this gap.** The table lists what the typing pass still had to guess, and this row named a settled question.
 
-**[HW-OBL-0053](../obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md) discharges.** The obligation was to state the declaration, and this record is that statement. Its entry leaves [13 — Open obligations](../spec/open-obligations.md) to match.
+**[HW-OBL-0053](../obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md) discharges.** The obligation was to state the declaration, and this record is that statement. Its entry leaves [Open obligations](../spec/open-obligations.md) to match.
 
 **Every existing document keeps validating.** Every `kinds.*.identifier` declaration in the base package and the overlay already uses only `{scheme: …}`. Every governed document already writes `id`. The decision states what the corpus already does. It changes no file under `docs/` beyond the ones this record names.

@@ -2,7 +2,7 @@
 //! The two declarations kind resolution reads, and nothing else.
 //!
 //! Kind resolution needs shelves, and it needs to know which kinds are abstract,
-//! because [spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds)
+//! because [the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds)
 //! says that no document resolves to one. This module reads exactly those two
 //! declarations out of a resolved taxonomy and refuses what it cannot use.
 //!
@@ -80,7 +80,7 @@ pub enum ShelfBody {
 #[derive(Clone, Debug)]
 pub struct Kind {
     pub name: String,
-    /// [Spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds): an
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds): an
     /// abstract kind is a kind that no document ever is.
     pub is_abstract: bool,
 }

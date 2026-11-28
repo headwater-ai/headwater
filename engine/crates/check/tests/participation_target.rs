@@ -2,7 +2,7 @@
 //! Which neighbour satisfies a participation window, when the relation admits
 //! more target kinds than the expectation names.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." `relation.participation.overdue` already had both.
 //! What it had no fixture for is the shape below, and that is how the defect
@@ -23,7 +23,7 @@
 //!
 //! **Both arms are shapes a taxonomy can declare.** `to_kind` became optional
 //! in `engine/crates/meta/meta-schema.yml` on 2026-09-11, and
-//! [spec 2](../../../../docs/spec/taxonomy-model.md#participation-expectations)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#participation-expectations)
 //! states what the absence means: any target document the relation admits
 //! satisfies the expectation.
 //! [HW-OBL-0039](../../../../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)

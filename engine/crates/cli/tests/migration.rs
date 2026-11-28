@@ -1028,7 +1028,7 @@ fn a_target_no_bundle_declares_stops_the_publish() {
 /// the source half is held against the base alone.
 ///
 /// The base alone is what a consumer who selects no bundle resolves, and a
-/// bundle is add-only ([spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)),
+/// bundle is add-only ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)),
 /// so a value the base declares is declared under every selection. That is what
 /// "renames something that did not move" means, and it is the only reading of it
 /// a publisher can certify. A value only a bundle declares moved for the

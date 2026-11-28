@@ -2,7 +2,7 @@
 //! The deletion of a retained document, and the corpus that separates it from
 //! every other path a change names that no census row holds.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." This rule is harder to hold to that bar than a
 //! defect in a document is, because its subject is a document that is not

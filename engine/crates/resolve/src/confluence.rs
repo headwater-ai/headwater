@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The static check that an overlay set commutes, run before anything merges.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
 //! "Overlay application must be **confluent**: the application of a set of
 //! overlays in any legal order yields the same resolved taxonomy. The resolver
 //! checks this statically, before it applies anything." And: "the resolver
@@ -11,7 +11,7 @@
 //! Static is the whole value of it. A resolver that discovered a conflict
 //! while merging would report whichever conflict the order it happened to pick
 //! reached first, and a publisher could not prove ahead of a release that every
-//! subset of its bundles resolves ([spec 7](../../../../docs/spec/distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)).
+//! subset of its bundles resolves ([distribution and federation](../../../../docs/spec/distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)).
 //! The check here reads the operations and never the tree, so its answer does
 //! not depend on the base it is about to be run against.
 //!

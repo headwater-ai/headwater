@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-A relation may declare `on_target.set_state`, which names the state that the edge writes onto the document at its target end. [Spec 2](../spec/taxonomy-model.md#the-meta-schema) now asks, under `relation coherence`, that the state is one every kind at the `to` end can stand in. The clause reads the lifecycle regime of each concrete kind the `to` end stands for, and it asks whether that regime names the state.
+A relation may declare `on_target.set_state`, which names the state that the edge writes onto the document at its target end. [The taxonomy model](../spec/taxonomy-model.md#the-meta-schema) now asks, under `relation coherence`, that the state is one every kind at the `to` end can stand in. The clause reads the lifecycle regime of each concrete kind the `to` end stands for, and it asks whether that regime names the state.
 
 The clause skips a kind whose chain binds no lifecycle regime at all. The engine reads the binding the way `headwater_check::Shape::lifecycle_of` reads it, nearest ancestor first, and a kind that binds none answers `None` there too. A kind that binds no regime stands at no state. A relation that writes one onto it is a worse defect than the one this clause refuses. No rule of `taxonomy validate` reports it.
 

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#what-this-leaves-open) calls the `Neighbourhood(depth)` scope speculative, and says to cut it if no real check needs a depth above one. That test misses the case that arrived. An edge-scoped instance exists for each edge, and this rule is about an edge that nobody declared.
+[The check layer](../spec/check-layer.md#what-this-leaves-open) calls the `Neighbourhood(depth)` scope speculative, and says to cut it if no real check needs a depth above one. That test misses the case that arrived. An edge-scoped instance exists for each edge, and this rule is about an edge that nobody declared.
 
 ## Obligation
 

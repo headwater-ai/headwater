@@ -55,7 +55,7 @@ Six leak attempts, each the thing an author would actually reach for, and each r
 
 Three positive controls compile: an ordinary document check, an edge check, and a corpus check that reads siblings legitimately. They matter as much as the failures, because without them a crate that simply did not build would score six out of six.
 
-**The design changed under the test, and this is the finding to carry back into [spec 12](../spec/check-layer.md).** Spec 12 models scope as a value that a check returns from `scope()`. With one trait and a returned value, a check declares one scope and can still be handed a view that reads more. That is because nothing connects the declaration to the argument. The spike uses **one trait per scope** — `DocumentCheck`, `EdgeCheck`, `CorpusCheck` — so the declared scope *is* the argument type. A check that wants siblings has to implement `CorpusCheck`. That registers it in the bucket where the runner already keys the cache on the whole corpus. There is one fact instead of two, so the two cannot disagree. `Scope` survives as a reporting and cache-keying value derived from the trait, never supplied by the implementer.
+**The design changed under the test, and this is the finding to carry back into [the check layer](../spec/check-layer.md).** Spec 12 models scope as a value that a check returns from `scope()`. With one trait and a returned value, a check declares one scope and can still be handed a view that reads more. That is because nothing connects the declaration to the argument. The spike uses **one trait per scope** — `DocumentCheck`, `EdgeCheck`, `CorpusCheck` — so the declared scope *is* the argument type. A check that wants siblings has to implement `CorpusCheck`. That registers it in the bucket where the runner already keys the cache on the whole corpus. There is one fact instead of two, so the two cannot disagree. `Scope` survives as a reporting and cache-keying value derived from the trait, never supplied by the implementer.
 
 **Two honest limits.** First, `EdgeView` holds a `&Graph` internally to answer `reciprocal_exists()`. Nothing outside the crate can reach it, because the field is private — but that is enforcement by privacy, which Go matches with an unexported field. The genuinely Rust-only guarantees are the lifetime and `Sync` ones, rows three, four and six above. Second, the compile-fail expectations are pinned to rustc's exact diagnostic text, so a toolchain upgrade will require regenerating them. That is a real maintenance cost, small and recurring.
 
@@ -122,7 +122,7 @@ Two costs scale with corpus size rather than change size, and both are visible i
 
 Stated plainly, because an unstated gap reads as a covered one:
 
-- No LSP server, no MCP server, no plugin hosting. The WebAssembly component model that [spec 12](../spec/check-layer.md) now points at for plugins is untested here.
+- No LSP server, no MCP server, no plugin hosting. The WebAssembly component model that [the check layer](../spec/check-layer.md) now points at for plugins is untested here.
 - Linux and x86_64 only. No macOS, no Windows, no aarch64.
 - No Python binding, although the evaluation cites `pyo3` as part of the embedding argument.
 - No real corpus. The generator is representative by construction, which is not the same as representative.

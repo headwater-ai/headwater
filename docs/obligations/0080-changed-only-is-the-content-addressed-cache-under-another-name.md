@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/engine-architecture.md#cli) states that there is no `--changed-only`, and this record holds the measurement behind that sentence. The one job such a flag has is to pay for a 200 ms commit hook without moving the verdict. In 2026-08 the cache paid it. At 477 and at 489 typed documents it did not, and the commit hook went past its target. At 501 typed documents, after [#1450](https://github.com/headwater-ai/headwater/issues/1450), it pays it again.
+[The engine architecture](../spec/engine-architecture.md#cli) states that there is no `--changed-only`, and this record holds the measurement behind that sentence. The one job such a flag has is to pay for a 200 ms commit hook without moving the verdict. In 2026-08 the cache paid it. At 477 and at 489 typed documents it did not, and the commit hook went past its target. At 501 typed documents, after [#1450](https://github.com/headwater-ai/headwater/issues/1450), it pays it again.
 
 **The measurement, and the conditions it was taken under.** On 2026-10-01, over this repository at 501 typed documents, a warm `headwater check --strict` cost 193 ms of user and system CPU time. The same run with `--no-cache` cost 587 ms. `sh tools/measure/mcp-check.sh` took both values with the `dev-release` engine on an 18-core host. Each is the median of 5 samples, and each sample is the mean of 3 runs. The load average of the host was near 12 during the run. In the same session, the engine before #1450 cost 257 ms and 610 ms. On 2026-09-30, at 489 documents, the values were 233 ms and 587 ms. So a warm cache now saves about two thirds of a cold run, and the rest is just inside the hook budget.
 

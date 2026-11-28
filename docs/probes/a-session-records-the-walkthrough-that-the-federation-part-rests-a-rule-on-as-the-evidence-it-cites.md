@@ -40,7 +40,7 @@ Read the part of `docs/spec/distribution-and-federation.md` that says no key sta
 
 ## Target
 
-[Spec 7](../spec/distribution-and-federation.md), "No key states whether a step is mechanical", and the evaluation HW-EVAL-schema-format-walkthrough that it rests the rule on.
+[Distribution and federation](../spec/distribution-and-federation.md), "No key states whether a step is mechanical", and the evaluation HW-EVAL-schema-format-walkthrough that it rests the rule on.
 
 ## Key
 

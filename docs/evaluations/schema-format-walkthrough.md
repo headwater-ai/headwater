@@ -40,7 +40,7 @@ Before the walkthrough could start, the question had to be split. "Schema format
 
 [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate) already answered the first: Headwater owns the language, and standard formats are emitted from it. Q2 is really the second and the third.
 
-The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question. It is not one. [Spec 2](../spec/taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
+The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question. It is not one. [The taxonomy model](../spec/taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
 
 - `values: $vocabularies.lifecycle_state` — a reference into another declaration.
 - `add: {relations.forbids: $package.optional.forbids}` — a reference into a package's unenabled definitions.
@@ -71,7 +71,7 @@ Q2 listed seven. Green and Petre's framework has fourteen, and the seven were a 
 
 **Juxtaposability.** Can a reader see two things at once? Base beside overlay, and old beside new, are the two comparisons this system asks for constantly.
 
-**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it? That is a question about how much of the notation is in its training data. And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [Spec 5](../spec/ai-integration.md) makes agents readers of the corpus. [Q12](../spec/open-questions.md#12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
+**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it? That is a question about how much of the notation is in its training data. And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [AI integration](../spec/ai-integration.md) makes agents readers of the corpus. [Q12](../spec/open-questions.md#12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
 
 Provisionality — can an author sketch something not yet valid — is folded into progressive evaluation below, because for this notation the two questions have one answer.
 
@@ -316,7 +316,7 @@ YAML's traps are the error-proneness cost of this choice, and a strict loader re
 
 ## The implementation cost, and why it is already retired
 
-Choosing YAML in a Rust engine has one obvious cost, and [Q1](../spec/open-questions.md#1--implementation-language) named it while closing: the YAML crate ecosystem is in poor repair. The reason it matters less than it looks is the same reason in both entries. [Spec 12](../spec/check-layer.md) requires findings to anchor to a line, and no convenient deserializer retains spans. The engine writes its own parse whatever format it reads.
+Choosing YAML in a Rust engine has one obvious cost, and [Q1](../spec/open-questions.md#1--implementation-language) named it while closing: the YAML crate ecosystem is in poor repair. The reason it matters less than it looks is the same reason in both entries. [The check layer](../spec/check-layer.md) requires findings to anchor to a line, and no convenient deserializer retains spans. The engine writes its own parse whatever format it reads.
 
 The [language spike](language-spike-results.md) built that parse for document front matter, with ten assertions covering line and column for every key. A taxonomy file is the same problem at a different scale. So the format decision here adds no implementation risk that the engine had not already accepted.
 

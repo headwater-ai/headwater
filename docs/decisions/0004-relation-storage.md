@@ -33,7 +33,7 @@ A relation is declared under a `relations:` block in front matter and nowhere el
 
 ## Consequences
 
-**The annotated prose link is cut, and that is the largest change here.** The old leaning allowed a prose link to carry relation semantics "unless they are annotated". An annotation syntax gives one edge two authoring locations, and three questions then have no good answer. Which location wins when they disagree? Which span does a finding anchor to? What does `--fix` write when it adds a reciprocal? [Spec 1](../spec/conceptual-model.md#facet) already refused a second edge syntax once, when it removed reference-valued facets, and the reasoning transfers without change.
+**The annotated prose link is cut, and that is the largest change here.** The old leaning allowed a prose link to carry relation semantics "unless they are annotated". An annotation syntax gives one edge two authoring locations, and three questions then have no good answer. Which location wins when they disagree? Which span does a finding anchor to? What does `--fix` write when it adds a reciprocal? [The conceptual model](../spec/conceptual-model.md#facet) already refused a second edge syntax once, when it removed reference-valued facets, and the reasoning transfers without change.
 
 **The friction that the old leaning worried about becomes a check.** A prose link that resolves to a corpus document with no declared relation raises an advisory finding. The author writes the link once, and the fix writes the declaration. The fix is mechanical only when exactly one enabled relation type permits the pair of kinds at the two ends. Otherwise the finding lists the candidates and carries no patch. The check has no converse, because a succession edge belongs in no paragraph.
 

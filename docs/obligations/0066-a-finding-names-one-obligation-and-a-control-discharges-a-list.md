@@ -27,7 +27,7 @@ The [finding](../spec/assurance-model.md#findings) shape carries one identifier,
 
 ## Obligation
 
-[Spec 4](../spec/assurance-model.md#findings) and [spec 12](../spec/check-layer.md#the-plugin-interface) owe a rule for the many-to-one case.
+[The assurance model](../spec/assurance-model.md#findings) and [the check layer](../spec/check-layer.md#the-plugin-interface) owe a rule for the many-to-one case.
 
 ## Discharge
 

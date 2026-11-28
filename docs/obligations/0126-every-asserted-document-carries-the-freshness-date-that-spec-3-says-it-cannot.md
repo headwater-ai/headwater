@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires) states the rule in one sentence: "Content with the `asserted` warrant carries no freshness value, and the engine never reports it as stale. `last_verified` records that a human confirmed a document, and nobody confirmed this one. It cannot acquire the date without becoming `accepted`, which is what promotion is."
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires) states the rule in one sentence: "Content with the `asserted` warrant carries no freshness value, and the engine never reports it as stale. `last_verified` records that a human confirmed a document, and nobody confirmed this one. It cannot acquire the date without becoming `accepted`, which is what promotion is."
 
 The pairing table beside it names what each warrant requires and what it forbids. `asserted` requires `drafted_by`, `activity` and the sources that produced the content, and it forbids `accepted_by`. The table says nothing about `last_verified`, so the ruling stands in the paragraph alone.
 

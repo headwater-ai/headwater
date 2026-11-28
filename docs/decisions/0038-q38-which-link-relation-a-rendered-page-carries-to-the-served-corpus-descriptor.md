@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-**[Spec 7](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold) requires the pointer and names no token for it.** It states the requirement once: "A rendered page therefore carries a link relation to the served copy". The same sentence adds that the copy may sit anywhere that the site can put it. No part of the specification names a relation. The string `describedby` appears nowhere under `docs/`.
+**[Distribution and federation](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold) requires the pointer and names no token for it.** It states the requirement once: "A rendered page therefore carries a link relation to the served copy". The same sentence adds that the copy may sit anywhere that the site can put it. No part of the specification names a relation. The string `describedby` appears nowhere under `docs/`.
 
 **No rendered page carried such a link, and the descriptor sits outside the rendered tree.** [Q14](0014-discovery-surface.md) fixed the descriptor at `.headwater/corpus.json`, and `mkdocs.yml` sets `docs_dir: docs`. A build therefore copies no descriptor into the site and emits no pointer to one. A search of a built site for `describedby` found no page.
 

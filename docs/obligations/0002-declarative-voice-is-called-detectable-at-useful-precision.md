@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 8](../spec/design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
+[The design departures](../spec/design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
 
 So the measurement that closed Q5 does not run here, and the instrument that produced it is recoverable rather than lost. `tools/ste-lint.py` stands intact at `a39e3fb^`, which is commit `9f0d1d8`. [The evaluation](../evaluations/what-a-check-can-know.md) records the method beside it. The seed is `20260811`, and the samples are 60 of 449 passive findings, 25 of 54 auxiliary, and all 12 progressive. So a reader can repeat that measurement.
 

@@ -54,7 +54,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 ## The skills, and when each one loads
 
-Nothing makes a skill load ([spec 5](docs/spec/ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does)). This table is the one mechanism stronger than a description.
+Nothing makes a skill load ([AI integration](docs/spec/ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does)). This table is the one mechanism stronger than a description.
 
 | skill | invoke it before |
 |---|---|

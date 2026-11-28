@@ -25,7 +25,7 @@ relations:
 
 # Governs edges: what an anchor reaches, what covers it, when it ages, and where a session meets it
 
-[Spec 5](../spec/ai-integration.md#write-time-hooks) makes one promise about code. A document can declare that it governs a path, and an edit to that path raises a prompt that names the document. [Spec 2](../spec/taxonomy-model.md#the-decision-relation-vocabulary) says that promise is why the base taxonomy enables `governs` at all, because without it a corpus has no edge to code. The [first-run walkthrough](default-taxonomy-first-run.md) calls impact detection the most valuable thing the corpus does for a coding agent. This evaluation measures how much of that promise the engine keeps on 2026-09-18. It measures on one change that exposed the gap, and it carries the designs that close it.
+[AI integration](../spec/ai-integration.md#write-time-hooks) makes one promise about code. A document can declare that it governs a path, and an edit to that path raises a prompt that names the document. [The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) says that promise is why the base taxonomy enables `governs` at all, because without it a corpus has no edge to code. The [first-run walkthrough](default-taxonomy-first-run.md) calls impact detection the most valuable thing the corpus does for a coding agent. This evaluation measures how much of that promise the engine keeps on 2026-09-18. It measures on one change that exposed the gap, and it carries the designs that close it.
 
 The reader outside this repository is an adopter who runs agents against a corpus of their own. That adopter wants the corpus to reach the agent when the agent touches the code the corpus describes. The reader inside it is the build order, whose agents change hooks and scripts that eleven documents describe and nothing governs.
 
@@ -90,7 +90,7 @@ Three alternatives were measured against this repository's own history and refus
 
 Spec 5 states that a hook calls a verb that ships and introduces none, and every position below keeps that term. `headwater route <path>` is the verb at each one.
 
-**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open. That was 35 milliseconds on this corpus when this evaluation measured it, and 180 milliseconds on 2026-09-26. [Spec 16](../spec/harness-support.md) keeps the current figure. It adds context only where a document has something to say.
+**Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open. That was 35 milliseconds on this corpus when this evaluation measured it, and 180 milliseconds on 2026-09-26. [Harness support](../spec/harness-support.md) keeps the current figure. It adds context only where a document has something to say.
 
 **Write, before.** The `write.sh` advisory moves from `PostToolUse` to `PreToolUse`, so an agent reads the governing documents before it edits and not after. The `PostToolUse` position keeps one line: the edit made an edge suspect, and `headwater check` reports it.
 
@@ -110,7 +110,7 @@ The backfill under equality is bounded on purpose. [HW-OBL-0104](../obligations/
 - The isolation how-to governs `.githooks/pre-commit`, `.claude/hooks/lib.sh`, `tools/hw-cargo` and `tools/repo/retire-worktree.sh`.
 - [HW-OBL-0149](../obligations/0149-the-write-time-hook-still-picks-pointer-lines-out-of-prose-by-their-em-dash.md) governs `.claude/hooks/write.sh`, which is its subject.
 - [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) governs `.claude/hooks/intent.sh`, which writes the log it rules on.
-- [Spec 16](../spec/harness-support.md) governs `.claude/hooks/fixtures.sh` and `.claude/hooks/fixtures-live.sh`, which hold the contract it states.
+- [Harness support](../spec/harness-support.md) governs `.claude/hooks/fixtures.sh` and `.claude/hooks/fixtures-live.sh`, which hold the contract it states.
 - This evaluation governs `.claude/hooks/write.sh` and `.claude/hooks/intent.sh`, the two positions its designs change.
 
 The remaining candidate pairs are the backfill issue's evidence. The ones that are rules rather than citations wait for HW-DR-0074. Under patterns the 22 contracts and the `.claude/` set collapse to one anchor each, as a list or a glob.

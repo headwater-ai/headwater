@@ -29,7 +29,7 @@ One [evaluation](../evaluations/the-serving-boundary.md) settles this with [Q17]
 
 ## Decision
 
-The **corpus descriptor** is a projection ([spec 7](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold)). `generate --check` holds it to regeneration. It names every corpus root in the repository, with the taxonomy identity, the version, the lock hash, the entry points, and each export profile. One descriptor serves several transports. A file at a fixed path *plus* a separate MCP statement is two copies of one fact ([principle 2](../spec/vision-and-scope.md#design-principles)).
+The **corpus descriptor** is a projection ([distribution and federation](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold)). `generate --check` holds it to regeneration. It names every corpus root in the repository, with the taxonomy identity, the version, the lock hash, the entry points, and each export profile. One descriptor serves several transports. A file at a fixed path *plus* a separate MCP statement is two copies of one fact ([principle 2](../spec/vision-and-scope.md#design-principles)).
 
 ## Consequences
 

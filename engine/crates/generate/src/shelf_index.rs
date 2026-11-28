@@ -3,7 +3,7 @@
 //!
 //! # The order is not the file order
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived) derives
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived) derives
 //! reading precedence from the relation family and the nucleus, and names three
 //! consumers: a routing result, the document a conflict is reported against, and
 //! "reading order in generated indexes". This is the third one. It calls the
@@ -22,7 +22,7 @@
 //!
 //! That reading is the engine's, and the specification does not state it. It
 //! sits beside the meta-schema's open question about which glob constructs a
-//! shelf path admits, and [spec 13](../../../../docs/spec/open-obligations.md)
+//! shelf path admits, and [the register of open obligations](../../../../docs/spec/open-obligations.md)
 //! carries both.
 
 use crate::profile::Admission;

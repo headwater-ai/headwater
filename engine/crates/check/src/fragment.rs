@@ -2,7 +2,7 @@
 //! A check at corpus grain: a prose link's fragment names a heading of the
 //! document it points at, whether that is the citing document or another one.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists prose-link resolution among the Document-origin examples, and
 //! [`headwater_graph::links`] left the far half deliberately undone: "whether
 //! `#q4--relation-storage` names a heading of the target is a Document check
@@ -113,7 +113,7 @@ const NO_ANCHORS: &str = "the view carries no document headings for this corpus"
 
 /// The check. It reads no declaration, and the module comment says why: the
 /// taxonomy language has no member that turns prose-link resolution on or off,
-/// because [spec 1](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
+/// because [the conceptual model](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 /// makes it a property of a corpus rather than of a kind.
 pub struct Fragments;
 

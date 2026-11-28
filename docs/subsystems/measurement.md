@@ -35,7 +35,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the measurement subsystem of [spec 6](../spec/engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `probe`, `conformance` and `sweep`.
+This spec describes the inside of the measurement subsystem of [the engine architecture](../spec/engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `probe`, `conformance` and `sweep`.
 
 Each crate measures a different thing:
 
@@ -47,11 +47,11 @@ The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `pr
 
 Other documents state what the subsystem does, and this spec does not repeat them:
 
-- [Spec 5](../spec/ai-integration.md#measuring-whether-any-of-this-works) states what a probe is, the run identity, the tiers, and what earns the grader its right to grade.
-- [Spec 15](../spec/the-recorder-contract.md) states the transcript that a recorder writes and the keys of each block.
-- [Spec 4](../spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the sweep, its four constraints and the [finding shape](../spec/assurance-model.md#findings).
-- [Spec 7](../spec/distribution-and-federation.md#conformance) states conformance, levels and waivers.
-- [Spec 12](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states the four facts that stop a sampler from gating.
+- [AI integration](../spec/ai-integration.md#measuring-whether-any-of-this-works) states what a probe is, the run identity, the tiers, and what earns the grader its right to grade.
+- [The recorder contract](../spec/the-recorder-contract.md) states the transcript that a recorder writes and the keys of each block.
+- [The assurance model](../spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the sweep, its four constraints and the [finding shape](../spec/assurance-model.md#findings).
+- [Distribution and federation](../spec/distribution-and-federation.md#conformance) states conformance, levels and waivers.
+- [The check layer](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states the four facts that stop a sampler from gating.
 - The contracts of [`headwater probe`](../interfaces/headwater-probe.md), [`headwater conformance`](../interfaces/headwater-conformance.md) and [`headwater sweep`](../interfaces/headwater-sweep.md) state the flags, the output and the exit status of each verb.
 - [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md) rules the cost and the cadence of probes. [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) rules what a budget prices. [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules what a sweep can be asked.
 
@@ -84,7 +84,7 @@ None of the three links `headwater-fetch`, which is the crate that holds the HTT
 
 `plan.rs` takes a `Plan` over the census, the graph, the rule set, the budgets and the lock digest. `Plan::over` never fails. A run that does not happen gives a plan that holds a `Refusal` and the numbers that caused it. The reason is what the caller needs.
 
-The plan fixes the members of the run identity that exist before a run, which [spec 5](../spec/ai-integration.md#the-harness-confirms-five-things-and-one-component-after-it-grades) lists. Three of them are digests, and each digest has one function:
+The plan fixes the members of the run identity that exist before a run, which [AI integration](../spec/ai-integration.md#the-harness-confirms-five-things-and-one-component-after-it-grades) lists. Three of them are digests, and each digest has one function:
 
 - `selection_digest` takes the selected identifiers in order. A grade takes it again to find which part of a selection a transcript was planned over.
 - `tree_digest` takes the path and the content digest of every typed row of the census. It moves on every commit.
@@ -189,4 +189,4 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **No check names the placeholder document, and the sweep does** (`no_check_names_the_placeholder_document_and_the_sweep_does`). This pair holds that the sweep finds what the checks cannot.
 - **The recorded plans, records, grades and reports are the assertion.** Record them again with `HEADWATER_BLESS=1` and read the diff. Move `grade::VERSION` with any change that moves a verdict.
 
-The probe grader is a correctness root ([spec 12](../spec/check-layer.md#the-correctness-roots)). A grader that evaluates a predicate wrongly gives a systematically green rate, and no probe finds it. The recorded fixtures in `engine/crates/probe/tests/fixtures.rs` hold each verdict form and each refusal of the grader.
+The probe grader is a correctness root ([the check layer](../spec/check-layer.md#the-correctness-roots)). A grader that evaluates a predicate wrongly gives a systematically green rate, and no probe finds it. The recorded fixtures in `engine/crates/probe/tests/fixtures.rs` hold each verdict form and each refusal of the grader.

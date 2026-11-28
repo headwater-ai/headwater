@@ -41,4 +41,4 @@ The session must open [the recorder contract](../spec/the-recorder-contract.md).
 
 **One known false negative.** `engine/crates/probe/src/intake.rs` encodes the closed key sets, so a session can learn the refusal from the engine source and never open the contract. The key then reads a fail for a session that acted correctly. That lowers the rate in every scenario and does not raise it.
 
-**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
+**The task section is the prompt, and nothing else of this document reaches the session.** [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.

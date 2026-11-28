@@ -29,7 +29,7 @@ The [MCP working-tree write class](../spec/ai-integration.md#what-the-working-tr
 
 ## Obligation
 
-The corpus owes a rule that separates an authored document from a scaffolded one, or a statement that no such rule is wanted. The second answer is defensible: the remedy for an empty section is a rewrite, and [spec 4](../spec/assurance-model.md#where-promotion-cannot-finish) makes such a category advisory whatever its rate. An advisory finding still names the file, and this run names nothing.
+The corpus owes a rule that separates an authored document from a scaffolded one, or a statement that no such rule is wanted. The second answer is defensible: the remedy for an empty section is a rewrite, and [the assurance model](../spec/assurance-model.md#where-promotion-cannot-finish) makes such a category advisory whatever its rate. An advisory finding still names the file, and this run names nothing.
 
 The narrower half is mechanical and total. The scaffolder writes a known string into every section it opens and into the summary. A rule that reported that exact string would detect every case with no judgment. It would also read a string that this engine writes, rather than one that an author might mean. Total detection is not the [fixability](../spec/check-layer.md#fixability) bar for an error, which reads the remedy. The remedy here is to write the section, and that is a rewrite, so the finding is advisory.
 

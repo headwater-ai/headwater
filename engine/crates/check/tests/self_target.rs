@@ -2,7 +2,7 @@
 //! A relation entry that names the document that declares it, and the ways a
 //! rule about it is easy to get wrong.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/self-target/` is
 //! [#1232](https://github.com/headwater-ai/headwater/issues/1232).

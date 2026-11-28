@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [Spec 2](../spec/taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md) calls it a deterministic, blocking-eligible check that the design held all along. It also records that spec 4 gave the same job to the sampled sweep.
+The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md) calls it a deterministic, blocking-eligible check that the design held all along. It also records that spec 4 gave the same job to the sampled sweep.
 
 ## Obligation
 

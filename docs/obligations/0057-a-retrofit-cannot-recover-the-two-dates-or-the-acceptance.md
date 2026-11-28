@@ -24,7 +24,7 @@ relations:
 
 The typing derived `status_since` from the first commit on each path and `last_verified` from the last commit that a human merged. Neither is the fact that the facet asks for, and no earlier record of either survives.
 
-It also wrote one `accepted_by` across 36 documents in one change. That is the bulk promotion that [spec 3](../spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) says no check can separate from 36 real acceptances. Spec 3 predicts the response, which is a finding about the review rather than about the documents.
+It also wrote one `accepted_by` across 36 documents in one change. That is the bulk promotion that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) says no check can separate from 36 real acceptances. Spec 3 predicts the response, which is a finding about the review rather than about the documents.
 
 ## Obligation
 
@@ -38,4 +38,4 @@ It also wrote one `accepted_by` across 36 documents in one change. That is the b
 
 That date is the fact the facet asks for. An obligation enters the `current` state on the day somebody writes it down, and a register is the writing down. So the recoverable fact is a property of the artifact rather than of the volume. A retrofit over documents recovers nothing, because a file records when it was created and not when its subject entered a state. A retrofit over the entries of a register recovers a date for every entry, because each entry arrived in a commit of its own.
 
-Two of the three fields stay lost at this volume. `last_verified` reads 2026-08-13 on all 101 records, which is the day one agent read every entry while converting it. That is a true bulk verification and not a per-entry fact. `accepted_by` reads one name across 101 documents in one change, which is the same bulk promotion at five times the multiple of the second pass. The acceptance that exists is the register's, and [spec 3](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) is right that no check separates it from 101 acceptances.
+Two of the three fields stay lost at this volume. `last_verified` reads 2026-08-13 on all 101 records, which is the day one agent read every entry while converting it. That is a true bulk verification and not a per-entry fact. `accepted_by` reads one name across 101 documents in one change, which is the same bulk promotion at five times the multiple of the second pass. The acceptance that exists is the register's, and [authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) is right that no check separates it from 101 acceptances.

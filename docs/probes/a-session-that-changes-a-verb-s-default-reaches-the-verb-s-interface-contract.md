@@ -39,4 +39,4 @@ The session must open [the interface contract of `headwater route`](../interface
 
 **What this probe expects, stated before any paid run.** About 55 percent in scenario 3, with a range of 40 to 75 percent. It is the nearest of the three to the ceiling, and the set holds it for that reason: the set needs one probe that a layer can move down as well as up. A search for the name of the verb over `docs/` finds the contract at once, and the routing code points to it. But a session that changes one constant and reports is done without opening anything under `docs/`.
 
-**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
+**The task section is the prompt, and nothing else of this document reaches the session.** [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.

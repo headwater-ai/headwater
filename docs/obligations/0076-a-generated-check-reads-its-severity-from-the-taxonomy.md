@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#severity-is-the-checks-posture-is-the-controls) gives a check its severity and gives a control the decision to block, which makes a promotion a configuration change. A participation expectation declares `severity: warn` in the taxonomy, and the generated check reports what the declaration says.
+[The check layer](../spec/check-layer.md#severity-is-the-checks-posture-is-the-controls) gives a check its severity and gives a control the decision to block, which makes a promotion a configuration change. A participation expectation declares `severity: warn` in the taxonomy, and the generated check reports what the declaration says.
 
 ## Obligation
 

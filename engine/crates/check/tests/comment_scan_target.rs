@@ -4,7 +4,7 @@
 //! where the target file's comment cites the identifier of the document that
 //! asserts the edge, and that identifier is minted.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor this file meets: a check ships with a fixture it fails and
 //! one it passes. `relation.target.unresolved` (`headwater_check::target`)
 //! already had both for a `source-tree` anchor. This is its first fixture

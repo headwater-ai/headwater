@@ -84,7 +84,7 @@ The diagram above does not draw two subsystems. Authoring (`new`, `capture`, `im
 
 ## Nothing stores the graph
 
-The graph is a function of the corpus and the lock, and every run builds it again. [Q6](decisions.md#q6--where-the-corpus-graph-lives-at-rest) names the three artifacts that derive from it, how long each lives, and why none is canonical. [Spec 12](check-layer.md#the-correctness-roots) holds the cache to that with a test.
+The graph is a function of the corpus and the lock, and every run builds it again. [Q6](decisions.md#q6--where-the-corpus-graph-lives-at-rest) names the three artifacts that derive from it, how long each lives, and why none is canonical. [The check layer](check-layer.md#the-correctness-roots) holds the cache to that with a test.
 
 **There is no embedded database, and the trigger to add one is named.** The [language spike](../evaluations/language-spike-results.md) measured a warm change-scoped pass at about 2 ms for 1,000 documents, and the budget is 200 ms. Nothing in the design asks a question that the in-memory graph cannot answer inside the targets below. Only a named query workload that misses a target reopens this.
 
@@ -92,7 +92,7 @@ The industry does not agree, and the disagreement belongs in view. CodeQL ships 
 
 ## Checks
 
-A check is a pure function from a **scoped view** of the graph to findings, and it sees only what its scope declares. [Spec 12](check-layer.md) is the design of the check layer, from the origin of a check to its export.
+A check is a pure function from a **scoped view** of the graph to findings, and it sees only what its scope declares. [The check layer](check-layer.md) is the design of the check layer, from the origin of a check to its export.
 
 ## Projections
 
@@ -124,14 +124,14 @@ waits
   coverage_report
 ```
 
-[Projections and export](../subsystems/projections-and-export.md#thirteen-kinds-two-value-sets-and-the-unbuilt-set) says what each kind carries, why a waiting kind writes nothing, and why one run can take several passes. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against the engine. The coverage report is the one waiting kind that no taxonomy can declare, and [spec 13](open-obligations.md) carries it:
+[Projections and export](../subsystems/projections-and-export.md#thirteen-kinds-two-value-sets-and-the-unbuilt-set) says what each kind carries, why a waiting kind writes nothing, and why one run can take several passes. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against the engine. The coverage report is the one waiting kind that no taxonomy can declare, and [the register of open obligations](open-obligations.md) carries it:
 
 ```
 coverage_report the register
   its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 ```
 
-**Eleven of the thirteen are declarable, and two are not.** For a declarable kind, a taxonomy names the output path, and [principle 1](vision-and-scope.md#design-principles) makes that path a schema decision. [Spec 4](assurance-model.md#every-obligation-has-exactly-one-disposition) fixes the coverage report, and [Q20](decisions.md#q20--where-scent-lives) fixes the corpus descriptor at `.headwater/corpus.json`.
+**Eleven of the thirteen are declarable, and two are not.** For a declarable kind, a taxonomy names the output path, and [principle 1](vision-and-scope.md#design-principles) makes that path a schema decision. [The assurance model](assurance-model.md#every-obligation-has-exactly-one-disposition) fixes the coverage report, and [Q20](decisions.md#q20--where-scent-lives) fixes the corpus descriptor at `.headwater/corpus.json`.
 
 **The rules that each projection obeys are part of the `headwater generate` contract**, which [states them](../interfaces/headwater-generate.md#what-a-projection-writes-and-why).
 
@@ -141,15 +141,15 @@ A verb index carries one row for every verb that the binary dispatches, and it m
 
 ### An export is a projection, and it declares what it dropped
 
-A graph export is one more projection, and every emitter declares what its target cannot carry. [Spec 7](distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states the export rules: whether an export is committed, the loss set, the projection census, and what an emitter withholds.
+A graph export is one more projection, and every emitter declares what its target cannot carry. [Distribution and federation](distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped) states the export rules: whether an export is committed, the loss set, the projection census, and what an emitter withholds.
 
 ### An export profile carries a filter
 
-An export profile selects what one audience receives. [Spec 7](distribution-and-federation.md#an-export-profile-carries-a-filter) states what a profile names, the rules that make the filter honest, the tombstone grains, and why an exporter fails closed.
+An export profile selects what one audience receives. [Distribution and federation](distribution-and-federation.md#an-export-profile-carries-a-filter) states what a profile names, the rules that make the filter honest, the tombstone grains, and why an exporter fails closed.
 
 ### What a filtered export claims, and what it does not
 
-A filtered export claims one boundary and states beside it what it does not claim. [Spec 7](distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states the claim and each non-claim.
+A filtered export claims one boundary and states beside it what it does not claim. [Distribution and federation](distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states the claim and each non-claim.
 
 ## Interfaces
 
@@ -213,7 +213,7 @@ headwater help        [<verb> [<word>]]
 headwater completions bash|zsh|fish|powershell
 ```
 
-**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. `engine/crates/cli/tests/verbs.rs` holds this claim as a containment against `headwater_verbs::VERBS`. It names a verb the table carries when this block does not carry it. It also names a block entry when the table does not carry it and this paragraph does not declare the entry waiting. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and the five export targets that no consumer has asked for. Each of those states its wait when a caller types it. `taxonomy migrate` was such a name and it now runs. `--apply` rewrites the facet value of every document that a mechanical step covers, and the address of every overlay entry it covers. It emits the judgment steps as a task list. One of the three writes that the name waited on stays open. Nothing writes the open task set into the lock, and [spec 7](distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) states why that omission is a decision. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
+**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. `engine/crates/cli/tests/verbs.rs` holds this claim as a containment against `headwater_verbs::VERBS`. It names a verb the table carries when this block does not carry it. It also names a block entry when the table does not carry it and this paragraph does not declare the entry waiting. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and the five export targets that no consumer has asked for. Each of those states its wait when a caller types it. `taxonomy migrate` was such a name and it now runs. `--apply` rewrites the facet value of every document that a mechanical step covers, and the address of every overlay entry it covers. It emits the judgment steps as a task list. One of the three writes that the name waited on stays open. Nothing writes the open task set into the lock, and [distribution and federation](distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) states why that omission is a decision. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
 
 **Each verb states its own rules in its contract.** The [interface contracts](../interfaces/README.md) hold one page for each verb above, with its flags, its two streams, its exit status and the files it touches. A refusal is never a document in the target that a caller named. [Q43](decisions.md#q43--whether-a-refusal-under---json-is-a-json-document) rules it, and each contract states it for its own verb.
 
@@ -223,7 +223,7 @@ The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` 
 
 ### `taxonomy validate` versus `taxonomy audit`
 
-There are two commands because there are two kinds of question. The distinction is the standard one between reasoning over a **TBox** (the terminology) and reasoning over an **ABox** (the assertions) against it ([spec 1](conceptual-model.md#two-layers-terminology-and-assertions)).
+There are two commands because there are two kinds of question. The distinction is the standard one between reasoning over a **TBox** (the terminology) and reasoning over an **ABox** (the assertions) against it ([the conceptual model](conceptual-model.md#two-layers-terminology-and-assertions)).
 
 **`validate`** decides the schema alone: referential integrity, determinism, purpose completeness, kind rigidity, edge provenance, overlay confluence, core satisfiability. It needs no documents, always terminates in a verdict, and gates everything.
 
@@ -241,7 +241,7 @@ The MCP server is the surface of the library that an agent reads ([AI integratio
 
 ### CI adapters
 
-The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([spec 8](design-departures.md)). [Checks and cache](../subsystems/checks-and-cache.md#a-renderer-is-what-the-engine-ships-and-an-adapter-is-a-renderer-with-a-credential) states the four formats and the loss set of each. It also states the severity map, the marking of a suppressed finding, and what a run states beside its findings.
+The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([the design departures](design-departures.md)). [Checks and cache](../subsystems/checks-and-cache.md#a-renderer-is-what-the-engine-ships-and-an-adapter-is-a-renderer-with-a-credential) states the four formats and the loss set of each. It also states the severity map, the marking of a suppressed finding, and what a run states beside its findings.
 
 ## Performance targets
 
@@ -253,7 +253,7 @@ The engine emits findings. Adapters translate them to the native vocabulary of a
 | Edit hook: `explain --json --paths-at-most 20` and the `headwater json` reads of its document | < 200 ms | 90 ms for a document that governs one glob over 50,000 files, 2026-09-30. |
 | Route query: `route` | < 100 ms | 60 ms at 444 checked documents, 2026-09-28. |
 
-Every value in this table is user and system CPU time, because load on a shared host moves CPU time less than wall time. Each value is a median over warm runs of the `dev-release` engine on an 18-core host. `sh tools/measure/mcp-check.sh` measured the three full-check rows, and `sh tools/measure/large-governs.sh` measured the edit hook. [Spec 5](ai-integration.md#review-time-checks) states the route measurement. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) records where the time of a warm check goes and what would change the position.
+Every value in this table is user and system CPU time, because load on a shared host moves CPU time less than wall time. Each value is a median over warm runs of the `dev-release` engine on an 18-core host. `sh tools/measure/mcp-check.sh` measured the three full-check rows, and `sh tools/measure/large-governs.sh` measured the edit hook. [AI integration](ai-integration.md#review-time-checks) states the route measurement. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) records where the time of a warm check goes and what would change the position.
 
 Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit check that costs two seconds is bypassed within a week. The developer who wrote the agent loop will skip a routing call that costs a second.
 

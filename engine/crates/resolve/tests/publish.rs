@@ -4409,7 +4409,7 @@ fn corrupting_the_vendored_release_records_digest_reopens_pin_current() {
     );
 }
 
-/// Every file the corrected manifest block of [spec 7's example](../../../../docs/spec/distribution-and-federation.md#publishing)
+/// Every file the corrected manifest block of [distribution and federation's example](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// names, so `publish` sees exactly what a publisher who copied that block
 /// would hand it.
 ///

@@ -40,7 +40,7 @@ Read `docs/spec/check-layer.md` where it explains why a construct that entails i
 
 ## Target
 
-[Spec 12](../spec/check-layer.md), "A construct that entails rather than checks is out", and the evaluation HW-EVAL-owl-skos-worked-example that it links for the rule.
+[The check layer](../spec/check-layer.md), "A construct that entails rather than checks is out", and the evaluation HW-EVAL-owl-skos-worked-example that it links for the rule.
 
 ## Key
 

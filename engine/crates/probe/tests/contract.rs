@@ -3,7 +3,7 @@
 //!
 //! # Why a document of the corpus is tested from a crate
 //!
-//! [Spec 15](../../../../docs/spec/the-recorder-contract.md) is the contract
+//! [The recorder contract](../../../../docs/spec/the-recorder-contract.md) is the contract
 //! a person reads before they write a recorder, and this repository holds no
 //! recorder. So every reader of that document is somewhere else, and a key that
 //! this engine started to refuse would reach them as a transcript that fails for

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The path patterns a shelf and an exclusion are written in.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution) says
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution) says
 //! that kind resolution "matches the path against shelf patterns — the most
 //! specific wins, and ties are a schema-validation error, not a runtime
 //! coin-flip". It does not say what the pattern language is, and it does not say
@@ -12,7 +12,7 @@
 //! # Why the meta-schema owns this
 //!
 //! The language started in `headwater-census`, which was the first code to read
-//! a shelf declaration. [13 — Open obligations](../../../../docs/spec/open-obligations.md)
+//! a shelf declaration. [Open obligations](../../../../docs/spec/open-obligations.md)
 //! then recorded that the ordering "belongs to the meta-schema", and the
 //! determinism rule of `taxonomy validate` proved the point: that rule asks
 //! whether two shelf patterns can match one path, and it runs before any corpus

@@ -12,7 +12,7 @@
 //!
 //! # The grain is a pair, and the reason is arithmetic
 //!
-//! A task holds `(document, rule)` pairs. [Spec 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+//! A task holds `(document, rule)` pairs. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 //! says why the coarser grain fails: "A label by document alone would blanket
 //! every finding on a named document for the whole migration. Defects
 //! introduced yesterday would then read as expected breakage." So a pair is
@@ -53,7 +53,7 @@
 //!
 //! # Precedence, and how the partition holds
 //!
-//! [Spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! fixes waiver, then migration-pending, then suppression, "so the three
 //! inventories partition the escaped findings, and no finding is counted three
 //! times". This runs before suppression, so a finding a task holds never

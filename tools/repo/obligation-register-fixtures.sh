@@ -1,5 +1,5 @@
 #!/bin/sh
-# What holds the obligation register: [spec 13](../../docs/spec/open-obligations.md)
+# What holds the obligation register: [The register of open obligations](../../docs/spec/open-obligations.md)
 # names, in one of its five lists, every obligation record on
 # `docs/obligations/` that has not been paid, and no others.
 #

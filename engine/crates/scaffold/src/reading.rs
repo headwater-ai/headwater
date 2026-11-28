@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The capture-cost store: one reading per run of `headwater new`.
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)
 //! makes capture cost a tracked metric and says the fraction trends. A verb
 //! that prints one number trends nothing, and the run is the only moment the
 //! number is knowable: Q4 keeps `created_by` on the relation type, so no later
@@ -62,7 +62,7 @@
 //! author's fumbling, which is the field above under another name.
 //!
 //! **Nothing a hook or a skill did.**
-//! [Spec 5](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+//! [AI integration](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
 //! says a hook binds nothing and that a session in which no hook spoke is no
 //! evidence. A "the hook fired" counter has a denominator that `disableAllHooks`
 //! empties with no record anywhere, so the number would fall when a harness

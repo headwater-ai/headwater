@@ -2,7 +2,7 @@
 //! The meta-schema of the taxonomy language, and what it decides over one
 //! source.
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema) says that
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema) says that
 //! the taxonomy language has a formal schema, published with the engine and
 //! versioned with it. `meta-schema.yml` is that schema
 //! and this crate is its reader.
@@ -36,7 +36,7 @@
 //!
 //! [`validate::skipped`] names the rest, each with the reason it needs a
 //! resolved tree. A validator that reported a pass over rules it never ran would
-//! be the silent pass that [spec 4](../../../../docs/spec/assurance-model.md)
+//! be the silent pass that [the assurance model](../../../../docs/spec/assurance-model.md)
 //! exists to remove, so the list is data rather than a paragraph in a comment.
 //! `headwater_resolve::rules` runs those rules and holds the other half of the
 //! same accounting.

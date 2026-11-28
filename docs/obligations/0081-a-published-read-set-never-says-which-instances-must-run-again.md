@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) asks a run to report the union of its in-scope inputs, and the union is what `headwater check` publishes. A gate that holds the union against a later tree learns one thing: whether anything the run read has moved.
+[The check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) asks a run to report the union of its in-scope inputs, and the union is what `headwater check` publishes. A gate that holds the union against a later tree learns one thing: whether anything the run read has moved.
 
 The same section also says that the engine derives the invalidated instances from a merge, and the union cannot support that. One changed document voids the instances that read it, and a union does not say which instances those are.
 

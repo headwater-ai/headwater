@@ -2,14 +2,14 @@
 //! An `evidenced` document whose pointer reaches an `asserted` one, and the
 //! six ways a rule about it is easy to get wrong.
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
 //! already rules it: "A pointer to a document with the `asserted` warrant does
 //! not support `evidenced`, because such a document is neither external nor
 //! auditable. A fabricated *why* with a file name is the failure that this
 //! table exists to prevent." The clause stood in the specification and nothing
 //! read it.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor at one fixture that fails and one that passes. The tree under
 //! `fixtures/evidence-basis/` goes past it, because a rule that reports nothing
 //! and a rule that reports everything both look right against one case.
@@ -751,7 +751,7 @@ fn a_target_whose_warrant_key_has_no_value_skips_like_one_with_no_warrant() {
 
 /// A target this engine wrote is decided, on the warrant the engine derives.
 ///
-/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
 /// "The engine derives `regenerated` from the marker, and never from a
 /// declaration." `targets/generated.md` carries the marker in its front matter
 /// and declares no provenance block, which is the shape every generated

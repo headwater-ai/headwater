@@ -7,7 +7,7 @@
 //! taxonomy is a later milestone. This crate answers one question: what did the
 //! author write, and where.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) names
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) names
 //! the parser a correctness root, and the failure it names is a silent pass
 //! rather than a crash: a mis-parsed heading lets a section contract hold with
 //! no finding anywhere. That is why the body is a real CommonMark parse rather
@@ -56,7 +56,7 @@ pub struct Document {
 
 /// The front-matter block that states what stands behind a document.
 ///
-/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
 /// "The provenance block is the exception, and its shape belongs to the
 /// engine." So the two names below are this crate's, like the split of front
 /// matter from body, and no taxonomy declares either.
@@ -73,7 +73,7 @@ pub const EVIDENCE_BASIS: &str = "evidence_basis";
 
 /// The warrant this engine derives for a file it wrote itself.
 ///
-/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
 /// "The engine derives `regenerated` from the marker, and never from a
 /// declaration. A generated file that declares no front matter has no block in
 /// which to state a warrant. A generated document that declares an identity has
@@ -91,7 +91,7 @@ pub const ACCEPTED: &str = "accepted";
 /// The warrant of a document that nobody accepted, whoever wrote it.
 pub const ASSERTED: &str = "asserted";
 
-/// The closed warrant set of [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
+/// The closed warrant set of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
 /// in the order that document's table lists it.
 ///
 /// One spelling for the engine. `headwater_check::warrant` reports a value

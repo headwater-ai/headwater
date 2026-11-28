@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The scaffolder's conformance fixtures.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names the scaffolder a correctness root, and it states what one owes: "Each
 //! component therefore owes its own conformance fixtures, in the same spirit as
 //! 'a check without a failing fixture does not ship'." This file is the

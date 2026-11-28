@@ -32,7 +32,7 @@ The assisted fraction and the audit report are the instruments, and this corpus 
 
 The first typing of this corpus supplies the other end of that scale. An agent typed 36 documents and 203 edge halves with no scaffolder and no engine, so the assisted fraction of the run is zero. [What the first typing found](../spec/open-obligations.md#what-the-first-typing-of-this-corpus-found) records where the cost fell.
 
-**A scaffolder exists, and it reports the fraction of the run it just did.** `headwater new` counts what it supplied against the four terms [spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. This record carried a sentence that the treatment had never been applied to anything, and that sentence is false. What stays open is the claim itself, and the paragraphs below say why the verb does not settle it.
+**A scaffolder exists, and it reports the fraction of the run it just did.** `headwater new` counts what it supplied against the four terms [authoring and lifecycle](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. This record carried a sentence that the treatment had never been applied to anything, and that sentence is false. What stays open is the claim itself, and the paragraphs below say why the verb does not settle it.
 
 **One run is not a trend, and the metric that Q4 tests is a trend.** The claim is that author-attributable edges rise without a rise in hand entry. That compares two populations over time, and a verb that prints one number stores nothing.
 

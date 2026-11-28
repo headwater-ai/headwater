@@ -29,11 +29,11 @@ One [evaluation](../evaluations/the-measurement-layer.md) settles this with [Q8]
 
 ## Decision
 
-An optional source-owned cue on a relation instance, with the summary still required and absence falling back to the target's summary. [Q4](0004-relation-storage.md) settled where it lives and who writes it, and [spec 2](../spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one) already declares it on `cites`.
+An optional source-owned cue on a relation instance, with the summary still required and absence falling back to the target's summary. [Q4](0004-relation-storage.md) settled where it lives and who writes it, and [the taxonomy model](../spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one) already declares it on `cites`.
 
 ## Consequences
 
-**Three static checks follow, and no new machinery.** Non-restatement is `Edge`-scoped, which [spec 12](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) already defines as one relation instance and both endpoints. Distinctiveness over cues is `Document`-scoped. The length band is trivial. All three stay advisory permanently under the [fixability bar](../spec/check-layer.md#fixability), because the remedy for a weak cue is a rewrite. A corpus that declares no cue has no instances and pays nothing.
+**Three static checks follow, and no new machinery.** Non-restatement is `Edge`-scoped, which [the check layer](../spec/check-layer.md#scope--the-declaration-everything-else-rests-on) already defines as one relation instance and both endpoints. Distinctiveness over cues is `Document`-scoped. The length band is trivial. All three stay advisory permanently under the [fixability bar](../spec/check-layer.md#fixability), because the remedy for a weak cue is a rewrite. A corpus that declares no cue has no instances and pays nothing.
 
 **Two behavioral measures come from transcripts that already exist.** Traversal precision and traversal abandonment are the edge analogs of routing precision and abandonment. A traversal is visible in a tool-call transcript, as opening one document and then opening a target that it declares an edge to.
 

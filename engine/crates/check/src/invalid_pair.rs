@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md) declares
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares
 //! `invalid_when: {both: {status: current}}` on `conflicts_with`, and lists
 //! "two `current` decisions joined by `conflicts_with`" as an incoherent corpus
 //! state that a check reports. The declaration existed and no rule read it:

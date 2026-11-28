@@ -4,11 +4,11 @@
 //! Two things need this. A round-trip fixture needs a text to load again, which
 //! is how a resolver demonstrates that its result is a taxonomy source and not
 //! an internal structure that happens to answer questions
-//! ([spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)).
+//! ([the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)).
 //! And the lock is this text with a hash over it, which is
 //! [#51](https://github.com/headwater-ai/headwater/issues/51).
 //!
-//! Declaration order is kept, because [spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
+//! Declaration order is kept, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 //! wants a resolution result that "is reproducible and reviewable in a diff",
 //! and a writer that sorted keys would move half the file whenever an overlay
 //! added a declaration in the middle.

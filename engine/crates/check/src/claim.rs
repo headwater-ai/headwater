@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The identifier claim store, and the two rules that hold it to the corpus.
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#identifiers):
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers):
 //! "Allocation reads a tree, and a tree holds no history… So the highest value
 //! that a run finds is a lower bound on every value ever allocated." A tree
 //! also holds no concurrency. Every branch cut from one `main` reads the same

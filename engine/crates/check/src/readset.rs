@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The read set: the union of the in-scope inputs behind one run.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! fixes what it is and what it is for. "The **read set** of a run is the union
 //! of the in-scope inputs that produced its results. That is the content hash of
 //! every document and edge that an instance read. It also holds the taxonomy
@@ -65,7 +65,7 @@
 //!
 //! Q21's open half asks whether publishing this is free. The measurement is one
 //! subtraction and it is in
-//! [13 — Open obligations](../../../../docs/spec/open-obligations.md): the
+//! [Open obligations](../../../../docs/spec/open-obligations.md): the
 //! artifact is one line per document, against a corpus whose documents average
 //! four orders of magnitude more than that. It is free at this corpus's scale
 //! and the number that would decide an adopter's is not this repository's.

@@ -4,7 +4,7 @@
 //!
 //! # Why the result is a projection and not something a verb prints
 //!
-//! [Spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! settles it in one sentence: "The **probe result** is a document, generated
 //! from the transcript, the expectations and the grader version. It carries the
 //! `regenerated` warrant, and `generate --check` proves it." A rate that only a

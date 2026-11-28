@@ -79,4 +79,4 @@ The verb writes no file. `headwater new` appends readings to the store before th
 
 [`headwater mcp`](headwater-mcp.md) records protocol scaffolding as a separate capture surface.
 
-[Spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) defines the assisted fraction and the store boundary.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) defines the assisted fraction and the store boundary.

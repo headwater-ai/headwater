@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/distribution-and-federation.md#what-is-shared-and-what-is-not) shares a schema, doctrine prose and the publisher's obligations, and it shares no corpus content. So a publisher whose method includes standards documents reaches a consumer with a conformance rule, and never with a document. The same specification rules that a reference runs upward, and no resolver in [spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) carries content down to meet it.
+[Distribution and federation](../spec/distribution-and-federation.md#what-is-shared-and-what-is-not) shares a schema, doctrine prose and the publisher's obligations, and it shares no corpus content. So a publisher whose method includes standards documents reaches a consumer with a conformance rule, and never with a document. The same specification rules that a reference runs upward, and no resolver in [the taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) carries content down to meet it.
 
 ## Obligation
 

@@ -14,7 +14,7 @@
 //! **Its inputs carry no prose.** A transcript is an event log whose every key
 //! is a member of a closed set, and an expectation is one of five predicates
 //! that the taxonomy fixes. Nothing here reads a sentence, so nothing here
-//! needs a rubric, and [spec 5](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+//! needs a rubric, and [AI integration](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
 //! sends a question that needs one to the sweep instead.
 //!
 //! **Every satisfied verdict carries a witness, and the type is what carries

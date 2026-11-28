@@ -2,7 +2,7 @@
 //! The change: the documents one change carries, and the version of each that
 //! stood before it.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
+//! [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
 //! rules that "a change reaches this engine as a named set of inputs, and never
 //! as a second tree. The prior version above is the one exception, and the
 //! change that supplies it also bounds its scope." This module is that named
@@ -39,7 +39,7 @@
 //! what to do about a version it cannot see, and every wrong answer to that
 //! question is green. So the runner skips the instance with the reason, which
 //! is the visible skip
-//! [spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks for, and the check is never handed one.
 //!
 //! # A manifest this reader cannot parse is refused whole

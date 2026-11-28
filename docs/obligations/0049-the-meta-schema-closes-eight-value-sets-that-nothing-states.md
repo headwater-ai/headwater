@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The role registry, the relation families and the `created_by` set are closed in [spec 2](../spec/taxonomy-model.md) itself. Eight more are not. Six are the role on a lifecycle-state value, the type of a facet, the severity of a facet or an expectation, `volatility`, `reciprocal` and `cardinality`. The other two arrived with an obligation, and they are its class and its severity.
+The role registry, the relation families and the `created_by` set are closed in [the taxonomy model](../spec/taxonomy-model.md) itself. Eight more are not. Six are the role on a lifecycle-state value, the type of a facet, the severity of a facet or an expectation, `volatility`, `reciprocal` and `cardinality`. The other two arrived with an obligation, and they are its class and its severity.
 
 ## Obligation
 

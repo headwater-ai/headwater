@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set two uses. The first use is the cache key. [HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) was the anchor gap in the key, and it is discharged: the key of an edge instance names the binding that the resolver returned. [#1029](https://github.com/headwater-ai/headwater/issues/1029) also put the identity of the compiled rule set into the key, through `headwater_check::rules_digest`.
+[The check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set two uses. The first use is the cache key. [HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) was the anchor gap in the key, and it is discharged: the key of an edge instance names the binding that the resolver returned. [#1029](https://github.com/headwater-ai/headwater/issues/1029) also put the identity of the compiled rule set into the key, through `headwater_check::rules_digest`.
 
 The second use is the artifact that `headwater check --read-set` writes and that `headwater gate` reads back. This record is about the second use. A key is computed inside one run, where a resolver has already answered. A later process reads the artifact over a later tree, and no resolver has answered there.
 

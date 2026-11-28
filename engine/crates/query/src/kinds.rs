@@ -19,7 +19,7 @@
 //! taxonomy to an adopter whose taxonomy is a different one.
 //!
 //! An abstract kind is a kind no document ever is
-//! ([spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds)), so it
+//! ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds)), so it
 //! gets no entry of its own. It appears as the `is_a` parent its children
 //! name, and what it requires appears in their inherited facets and
 //! sections. The header counts the abstract kinds it left out, so a reader

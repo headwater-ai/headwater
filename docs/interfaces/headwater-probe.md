@@ -41,7 +41,7 @@ relations:
 
 Probe output never changes an exit status. A probe is a measurement, not a build gate. No subcommand opens a network connection or writes a file.
 
-**No engine code performs the part between `plan` and `record`, so no build waits for a model.** That part drives a session and observes it. `plan` fixes the six members of the run identity that a run inherits. It projects the cost of the run against the declared budget of the tier, and it refuses a run above that budget. `stale` holds the read set of every committed transcript against the tree in front of it, and it reports which recorded results a change voided. The harness is a crate that `headwater-check` cannot name. An exit status that carried a rate would be a build that a model moves. These are the four facts that [spec 12](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) fixes for the sampler path.
+**No engine code performs the part between `plan` and `record`, so no build waits for a model.** That part drives a session and observes it. `plan` fixes the six members of the run identity that a run inherits. It projects the cost of the run against the declared budget of the tier, and it refuses a run above that budget. `stale` holds the read set of every committed transcript against the tree in front of it, and it reports which recorded results a change voided. The harness is a crate that `headwater-check` cannot name. An exit status that carried a rate would be a build that a model moves. These are the four facts that [the check layer](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) fixes for the sampler path.
 
 The harness reads the selection again when it grades a transcript. This prevents a result from grading against probes that the current corpus no longer declares.
 
@@ -94,7 +94,7 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 `plan` exits 1 when `--action` or `--moment` names a value outside the set that the taxonomy declares. It refuses the run at status 0 when a probe has no `action`, or an `action` that is a list or is outside the set. It does the same for a `moments` item outside the set.
 
-`grade` also exits 0 when the intake refuses a transcript whole, for example a transcript with no `Run identity` block. That refusal is a probe result, and [spec 12](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) says why a probe result never gates. `grade` prints the refusal on standard output, not on standard error. A script tells the three results of `grade` apart by the start of the first line of standard output:
+`grade` also exits 0 when the intake refuses a transcript whole, for example a transcript with no `Run identity` block. That refusal is a probe result, and [the check layer](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) says why a probe result never gates. `grade` prints the refusal on standard output, not on standard error. A script tells the three results of `grade` apart by the start of the first line of standard output:
 
 - `Graded by grader ` when the grader read the transcript.
 - `This transcript reached no grader: ` when the intake refused the transcript, for any of its reasons.
@@ -129,9 +129,9 @@ No subcommand writes a file. Output goes to standard output.
 
 ## See also
 
-[Spec 5](../spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose) defines the three tiers, probe categories and transcript contract.
+[AI integration](../spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose) defines the three tiers, probe categories and transcript contract.
 
-[Spec 15](../spec/the-recorder-contract.md) defines the recorder and the six members of a probe run identity.
+[The recorder contract](../spec/the-recorder-contract.md) defines the recorder and the six members of a probe run identity.
 
 [`headwater sweep`](headwater-sweep.md) reports coherence findings and never evaluates a probe expectation.
 

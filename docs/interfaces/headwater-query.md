@@ -21,7 +21,7 @@ The verb takes one or more words as the expression. It refuses every expression 
 
 ## Description
 
-`headwater query` is listed in [spec 6](../spec/engine-architecture.md#cli), but no document defines an expression or its selected data. The engine therefore implements no query language.
+`headwater query` is listed in [the engine architecture](../spec/engine-architecture.md#cli), but no document defines an expression or its selected data. The engine therefore implements no query language.
 
 The verb reports this gap and names the reads that exist. Use `headwater route` to match a task to documents. Use `headwater explain` to read the graph behind one document.
 

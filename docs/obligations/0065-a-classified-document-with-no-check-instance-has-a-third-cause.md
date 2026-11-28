@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/check-layer.md#instances-and-why-coverage-needs-them) rules that a document with zero instances is a finding. It names two causes: a shelf pattern that is wrong, or a file in the wrong place.
+[The check layer](../spec/check-layer.md#instances-and-why-coverage-needs-them) rules that a document with zero instances is a finding. It names two causes: a shelf pattern that is wrong, or a file in the wrong place.
 
 The runner reported three such documents in this repository when it landed, and neither cause held for any of them. Each one sat on the shelf that its author intended, and the taxonomy declared no rule that read its kind. That is the ordinary state of a young taxonomy rather than a defect in the corpus.
 

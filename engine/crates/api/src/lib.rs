@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The library under the `headwater` binary: one load of a corpus, as a value.
 //!
-//! [Spec 6](../../../../docs/spec/engine-architecture.md) says the CLI is a
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) says the CLI is a
 //! thin shell over a library API. This crate is the first piece of that API
 //! which the shell and an in-process caller (`lsp`, `hook`, `mcp`) share. It
 //! has no `clap` and no `headwater-fetch`, so a caller that links it parses no
@@ -327,7 +327,7 @@ impl Session {
     /// The taxonomy comes from the lock and the corpus block comes from the
     /// consumer declaration. The two are different questions: the lock says what
     /// the schema is, and `corpus:` says what to walk.
-    /// [Spec 4](../../../../docs/spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
+    /// [The assurance model](../../../../docs/spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
     /// keeps them apart too, because a run reports "The corpus tree, the taxonomy
     /// lock hash" as two facts.
     ///

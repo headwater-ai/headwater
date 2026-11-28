@@ -64,6 +64,6 @@ expected: [absent]
 
 **The axes.** The task names the directory and no file, so the probe does not carry `names_file`. No superseded or contradicted document stands between the session and spec 7, so it does not carry `superseded_target`.
 
-**The output contract in each phrasing is what makes the answer reachable.** [Spec 15](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) takes a value only where the whole of the trimmed final message equals one declared answer.
+**The output contract in each phrasing is what makes the answer reachable.** [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) takes a value only where the whole of the trimmed final message equals one declared answer.
 
 [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) records the unmeasured claim. This probe is its instrument for a corpus that serves no tombstone, and it supplies no observed result.

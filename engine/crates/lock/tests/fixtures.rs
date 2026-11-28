@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The lock's own fixtures.
 //!
-//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names "the overlay resolver and the lock" one correctness-root entry, and it
 //! says of the lock that "a committed and diffable lock decreases the risk but
 //! does not test the resolver". The converse is what this file is for: the

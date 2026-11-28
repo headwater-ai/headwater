@@ -5,7 +5,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! lists this among the rules the engine enforces from the declaration alone:
 //! "a live document may not depend on a terminal one through a relation
 //! declared `lifecycle_sensitive`". The declaration existed and no rule read
@@ -30,7 +30,7 @@
 //! reaching a terminal one through a succession relation would report every
 //! correct supersession in the corpus, and the remedy would be to delete the
 //! lineage that the same core requirement exists to retain
-//! ([spec 2](../../../../docs/spec/taxonomy-model.md#the-immutable-core):
+//! ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-immutable-core):
 //! dropping the `terminal-retained` role fails resolution "because succession
 //! could no longer retain lineage, which the core requires").
 //!
@@ -76,7 +76,7 @@
 //! The unit is [`EdgeUnit::Pair`], which is the Q4 triple: a source, a relation
 //! and a target document. Both endpoints are documents by construction there,
 //! which is what this rule needs and what [`crate::target`] could not use.
-//! [Spec 12](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes an edge-scoped read set at one relation instance and both endpoints,
 //! so the two states this rule reads are both in the read set that keys it. An
 //! edit to either end moves the key.

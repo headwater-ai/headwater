@@ -31,4 +31,4 @@ The engine reads it as the shelf's directory. It takes that directory as the lit
 
 ## Discharge
 
-It sits beside the open question about which glob constructs a shelf path admits. Both answers come from one string, and only one of them is written down. [Spec 2](../spec/taxonomy-model.md#the-thirteen-declarations) is where the statement belongs.
+It sits beside the open question about which glob constructs a shelf path admits. Both answers come from one string, and only one of them is written down. [The taxonomy model](../spec/taxonomy-model.md#the-thirteen-declarations) is where the statement belongs.

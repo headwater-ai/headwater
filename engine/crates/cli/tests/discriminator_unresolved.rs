@@ -7,7 +7,7 @@
 //! heterogeneous `reviews` shelf. The census counted it as untyped, so no
 //! template instantiated over it, coverage reads typed rows alone, and a strict
 //! run exited 0 over a document that had left every check.
-//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution), step
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution), step
 //! 3, states the opposite: "A missing or unrecognized value is a finding". The
 //! rule `shelf.discriminator.unresolved` is that finding.
 //!

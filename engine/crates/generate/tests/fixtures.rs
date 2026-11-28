@@ -1159,7 +1159,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
 /// The native export carries the graph with no loss, and the round trip is what
 /// proves it.
 ///
-/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
 /// "The native export keeps its round-trip test, because an empty loss set is
 /// exactly what a round trip proves." So this reads the emitted bytes back with
 /// the loader that reads every other file in this engine, and holds what it

@@ -8,7 +8,7 @@
 //!
 //! # What edge resolution needs, and why each field is here
 //!
-//! **`to`** decides what a target *is*. [Spec 1](../../../../docs/spec/conceptual-model.md#external-anchor)
+//! **`to`** decides what a target *is*. [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor)
 //! says a relation endpoint is a declared kind or a declared anchor kind and
 //! never a bare string, so the declared target set is what tells the resolver
 //! whether to look in the identifier index or to hand the string to an anchor
@@ -30,7 +30,7 @@
 //! **`reciprocal`** is carried and never read here either, for the reason that
 //! makes it worth carrying. A reciprocity check is *generated* from the
 //! relation declaration rather than written
-//! ([spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)),
+//! ([the check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)),
 //! so the declared value is the whole input to it. Resolution never consults
 //! it, because a half that nobody wrote is a missing edge rather than a
 //! mis-resolved one.
@@ -43,7 +43,7 @@
 //! families a core requirement marks are one join, and two crates that each did
 //! it their own way would answer one question twice. A relation is sensitive
 //! when either reading marks it, which HW-DR-0065 rules, and
-//! [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) is
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) is
 //! the rule that reads the answer.
 //!
 //! **`sets_target_state`** is `on_target.set_state`, the one declaration in the
@@ -96,7 +96,7 @@ pub struct Relation {
     /// from `invalid_when.both`: each `(facet, value)` pair must hold at both
     /// ends, in declaration order.
     ///
-    /// [Spec 2](../../../../docs/spec/taxonomy-model.md) declares
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares
     /// `invalid_when: {both: {status: current}}` on `conflicts_with`, and the
     /// meta-schema admits `both` alone. Empty where the relation declares no
     /// condition. `headwater_check::invalid_pair` is the reader.
@@ -129,7 +129,7 @@ pub struct Relation {
     /// The names of the instance attributes the relation declares under
     /// `attributes:`, in declaration order.
     ///
-    /// [Spec 2](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
     /// says an attribute the relation type does not declare is a finding. The
     /// one reader today is `headwater_check::suspect`, which offers to write
     /// `verified_revision` onto an edge only where the relation declares it,
@@ -151,7 +151,7 @@ impl Relation {
 
 /// Which end of an edge governs the reading of the pair.
 ///
-/// [Spec 2](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived):
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived):
 /// "When two documents are linked, no declaration states which one governs the
 /// reading. Properties already declared entail it." So this is derived here and
 /// never read off a member, and the cut `dominance` field is the thing this
@@ -198,7 +198,7 @@ impl Relation {
 
 /// What a relation declares about its other half.
 ///
-/// [Spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 /// gives the vocabulary. The set is closed here, and a value outside it reads
 /// as [`Reciprocal::Unknown`] rather than as an error, because the meta-schema
 /// owns the value set and it is
@@ -224,7 +224,7 @@ pub enum Reciprocal {
 pub struct AnchorKind {
     pub name: String,
     /// The single component that owns identity for this anchor type
-    /// ([spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)).
+    /// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)).
     pub resolver: String,
     /// A configuration string the named resolver reads at its own discretion,
     /// and that this crate does not interpret. `comment-scan` is the first

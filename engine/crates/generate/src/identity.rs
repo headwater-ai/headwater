@@ -62,7 +62,7 @@
 //! - a **heterogeneous** shelf declares a discriminator, so the block writes
 //!   `{discriminator}: {kind}`, and the kind has to be one the shelf admits;
 //! - a **homogeneous** shelf states the kind itself, and
-//!   [spec 2](../../../../docs/spec/taxonomy-model.md) forbids restating it,
+//!   [The taxonomy model](../../../../docs/spec/taxonomy-model.md) forbids restating it,
 //!   so the block writes no facet at all and the declared kind has to agree with
 //!   the shelf's.
 //!

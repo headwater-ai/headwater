@@ -20,7 +20,7 @@ relations:
 
 ## Context
 
-[HW-DR-0017](0017-governed-access-and-the-solution-layer.md#consequences) makes withheld a third outcome of an anchor, beside resolved and unresolved. It gives the reason. Without the distinction, every filtered harvest produces a wall of unresolved findings. Operators then learn to ignore the class that also carries real defects. [Spec 7](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) says that an anchor into a document that the publisher withheld resolves to `withheld`.
+[HW-DR-0017](0017-governed-access-and-the-solution-layer.md#consequences) makes withheld a third outcome of an anchor, beside resolved and unresolved. It gives the reason. Without the distinction, every filtered harvest produces a wall of unresolved findings. Operators then learn to ignore the class that also carries real defects. [Distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) says that an anchor into a document that the publisher withheld resolves to `withheld`.
 
 Before this decision, nothing produced that outcome. The resolver over a pinned export matched an anchor against the identifiers in the export, and the export held no withheld identifier. So an anchor into a withheld document and a typo gave the same miss, and both were reported as unresolved ([#1309](https://github.com/headwater-ai/headwater/issues/1309)).
 
@@ -28,8 +28,8 @@ The export could not help. Under `counted`, each tombstone stated a rule and a c
 
 Three statements pull against each other here:
 
-- HW-DR-0017 and [spec 1](../spec/conceptual-model.md#external-anchor) say that withheld is never reported as unresolved.
-- [Spec 7](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` the existence of the item is not the secret, and under `sealed` it is. It also says that the rule identifier is all that a reader of a tombstone gets.
+- HW-DR-0017 and [the conceptual model](../spec/conceptual-model.md#external-anchor) say that withheld is never reported as unresolved.
+- [Distribution and federation](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` the existence of the item is not the secret, and under `sealed` it is. It also says that the rule identifier is all that a reader of a tombstone gets.
 - A filtered export must not carry the identifier or the path of a document it withheld. The fixture `a_filtered_profile_withholds_a_document_and_its_edges` in `engine/crates/generate/tests/fixtures.rs` holds that.
 
 ## Decision
@@ -44,9 +44,9 @@ Three statements pull against each other here:
 
 **The export version moves from 1.2 to 1.3.** The change adds a member and removes none, so it is a minor version.
 
-**What this discloses, stated plainly.** A reader who holds an identifier can learn that the identifier exists and that the filter withheld it. The digest is not salted, so a reader who can guess an identifier can test the guess. An identifier from a pattern with a short slug is easy to guess. A reader who holds nothing learns nothing more than the count. This is consistent with the `counted` grain, where existence is not the secret. It amends one sentence of [spec 7](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter), which says that the rule identifier is all that a reader gets. Spec 7 now states the amendment after that sentence. Under `counted`, the reader also gets a membership test for an identifier that they already hold. Where the existence of a document is the secret, the publisher declares `sealed`. HW-DR-0017's instruction also stands: a fact whose existence is the secret does not belong in a corpus that is exported at all.
+**What this discloses, stated plainly.** A reader who holds an identifier can learn that the identifier exists and that the filter withheld it. The digest is not salted, so a reader who can guess an identifier can test the guess. An identifier from a pattern with a short slug is easy to guess. A reader who holds nothing learns nothing more than the count. This is consistent with the `counted` grain, where existence is not the secret. It amends one sentence of [distribution and federation](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter), which says that the rule identifier is all that a reader gets. Spec 7 now states the amendment after that sentence. Under `counted`, the reader also gets a membership test for an identifier that they already hold. Where the existence of a document is the secret, the publisher declares `sealed`. HW-DR-0017's instruction also stands: a fact whose existence is the secret does not belong in a corpus that is exported at all.
 
-**The list is a membership test, and not the placeholder that [spec 7](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) describes.** [Spec 7](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` a placeholder sits where each withheld node would have been. The export writes one aggregate entry for each rule, with no position. This decision does not close that gap.
+**The list is a membership test, and not the placeholder that [distribution and federation](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) describes.** [Distribution and federation](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter) says that under `counted` a placeholder sits where each withheld node would have been. The export writes one aggregate entry for each rule, with no position. This decision does not close that gap.
 
 **What reopens this decision.** This is a product choice, and it is reversible. Reopen the `sealed` ruling when an adopter who harvests a `sealed` export reports that its unresolved findings hide real defects. Reopen the `counted` ruling when a publisher reports that the digest list disclosed an identifier that the `counted` grain was meant to keep.
 
