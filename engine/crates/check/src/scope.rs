@@ -195,7 +195,7 @@
 //! it.
 
 use crate::cache::Cache;
-use crate::change::{Committed, Departed, Prior, Stated};
+use crate::change::{Committed, Departed, Prior, Stated, Unread};
 use crate::context::{Context, Date};
 use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
@@ -1547,6 +1547,7 @@ impl<'a> NeighbourhoodView<'a> {
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
+    unread: &'a [Unread<'a>],
     committed: &'a [Committed<'a>],
     added: &'a [&'a str],
     scope: Option<&'a [headwater_graph::scope::Reach]>,
@@ -1634,6 +1635,17 @@ impl<'a> CorpusView<'a> {
     /// that declared the same input.
     pub fn departed(&self) -> &[Departed<'a>] {
         self.departed
+    }
+
+    /// What the change named that no row of this corpus holds and whose prior
+    /// version did not read, with the reason, and only for a check that
+    /// declared `NEEDS_PRIOR` (HW-OBL-0127).
+    ///
+    /// The bytes of each entry that opened are in the read set, on the terms
+    /// of [`CorpusView::departed`]. See
+    /// [`crate::change::Change::unread`].
+    pub fn unread(&self) -> &[Unread<'a>] {
+        self.unread
     }
 
     /// Every document the change carries that a row holds, with the version
@@ -1729,6 +1741,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            unread: &[],
             committed: &[],
             added: &[],
             scope: None,
@@ -1751,6 +1764,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            unread: &[],
             committed: &[],
             added: &[],
             scope: None,
@@ -1774,6 +1788,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            unread: &[],
             committed: &[],
             added: &[],
             scope: None,
@@ -1799,6 +1814,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            unread: &[],
             committed: &[],
             added: &[],
             scope: None,
@@ -2339,9 +2355,14 @@ pub fn over_corpus<C: CorpusCheck>(
     // rule that declared it and met a run with no change reports the skip
     // rather than an empty set, because "the change named no departed path" and
     // "there is no change" are the two readings that must not become one.
-    let (departed, committed, added) = match (C::NEEDS_PRIOR, ctx.change()) {
-        (false, _) => (Vec::new(), Vec::new(), Vec::new()),
-        (true, Some(change)) => (change.departed(), change.committed(), change.added()),
+    let (departed, unread, committed, added) = match (C::NEEDS_PRIOR, ctx.change()) {
+        (false, _) => (Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+        (true, Some(change)) => (
+            change.departed(),
+            change.unread(),
+            change.committed(),
+            change.added(),
+        ),
         (true, None) => {
             cache.undecided();
             return vec![Instance::skipped(
@@ -2364,6 +2385,19 @@ pub fn over_corpus<C: CorpusCheck>(
         departed
             .iter()
             .map(|entry| Input::new(entry.path, Some(entry.digest))),
+    );
+    // The bytes of each unread departure that may have been a document are an
+    // input too, for the same reason: without them a warm run would serve the
+    // verdict from before the change that deleted it (HW-OBL-0127). A source
+    // file is not one, because no change to its bytes can make it a document,
+    // so a change that edits source moves no key here. A prior version that
+    // did not open has no digest, and the instance then goes unkeyed, which is
+    // the honest answer for an input this run could not read.
+    reads.extend(
+        unread
+            .iter()
+            .filter(|entry| entry.may_be_a_document())
+            .map(|entry| Input::new(entry.path, entry.digest)),
     );
     // Each added path that no row carrying a document already lists, which is
     // every source file a change adds. The input is the manifest's statement
@@ -2410,6 +2444,7 @@ pub fn over_corpus<C: CorpusCheck>(
             false => None,
         },
         departed: &departed,
+        unread: &unread,
         committed: &committed,
         added: &added,
         // Walked by the graph build from the tree, on the terms of `edges`

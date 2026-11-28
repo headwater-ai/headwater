@@ -66,7 +66,10 @@
 //! because a real change carries files that are not corpus documents at all: a
 //! caller who writes `git diff --name-only` into a manifest names source files,
 //! and refusing those would make the honest wrapper the one thing this engine
-//! declines to accept.
+//! declines to accept. The prior version such a path names is kept with it:
+//! its front matter where it parsed, which [`Change::departed`] hands on, and
+//! the reason it did not read where it did not, which [`Change::unread`] hands
+//! on (HW-OBL-0127).
 //!
 //! **No path is normalized.** `./docs/a.md` matches no census row and is
 //! reported as one that matched nothing. A normalizer here would be one form
@@ -133,11 +136,16 @@ enum Held {
     /// The version that stood before the change, as the caller named it.
     Committed { digest: String, document: Document },
     /// The caller named a prior version that this engine could not read. See
-    /// the module comment: it never reaches a check.
-    Unreadable { why: String },
+    /// the module comment: over a path a row holds, it never reaches a check.
+    ///
+    /// `no_front_matter` says that the bytes parsed as far as the first line
+    /// and held no block of front matter at all. Such a file declared no
+    /// state, so no rule could have refused its deletion, and
+    /// [`crate::retention`] reads the flag to leave it out (HW-OBL-0127).
+    Unreadable { why: String, no_front_matter: bool },
     /// The caller named a path that the corpus of this run does not hold, and
-    /// the version that stood at it, where the caller named one and this
-    /// engine read it.
+    /// what this engine made of the version that stood at it, where the caller
+    /// named one.
     ///
     /// No document-scoped instance exists over such a path, because there is
     /// no row to instantiate over. The prior version is kept rather than
@@ -150,19 +158,35 @@ enum Held {
     /// as well as for a deletion, so an edit to a Markdown file that carries
     /// front matter and stands outside the corpus root reaches this arm
     /// holding one. What separates the two is the content, and
-    /// [`crate::retention`] is the rule that reads it. A source file reaches
-    /// this arm holding nothing, because bytes that are no document do not
-    /// parse as one and [`read_prior`] has already said so.
+    /// [`crate::retention`] is the rule that reads it.
+    ///
+    /// A prior version that did not read is kept as [`Before::Unread`] with
+    /// its reason, and is not dropped (HW-OBL-0127). A source file reaches
+    /// this arm that way, because bytes that are no document do not parse as
+    /// one. So does a governed document whose prior front matter did not
+    /// parse, and that is a deletion no rule can read the state of.
+    /// [`Change::unread`] hands both to a caller, and the caller separates
+    /// them.
     ///
     /// `added` keeps what the line said: `added` rather than `prior`. Without
     /// it an added source file and an edited one bind to one shape, because
     /// neither holds a prior version here, and [`crate::scope_ratchet`] would
     /// read every edit to a file that already stood ungoverned as new debt
     /// (#1573). See [`Change::added`].
-    Unmatched {
-        prior: Option<(String, Document)>,
-        added: bool,
-    },
+    Unmatched { prior: Before, added: bool },
+}
+
+/// What a path that binds to no row carried before the change.
+#[derive(Clone, Debug)]
+enum Before {
+    /// The line named no prior version that opened as bytes for this engine
+    /// to keep: an `added` line, which carries none.
+    Nothing,
+    /// The prior version, read and parsed.
+    Read { digest: String, document: Document },
+    /// The line named a prior version and this engine could not read it. The
+    /// fields are those of [`Held::Unreadable`], which it was before the bind.
+    Unread { why: String, no_front_matter: bool },
 }
 
 /// What a change states about one edge beside the prior version of the
@@ -624,26 +648,45 @@ impl Unbound {
                     (true, held) => (path, held),
                     // The path binds to no row, and what the caller named it
                     // as decides what is left of it. A `prior` line carried
-                    // bytes, and they are held. An `added` line carried none,
-                    // and a prior version this engine could not read leaves
-                    // nothing to hold either: the reason it names is about a
-                    // file no check will be handed.
+                    // bytes, and they are held. An `added` line carried none.
                     (false, Held::Committed { digest, document }) => (
                         path,
                         Held::Unmatched {
-                            prior: Some((digest, document)),
+                            prior: Before::Read { digest, document },
+                            added: false,
+                        },
+                    ),
+                    // A prior version this engine could not read keeps its
+                    // reason. Until HW-OBL-0127 it was dropped here, and a
+                    // deletion of a document whose front matter did not parse
+                    // reached no rule. See `Change::unread`.
+                    (
+                        false,
+                        Held::Unreadable {
+                            why,
+                            no_front_matter,
+                        },
+                    ) => (
+                        path,
+                        Held::Unmatched {
+                            prior: Before::Unread {
+                                why,
+                                no_front_matter,
+                            },
                             added: false,
                         },
                     ),
                     // The line's verb survives the bind, so an addition and
                     // an edit stay two facts. See `Held::Unmatched`.
-                    (false, held) => (
+                    (false, Held::Added) => (
                         path,
                         Held::Unmatched {
-                            prior: None,
-                            added: matches!(held, Held::Added),
+                            prior: Before::Nothing,
+                            added: true,
                         },
                     ),
+                    // Only a bind writes this arm, and a value is bound once.
+                    (false, held @ Held::Unmatched { .. }) => (path, held),
                 })
                 .collect(),
         }
@@ -789,20 +832,61 @@ impl Change {
     /// this engine has.
     ///
     /// A governed document whose *prior* front matter did not parse is absent
-    /// here, and this is the one reading that could hide a deletion. It costs
-    /// nothing to accept: a document whose committed front matter does not
-    /// parse fails the run that committed it.
+    /// here, because every entry here carries the front matter it stood with
+    /// and [`crate::scope_ratchet`] reads it. Nothing guarantees that such a
+    /// document never stood: a document whose front matter does not parse
+    /// passes a strict run, because no rule reads an unreadable census row. So
+    /// [`Change::unread`] carries that shape apart, with the reason
+    /// (HW-OBL-0127).
     pub fn departed(&self) -> Vec<Departed<'_>> {
         self.entries
             .iter()
             .filter_map(|(path, held)| match held {
                 Held::Unmatched {
-                    prior: Some((digest, document)),
+                    prior: Before::Read { digest, document },
                     ..
                 } => Some(Departed {
                     path: path.as_str(),
                     digest: digest.as_str(),
                     facets: &document.facets,
+                }),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Every path this change named that no row of this corpus holds, whose
+    /// prior version the caller named and this run could not read, in path
+    /// order (HW-OBL-0127).
+    ///
+    /// It is the other half of [`Change::departed`], and it is kept apart from
+    /// it because no entry here carries front matter. Most entries are source
+    /// files, whose bytes are no document. A governed document whose prior
+    /// front matter did not parse is here too, and its deletion is the one
+    /// that no rule can read the state of. This list does not separate the
+    /// two, because the separation needs the taxonomy: [`crate::retention`]
+    /// keeps a Markdown path that a shelf claims and that held a block of front
+    /// matter, and reports it as a skip.
+    pub fn unread(&self) -> Vec<Unread<'_>> {
+        self.entries
+            .iter()
+            .filter_map(|(path, held)| match held {
+                Held::Unmatched {
+                    prior:
+                        Before::Unread {
+                            why,
+                            no_front_matter,
+                        },
+                    ..
+                } => Some(Unread {
+                    path: path.as_str(),
+                    why: why.as_str(),
+                    no_front_matter: *no_front_matter,
+                    digest: self
+                        .prints
+                        .binary_search_by(|(known, _)| known.as_str().cmp(path))
+                        .ok()
+                        .map(|index| self.prints[index].1.raw.as_str()),
                 }),
                 _ => None,
             })
@@ -891,7 +975,7 @@ impl Change {
                 digest,
                 facets: &document.facets,
             }),
-            Held::Unreadable { why } => Err(why),
+            Held::Unreadable { why, .. } => Err(why),
             // Unreachable: the census holds no row at this path, so no instance
             // exists to ask. It is an arm rather than a fallthrough because the
             // day an instance does exist over an unmatched path, the answer has
@@ -919,6 +1003,38 @@ pub struct Departed<'a> {
     /// document carries an empty mapping rather than nothing, which is what
     /// makes the reading of it a judgment the caller states.
     pub facets: &'a Mapping,
+}
+
+/// One path a change named that this corpus holds no row at, whose prior
+/// version the caller named and this engine could not read. Borrowed from the
+/// [`Change`], on the terms [`Departed`] states (HW-OBL-0127).
+#[derive(Clone, Copy, Debug)]
+pub struct Unread<'a> {
+    /// As the manifest wrote it.
+    pub path: &'a str,
+    /// Why the prior version did not read: it did not open, it is not UTF-8,
+    /// or it did not parse.
+    pub why: &'a str,
+    /// The bytes parsed as far as the first line and held no block of front
+    /// matter at all. Such a file declared no state.
+    pub no_front_matter: bool,
+    /// Over the raw prior bytes, by the function the census hashes a document
+    /// with, where they opened. A prior version that did not open has none.
+    pub digest: Option<&'a str>,
+}
+
+impl Unread<'_> {
+    /// Whether the version that stood here may have been a document that
+    /// declared a state: the path passes the census's own extension test,
+    /// which is exact and lower case, and the bytes held a block of front
+    /// matter.
+    ///
+    /// A source file fails the first test, and a shelf's untyped `README.md`
+    /// fails the second. Whether a shelf claims the path is the third test,
+    /// and only a caller that holds the taxonomy can apply it.
+    pub fn may_be_a_document(&self) -> bool {
+        self.path.ends_with(".md") && !self.no_front_matter
+    }
 }
 
 /// One document a change carries that a row of this corpus holds, and the
@@ -954,6 +1070,7 @@ fn read_prior(
             return (
                 Held::Unreadable {
                     why: format!("the prior version at `{source}` did not open: {error}"),
+                    no_front_matter: false,
                 },
                 None,
             )
@@ -968,17 +1085,24 @@ fn read_prior(
         return (
             Held::Unreadable {
                 why: format!("the prior version at `{source}` is not UTF-8"),
+                no_front_matter: false,
             },
             Some(digests),
         );
     };
     let held = match headwater_doc::parse(&text) {
         Ok(document) => Held::Committed { digest, document },
+        // A file with no block of front matter at all is told apart from one
+        // whose block did not load, because the first declared no state and
+        // the second may have (HW-OBL-0127).
         Err(errors) => Held::Unreadable {
             why: format!(
                 "the prior version at `{source}` did not parse: {} error(s)",
                 errors.len()
             ),
+            no_front_matter: errors
+                .iter()
+                .any(|error| error.reason == headwater_doc::Reason::NoFrontMatter),
         },
     };
     (held, Some(digests))
