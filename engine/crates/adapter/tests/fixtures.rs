@@ -1944,6 +1944,94 @@ fn every_format_states_the_scoping_a_second_way() {
     }
 }
 
+/// The corpus tree one artifact states, read the way a consumer of that format
+/// reads it.
+///
+/// The data formats are parsed and the member read. The text report writes the
+/// value on the line under its `tree` heading, and the Markdown report writes it
+/// in the opening sentence as `tree <value>`.
+fn stated_tree(format: Format, artifact: &str) -> String {
+    match format {
+        Format::Json => text(&parse(artifact), "tree"),
+        Format::Sarif => {
+            let bag = member(&runs(&parse(artifact))[0], "properties")
+                .and_then(|properties| member(&properties, "headwater"))
+                .expect("the property bag");
+            text(&bag, "tree")
+        }
+        Format::Text => {
+            let mut lines = artifact.lines();
+            lines
+                .by_ref()
+                .find(|line| *line == "tree")
+                .expect("a `tree` heading");
+            lines
+                .next()
+                .expect("a line under the heading")
+                .trim()
+                .to_string()
+        }
+        Format::Markdown => {
+            let opening = artifact.lines().nth(2).expect("the opening sentence");
+            let (_, after) = opening
+                .split_once("tree `")
+                .unwrap_or_else(|| panic!("no tree in the opening sentence: {opening}"));
+            after
+                .split('`')
+                .next()
+                .expect("a closing backtick")
+                .to_string()
+        }
+    }
+}
+
+/// A row that no check reads moves the corpus tree in every format, and moves
+/// no entry of the read set (HW-OBL-0028).
+///
+/// [The assurance model](../../../../docs/spec/assurance-model.md) asks a run to
+/// report the state that it evaluated, and the read set is not that state: it
+/// holds what the checks read, and a merge can add a file that no check reads.
+/// The added row here is such a file, a source file that the census walked and
+/// read no bytes of. So three builds fail this case: a format that omits the
+/// tree, a tree that is the identity of the read set, and a tree that reuses
+/// the probe plan's digest, which covers typed rows alone.
+#[test]
+fn a_row_no_check_reads_moves_the_tree_in_every_format_and_no_read_set_entry() {
+    let ran = fixture_run();
+    let mut grown = fixture_run();
+    grown.census.rows.push(census::Row {
+        path: "zz-no-check-reads-this.rs".to_string(),
+        outcome: census::Outcome::NotADocument,
+        document: None,
+        digest: None,
+    });
+    let before = ran.census.tree_digest();
+    let after = grown.census.tree_digest();
+    assert_ne!(before, after, "the census function moves with the row");
+    for format in Format::ALL {
+        let was = render(&ran, format);
+        let now = render(&grown, format);
+        assert_eq!(
+            stated_tree(format, &was),
+            before,
+            "{} states the tree of the census it rendered",
+            format.name()
+        );
+        assert_eq!(
+            stated_tree(format, &now),
+            after,
+            "{} states the tree of the census it rendered, after the row arrived",
+            format.name()
+        );
+    }
+    let read_set = |artifact: &str| format!("{:?}", member(&parse(artifact), "read_set"));
+    assert_eq!(
+        read_set(&render(&ran, Format::Json)),
+        read_set(&render(&grown, Format::Json)),
+        "a row that no check reads is not in the read set"
+    );
+}
+
 /// The coverage block of one artifact, in the two formats that carry data.
 fn coverage_block(format: Format, artifact: &str) -> Value {
     let document = parse(artifact);

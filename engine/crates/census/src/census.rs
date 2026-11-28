@@ -632,6 +632,45 @@ pub fn no_front_matter_message(shelf: &str, kind: Option<&str>) -> String {
 }
 
 impl Census {
+    /// The corpus tree: one digest over every row of this census, in census
+    /// order, which is path order.
+    ///
+    /// Each row contributes one line, `path \t class \t digest`, where the class
+    /// is [`Outcome::class`] and the digest is `-` for a row that read no bytes.
+    /// So the tree moves when a file arrives or leaves, when a file changes
+    /// class, and when the bytes of a file the census read change. The
+    /// [assurance model](../../../../docs/spec/assurance-model.md) asks a run to
+    /// report the state that it evaluated, and this is the value that names it:
+    /// every format of `headwater check` writes it, from this one function
+    /// (HW-OBL-0028).
+    ///
+    /// What it does not cover, said here because a reader will assume it does:
+    ///
+    /// - A row with no digest (a file that is not Markdown, an excluded file,
+    ///   an unwalkable entry) contributes its path and class only. An edit to
+    ///   the bytes of such a file does not move the tree, because the census
+    ///   did not read those bytes.
+    /// - [`Census::outside`] is not rows, and it stays out, for the reason
+    ///   [`crate::outside`] gives for keeping it out of the denominator.
+    ///
+    /// It is not the probe plan's tree. `headwater_probe::plan::tree_digest`
+    /// covers the typed rows only, and recorded probe results carry its values,
+    /// so it stays as it is. The check report's tree covers every row, because
+    /// a merge can add an untyped, unreadable or excluded file that a typed-only
+    /// digest would not see.
+    pub fn tree_digest(&self) -> String {
+        let mut tree = String::new();
+        for row in &self.rows {
+            tree.push_str(&row.path);
+            tree.push('\t');
+            tree.push_str(row.outcome.class());
+            tree.push('\t');
+            tree.push_str(row.digest.as_deref().unwrap_or("-"));
+            tree.push('\n');
+        }
+        headwater_hash::digest(tree.as_bytes())
+    }
+
     /// Counts per outcome class, in the order the classes are declared, so that
     /// two reports line up column by column.
     pub fn counts(&self) -> Vec<(&'static str, usize)> {
@@ -1057,6 +1096,57 @@ mod tests {
             .expect("the fixture");
         let bytes = std::fs::read(fixtures().join(&row.path)).expect("the fixture reads");
         assert_eq!(row.digest, Some(headwater_hash::digest(&bytes)));
+    }
+
+    /// The tree covers every row: a row that read no bytes moves it, a change
+    /// of class moves it, and a change of bytes moves it (HW-OBL-0028).
+    ///
+    /// Each mutation below is one a narrower digest would miss. A typed-only
+    /// digest misses the first two, and a digest of paths alone misses the
+    /// third and the second.
+    #[test]
+    fn the_tree_moves_with_every_row_and_with_nothing_else() {
+        let census = take(&corpus(), &taxonomy());
+        let tree = census.tree_digest();
+        assert!(tree.starts_with("sha256:"), "{tree}");
+        assert_eq!(tree, census.clone().tree_digest(), "a function of the rows");
+
+        let mut added = census.clone();
+        added.rows.push(Row {
+            path: "zz-not-a-document.rs".to_string(),
+            outcome: Outcome::NotADocument,
+            document: None,
+            digest: None,
+        });
+        assert_ne!(added.tree_digest(), tree, "a row that read no bytes");
+
+        let mut reclassed = census.clone();
+        let typed = reclassed
+            .rows
+            .iter_mut()
+            .find(|row| matches!(row.outcome, Outcome::Typed { .. }))
+            .expect("a typed row");
+        typed.outcome = Outcome::NotADocument;
+        assert_ne!(reclassed.tree_digest(), tree, "a change of class alone");
+
+        let mut edited = census.clone();
+        let read = edited
+            .rows
+            .iter_mut()
+            .find(|row| row.digest.is_some())
+            .expect("a row that read bytes");
+        read.digest = Some(headwater_hash::digest(b"other bytes"));
+        assert_ne!(edited.tree_digest(), tree, "a change of bytes alone");
+
+        let mut parsed_away = census.clone();
+        for row in &mut parsed_away.rows {
+            row.document = None;
+        }
+        assert_eq!(
+            parsed_away.tree_digest(),
+            tree,
+            "the parse is not an input: the bytes are"
+        );
     }
 
     /// The outcome this module gained, on the file that motivated it.
