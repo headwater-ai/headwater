@@ -164,9 +164,8 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
             "the pointer paragraph of spec 6's `### CLI` does not link the interface index"
         );
         assert!(
-            pointer.contains(
-                "](decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"
-            ),
+            pointer
+                .contains("](decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"),
             "the pointer paragraph of spec 6's `### CLI` does not cite Q43, which rules a refusal"
         );
     }

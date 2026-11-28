@@ -657,10 +657,7 @@ mod tests {
             "---\nid: HW-SPEC-engine\n---\n\n---\n{}\n---\n",
             marker_member("shelf_sections")
         );
-        assert!(!carries_marker(
-            "docs/spec/engine-architecture.md",
-            &fenced
-        ));
+        assert!(!carries_marker("docs/spec/engine-architecture.md", &fenced));
     }
 
     #[test]

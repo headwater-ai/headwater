@@ -523,8 +523,7 @@ fn each_moved_term_is_gone_from_spec_6_and_held_at_its_home() {
 #[test]
 fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let decision = "docs/decisions/0500-a-decision.md";
-    let budget =
-        "[Spec 6](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
+    let budget = "[Spec 6](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
     assert_eq!(moved_credits(decision, budget), vec![(1, "probe budget")]);
 
     // An adverb may stand between the name and the verb, and a bare link is a
@@ -557,7 +556,8 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert!(moved_credits(decision, far).is_empty());
 
     // A credit to a rule that the engine architecture (docs/spec/engine-architecture.md) still states is not flagged.
-    let kept = "[Spec 6](../spec/engine-architecture.md#library) states that the CLI is a thin shell.\n";
+    let kept =
+        "[Spec 6](../spec/engine-architecture.md#library) states that the CLI is a thin shell.\n";
     assert!(moved_credits(decision, kept).is_empty());
 
     // A present-tense credit to another part is not a credit to the engine architecture (docs/spec/engine-architecture.md).
@@ -629,7 +629,8 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     );
     let curly = "Spec 6\u{2019}s table says that a placeholder sits there.\n";
     assert_eq!(moved_credits(decision, curly), vec![(1, "placeholder")]);
-    let linked_possessive = "[Spec 6](../spec/engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
+    let linked_possessive =
+        "[Spec 6](../spec/engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
     assert_eq!(
         moved_credits(decision, linked_possessive),
         vec![(1, "probe budget")]
@@ -919,8 +920,7 @@ fn each_of_the_seven_pointer_sections_is_flagged() {
 
 #[test]
 fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
-    let line =
-        "See [spec 6](../spec/engine-architecture.md#an-export-profile-carries-a-filter).\n";
+    let line = "See [spec 6](../spec/engine-architecture.md#an-export-profile-carries-a-filter).\n";
 
     // A governing document with a pointer-only link is flagged.
     let hit = offending("docs/decisions/0500-a-decision.md", line);
@@ -958,7 +958,6 @@ fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
     assert_eq!(offending("docs/interfaces/headwater-mcp.md", mcp).len(), 1);
 
     // Two links on one line are two hits.
-    let two =
-        "[a](engine-architecture.md#checks) and [b](engine-architecture.md#mcp-server)\n";
+    let two = "[a](engine-architecture.md#checks) and [b](engine-architecture.md#mcp-server)\n";
     assert_eq!(offending("docs/spec/assurance-model.md", two).len(), 2);
 }

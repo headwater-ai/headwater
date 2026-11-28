@@ -2750,10 +2750,9 @@ fn a_shelf_the_site_nav_names_under_precedence_reads_in_relation_order() {
         "with no `precedence` the decisions shelf reads in path order:\n{path_order}"
     );
 
-    let relation_order = site_nav_bytes(
-        "  - kind: site_nav\n    output: nav.yml\n    precedence: [decisions]\n",
-    )
-    .expect("a nav with `precedence` writes");
+    let relation_order =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n    precedence: [decisions]\n")
+            .expect("a nav with `precedence` writes");
     assert!(
         at(&relation_order, "0002-rebuild-the-graph.md")
             < at(&relation_order, "0001-store-the-graph.md"),
@@ -2769,14 +2768,19 @@ fn a_shelf_the_site_nav_names_under_precedence_reads_in_relation_order() {
     let mut b: Vec<&str> = relation_order.lines().collect();
     a.sort_unstable();
     b.sort_unstable();
-    assert_eq!(a, b, "`precedence` changed what the nav lists, not only its order");
+    assert_eq!(
+        a, b,
+        "`precedence` changed what the nav lists, not only its order"
+    );
 
     // A name that is not a declared shelf is refused, as `for` refuses one.
-    let refused = site_nav_bytes(
-        "  - kind: site_nav\n    output: nav.yml\n    precedence: [nowhere]\n",
-    )
-    .expect_err("an undeclared shelf under `precedence` is refused");
-    assert!(refused.contains("nowhere"), "the refusal names the shelf: {refused}");
+    let refused =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n    precedence: [nowhere]\n")
+            .expect_err("an undeclared shelf under `precedence` is refused");
+    assert!(
+        refused.contains("nowhere"),
+        "the refusal names the shelf: {refused}"
+    );
 
     // Only a `site_nav` takes the member.
     let wrong_kind = site_nav_bytes(

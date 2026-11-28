@@ -53,8 +53,7 @@ const SECTION: &str = "### The migration payload";
 const HEADER: &str = "| subject | what it moves | the dimension it is a remedy for |";
 
 fn spec_seven() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../docs/spec/distribution-and-federation.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/distribution-and-federation.md")
 }
 
 /// The text of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *The migration payload* section, from its heading to
