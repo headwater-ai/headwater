@@ -77,7 +77,11 @@ impl Root {
         std::fs::write(at.join(".headwater/overlay.yml"), OVERLAY).expect("the overlay writes");
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);
-        assert_eq!(resolved.code, Some(0), "the scratch corpus resolves\n{resolved:?}");
+        assert_eq!(
+            resolved.code,
+            Some(0),
+            "the scratch corpus resolves\n{resolved:?}"
+        );
         root
     }
 
@@ -113,9 +117,12 @@ impl Root {
             .filter_map(|line| {
                 let (rule, _) = line.split_once(' ')?;
                 let rule = rule.strip_suffix(':').unwrap_or(rule);
-                let opens = line[rule.len()..].starts_with(" (") || line[rule.len()..].starts_with(": ");
+                let opens =
+                    line[rule.len()..].starts_with(" (") || line[rule.len()..].starts_with(": ");
                 let shaped = rule.contains('.')
-                    && rule.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_');
+                    && rule
+                        .chars()
+                        .all(|c| c.is_ascii_lowercase() || c == '.' || c == '_');
                 (opens && shaped).then(|| rule.to_string())
             })
             .collect()
@@ -167,12 +174,8 @@ fn a_new_part_is_named_by_its_slug_and_carries_no_sequence() {
     let made = root.run(&["new", "design_spec", "--title", "Harness support"]);
     assert_eq!(made.code, Some(0), "the part scaffolds\n{made:?}");
     let written = root.at.join("docs/spec/harness-support.md");
-    let text = std::fs::read_to_string(&written).unwrap_or_else(|error| {
-        panic!(
-            "the part is at {}: {error}\n{made:?}",
-            written.display()
-        )
-    });
+    let text = std::fs::read_to_string(&written)
+        .unwrap_or_else(|error| panic!("the part is at {}: {error}\n{made:?}", written.display()));
     assert!(
         !text.lines().any(|line| line.starts_with("sequence:")),
         "the part declares no sequence:\n{text}"
@@ -225,7 +228,10 @@ fn a_part_left_numbered_by_4_x_raises_nothing_about_its_sequence() {
         !findings.is_empty(),
         "the control: the report prints findings, so an empty list below is not a parse that reads nothing"
     );
-    let about: Vec<&String> = findings.iter().filter(|rule| rule.starts_with("facet.")).collect();
+    let about: Vec<&String> = findings
+        .iter()
+        .filter(|rule| rule.starts_with("facet."))
+        .collect();
     assert!(
         about.is_empty(),
         "nothing names a facet of the left-over part: {findings:?}"
