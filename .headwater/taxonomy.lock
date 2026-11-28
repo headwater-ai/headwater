@@ -49,6 +49,10 @@ lock:
 # remains on every run.
 
 adoption:
+  from:
+    version: 4.31.0
+    digest: "sha256:a15faef6c5f4f22eee470a56a4ff432fba39ff5b0d3e4858625eb52f71aa0136"
+  to: 5.0.0
   tasks:
     - id: AD-1
       statement: "The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule"
