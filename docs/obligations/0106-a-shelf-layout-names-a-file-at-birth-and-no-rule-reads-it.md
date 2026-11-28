@@ -17,7 +17,6 @@ relations:
   traces_to:
     - HW-SPEC-authoring-and-lifecycle
     - HW-SPEC-taxonomy-model
-    - HW-DR-0117
 ---
 
 # A shelf layout names a file at birth and no rule reads it
