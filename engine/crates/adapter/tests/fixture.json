@@ -1,5 +1,5 @@
 {
-  "version": "1.9",
+  "version": "1.10",
   "tool": "headwater",
   "taxonomy": {
     "package": "headwater/fixture",
@@ -7,6 +7,7 @@
     "lock": "105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601"
   },
   "clock": "2026-08-12",
+  "tree": "sha256:f3b8a14c1f935359b70991fbc5c6a753c7ca5824e24f08e651db5298ac05dfcf",
   "coverage": {
     "seen": 31,
     "classified": 29,

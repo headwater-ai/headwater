@@ -127,7 +127,7 @@ fn the_report_counts_its_findings_by_severity_and_raises_its_version() {
     }
     assert_eq!(
         at(&report, &["version"]).as_deref(),
-        Some("1.9"),
+        Some("1.10"),
         "a member added to the JSON shape of the check moves its minor version"
     );
 }

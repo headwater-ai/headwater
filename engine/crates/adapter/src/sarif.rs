@@ -117,21 +117,34 @@
 //! consumer that baselines still cannot tell the two runs apart from a member
 //! of the vocabulary, and the property bag is where the answer is.
 //!
-//! One entry is worth reading twice. A run reports the taxonomy lock hash and
-//! its read set, and
+//! One entry is worth reading twice. A run reports the corpus tree, the
+//! taxonomy lock hash and its read set, as
 //! [checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
-//! names the corpus tree as a gap. SARIF has
-//! `run.automationDetails.id`, which is exactly where a corpus tree would go,
-//! and this emitter leaves it out: nothing in the engine computes a corpus tree,
-//! and the read set is not one, because the read set holds what the checks read
-//! and a tree holds what the census walked. Writing the read set's identity into
-//! a member that means *the tree this run is about* would be the emitter
-//! printing something false to fill a slot.
+//! asks. The tree is written to the run's property bag, at
+//! `properties.headwater.tree`, beside `taxonomy` and `clock`, and not to
+//! `run.automationDetails.id`. Two reasons hold it there. The first is the one
+//! above: the schema defines that member as the unique identity of a run, and
+//! two runs over one tree would write one value. The second is a forge's:
+//! GitHub code scanning derives the category of an analysis from that member,
+//! and the shipped action uploads with no `category` of its own, so a value
+//! that moves on every commit could split an adopter's alert history into one
+//! category per commit. No offline test can show that it does not.
+//!
+//! **What reopens this.** A forge consumer that needs the tree in a member the
+//! SARIF vocabulary defines, together with a check against GitHub's documented
+//! rule for `runAutomationDetails` ("SARIF support for code scanning") that a
+//! `<stable category>/<tree>` form keeps one category across commits. Until
+//! both exist, the bag is the honest carrier (HW-OBL-0028).
+//!
+//! The read set is not the tree, and neither stands in for the other: the read
+//! set holds what the checks read, and the tree holds what the census walked,
+//! so a file that no check reads moves the tree and no read-set entry.
 
 use crate::{
     a_filtered_run, a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format,
     Loss, Place, Reported, Subject, TOOL, TOOL_URI,
 };
+use headwater_census::census::Census;
 use headwater_check::instance::Input;
 use headwater_check::register::Bound;
 use headwater_check::{Run, Severity};
@@ -289,9 +302,19 @@ pub const LOSS: &[Loss] = &[
     },
     Loss {
         field: "the corpus tree",
-        reason: "`run.automationDetails.id` is where one would go and nothing computes one. The \
-                 read set is not a tree: it holds what the checks read",
-        carrier: Carrier::Nowhere,
+        reason: "`run.automationDetails.id` is defined as the unique identity of a run, and two \
+                 runs over one tree would share the value. GitHub code scanning also derives \
+                 an analysis category from it, so a value that moves on every commit could \
+                 split an alert history. The read set is not a tree: it holds what the checks \
+                 read",
+        carrier: Carrier::Run {
+            places: &[Place {
+                at: &["properties", "headwater", "tree"],
+                // One string, the whole of what was carried, so no members.
+                members: &[],
+            }],
+            when: every_run,
+        },
     },
 ];
 
@@ -362,8 +385,11 @@ pub fn kind(escape: Escape) -> &'static str {
 pub type Grading = fn(&Reported<'_>, &Run) -> Option<String>;
 
 /// One run as a SARIF 2.1.0 log.
-pub fn render(run: &Run, subject: &Subject<'_>) -> String {
-    render_with(run, subject, obligation_severity)
+///
+/// The census is here for one value, its corpus tree, which the run's property
+/// bag carries (HW-OBL-0028).
+pub fn render(run: &Run, census: &Census, subject: &Subject<'_>) -> String {
+    render_with(run, census, subject, obligation_severity)
 }
 
 /// The same log, over a grading the caller names.
@@ -373,19 +399,27 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
 /// silent emitter would be an audit with nothing to report. Hand it a grading
 /// that returns nothing over a run whose register grades an obligation, and
 /// the census has to say so.
-pub fn render_with(run: &Run, subject: &Subject<'_>, grading: Grading) -> String {
-    document(run, subject, grading).render_pretty()
+pub fn render_with(
+    run: &Run,
+    census: &Census,
+    subject: &Subject<'_>,
+    grading: Grading,
+) -> String {
+    document(run, &census.tree_digest(), subject, grading).render_pretty()
 }
 
-fn document(run: &Run, subject: &Subject<'_>, grading: Grading) -> Json {
+fn document(run: &Run, tree: &str, subject: &Subject<'_>, grading: Grading) -> Json {
     Json::object([
         ("$schema", Json::string(SCHEMA)),
         ("version", Json::string(VERSION)),
-        ("runs", Json::Array(vec![one_run(run, subject, grading)])),
+        (
+            "runs",
+            Json::Array(vec![one_run(run, tree, subject, grading)]),
+        ),
     ])
 }
 
-fn one_run(run: &Run, subject: &Subject<'_>, grading: Grading) -> Json {
+fn one_run(run: &Run, tree: &str, subject: &Subject<'_>, grading: Grading) -> Json {
     let rules: Vec<&'static str> = run.served.iter().map(|served| served.rule).collect();
     Json::object([
         ("tool", tool(run)),
@@ -414,7 +448,7 @@ fn one_run(run: &Run, subject: &Subject<'_>, grading: Grading) -> Json {
                     .collect(),
             ),
         ),
-        ("properties", run_properties(run, subject)),
+        ("properties", run_properties(run, tree, subject)),
     ])
 }
 
@@ -638,7 +672,7 @@ fn result_properties(entry: &Reported<'_>, run: &Run, grading: Grading) -> Json 
     Json::object([("headwater", Json::object(headwater))])
 }
 
-fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
+fn run_properties(run: &Run, tree: &str, subject: &Subject<'_>) -> Json {
     let all = reported(run);
     let escaped = |escape: Escape| {
         all.iter()
@@ -662,6 +696,9 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
             ]),
         ),
         ("clock", Json::string(subject.now)),
+        // The corpus tree, here and not in `automationDetails.id`. The module
+        // comment says why, and what reopens it.
+        ("tree", Json::string(tree)),
     ];
     // Above coverage here as in every other format, and written only for a run
     // that was scoped. See the module comment for the two members of the

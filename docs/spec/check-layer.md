@@ -157,7 +157,7 @@ The set is the view's and never the check's. The runner records what it handed a
 
 That statement is the whole test, and it decides three things.
 
-**1. The test is a comparison over listed inputs rather than a diff of two trees.** A diff reads two trees, so it sees the file that a merge added. A diff also needs a tree, and no run of this engine computes one ([HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)). The comparison needs neither a tree nor a run, so it costs one hash for each listed input. What that economy buys and what it cannot buy is decision 3.
+**1. The test is a comparison over listed inputs rather than a diff of two trees.** A diff reads two trees, so it sees the file that a merge added. A diff also needs the content of both trees, and a run reports only a digest of the tree that it evaluated ([HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)). The comparison needs neither a tree nor a run, so it costs one hash for each listed input. What that economy buys and what it cannot buy is decision 3.
 
 **2. The clock voids a verdict, and a tree is not the whole subject of one.** A verdict is about one state of the corpus **and one day**. A rule that reads the injected clock is named on a `windowed` line of the artifact. A gate asked about another day voids those rules, and no tree change is needed for that. A run that reads no clock is about a tree alone, so the day decides nothing about it.
 

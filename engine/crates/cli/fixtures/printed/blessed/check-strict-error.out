@@ -5,6 +5,9 @@ taxonomy
 clock
   2026-01-15
 
+tree
+  sha256:b1fe9b7c955a3695230033aca2844e117bbeb6f6365bd6a5e695de4691e3f63f
+
 census
   3 files under the corpus root
         3 typed

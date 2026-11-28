@@ -1,6 +1,6 @@
 ## `headwater check`
 
-37 findings, 20 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
+37 findings, 20 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, over tree `sha256:f3b8a14c1f935359b70991fbc5c6a753c7ca5824e24f08e651db5298ac05dfcf`, evaluated at 2026-08-12.
 
 **Narrowed by a path filter.** Every document was evaluated, and the findings below are only those on a path that one of these patterns matches: `check/spec/0*.md`, `check/nowhere/**`. 33 findings outside the filter were held back.
 

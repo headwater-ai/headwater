@@ -35,6 +35,7 @@
 //! [`LOSS`] for the one such value.
 
 use crate::{reported, Carrier, Loss, Reported, Subject};
+use headwater_census::census::Census;
 use headwater_check::register::Bound;
 use headwater_check::{Coverage, Instance, Outcome, Run, Scoped};
 use headwater_yaml::json::Json;
@@ -125,6 +126,13 @@ use std::collections::HashSet;
 /// without the member is a run with no filter. A `1.8` document could not
 /// report one context of a corpus alone (#2101).
 ///
+/// `1.10` added `tree`, a top-level member of every run after `clock`: the
+/// corpus tree, one `sha256:` digest over every row of the census, its path,
+/// its class and the digest of its bytes. It names the state the run
+/// evaluated, and it moves when a file that no check reads arrives, which the
+/// read set does not. A `1.9` document could not say which state of the corpus
+/// its verdict was about (HW-OBL-0028).
+///
 /// Three of the shapes here have a second reader: [`change`], [`filter`] and
 /// [`coverage`] are what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
@@ -132,7 +140,7 @@ use std::collections::HashSet;
 /// `docs/interfaces/headwater-check.md` states this history for a reader who
 /// holds no clone, and `tests/interface_page.rs` fails when this constant
 /// names a version the page does not (#1451). Raise both together.
-pub const VERSION: &str = "1.9";
+pub const VERSION: &str = "1.10";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -159,8 +167,11 @@ pub const LOSS: &[Loss] = &[Loss {
 }];
 
 /// One run as JSON.
-pub fn render(run: &Run, subject: &Subject<'_>) -> String {
-    document(run, subject).render_pretty()
+///
+/// The census is here for one value, its corpus tree, which this function
+/// takes from the census rather than from its caller (HW-OBL-0028).
+pub fn render(run: &Run, census: &Census, subject: &Subject<'_>) -> String {
+    document(run, &census.tree_digest(), subject).render_pretty()
 }
 
 /// The `check --path` filter of a run, as the JSON document and the SARIF
@@ -409,7 +420,7 @@ fn routed(coverage: &Coverage, reason: &str) -> Json {
     )
 }
 
-fn document(run: &Run, subject: &Subject<'_>) -> Json {
+fn document(run: &Run, tree: &str, subject: &Subject<'_>) -> Json {
     let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),
         ("tool", Json::string(crate::TOOL)),
@@ -422,6 +433,8 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
             ]),
         ),
         ("clock", Json::string(subject.now)),
+        // The state this run evaluated, over every row of the census (1.10).
+        ("tree", Json::string(tree)),
     ];
     // Above coverage, for the reason the text report puts it above coverage: it
     // is the input that decides which instances reached a verdict at all, and

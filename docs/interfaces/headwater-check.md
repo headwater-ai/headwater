@@ -205,6 +205,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 | `taxonomy.version` | Always | The version of that package. |
 | `taxonomy.lock` | Always | The digest of `.headwater/taxonomy.lock`. |
 | `clock` | Always | The date that the run evaluated against, from `--now` or from the clock of the host. |
+| `tree` | Always | The corpus tree: one `sha256:` digest over each row of the census, in path order. Each row gives its path, its class and the digest of its bytes. The value names the state of the corpus that the run evaluated. A file that no check reads changes the tree and does not change `read_set`. The SARIF report writes the same value at `properties.headwater.tree` of its run. |
 | `change` | Only on a run with `--change` | The account of the manifest. A run without `--change` writes no `change`, so its absence says that the run read the whole corpus. |
 | `change.documents` | With `change` | The number of documents that the manifest names. |
 | `change.added` | With `change` | The number of those documents that an `added` line names. |
@@ -231,7 +232,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 ### Raising the version
 
-The current version is `1.9`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change`, `filter` and `coverage` in its property bag, so this version also applies to those three members of that report.
+The current version is `1.10`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change`, `filter` and `coverage` in its property bag, so this version also applies to those three members of that report.
 
 Each version added a member, and each addition moved the minor. So an absent member says a different thing at each version. At `1.1` a report with no `change` says that the run read the whole corpus. At `1.0` it says only that the engine had no such member to write.
 
@@ -245,6 +246,7 @@ Each version added a member, and each addition moved the minor. So an absent mem
 - `1.7` added `blocked_by` to a live finding that a `posture: blocking` control discharges. Before `1.7`, a report did not say why a strict run over a corpus with no error failed ([#2015](https://github.com/headwater-ai/headwater/issues/2015)).
 - `1.8` added `touched` and `spared_by` to a live `relation.target.suspect` finding of a run with `--change`. Before `1.8`, a report did not say which governed files a change touched, or whether a change moved only white space ([#2100](https://github.com/headwater-ai/headwater/issues/2100), [#2028](https://github.com/headwater-ai/headwater/issues/2028)).
 - `1.9` added `filter`, for a run with `--path`. Before `1.9`, no report could give the findings of one context of a corpus alone ([#2101](https://github.com/headwater-ai/headwater/issues/2101)).
+- `1.10` added `tree`. Before `1.10`, a report did not say which state of the corpus its verdict was about, and a file that no check reads changed nothing in it ([HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)).
 
 ## See also
 

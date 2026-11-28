@@ -3624,13 +3624,14 @@
       ],
       "properties": {
         "headwater": {
-          "shape": "1.9",
+          "shape": "1.10",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
             "lock": "105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601"
           },
           "clock": "2026-08-12",
+          "tree": "sha256:f3b8a14c1f935359b70991fbc5c6a753c7ca5824e24f08e651db5298ac05dfcf",
           "coverage": {
             "seen": 31,
             "classified": 29,
@@ -4404,8 +4405,8 @@
             },
             {
               "field": "the corpus tree",
-              "reason": "`run.automationDetails.id` is where one would go and nothing computes one. The read set is not a tree: it holds what the checks read",
-              "carried_in": ""
+              "reason": "`run.automationDetails.id` is defined as the unique identity of a run, and two runs over one tree would share the value. GitHub code scanning also derives an analysis category from it, so a value that moves on every commit could split an alert history. The read set is not a tree: it holds what the checks read",
+              "carried_in": "run.properties.headwater.tree"
             }
           ]
         }

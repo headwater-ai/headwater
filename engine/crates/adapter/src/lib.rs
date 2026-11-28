@@ -12,7 +12,9 @@
 //! [The engine architecture](../../../../docs/spec/engine-architecture.md) fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
 //! every one of them, and it is the only place any caller turns a run into
 //! bytes. [`text`] needs the census and the graph as well as the run, so
-//! [`render`] takes all three and the three translations ignore two of them.
+//! [`render`] takes all three. The three translations ignore the graph, and
+//! they read one value of the census, its corpus tree, which every format
+//! states (HW-OBL-0028).
 //! One argument list that says more than a translation needs is the price of a
 //! single dispatcher. The alternative is a `None` arm for `text` and a caller
 //! that composes that format for itself, which costs one composition per
@@ -1157,10 +1159,11 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
 /// What every format states about the run beside the findings.
 ///
 /// [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
-/// names the taxonomy lock hash and the read set, and names the corpus tree as
-/// a gap. The lock hash and the read set are here. The corpus tree is not,
-/// because nothing computes one — see [`sarif`] for where that absence shows
-/// up and what this crate declined to print in its place.
+/// names the corpus tree, the taxonomy lock hash and the read set. The lock
+/// hash is here, and the read set is on the run. The corpus tree is not a
+/// member here on purpose: [`render_at`] computes it from the census it
+/// renders, with [`headwater_census::census::Census::tree_digest`], so no
+/// caller can hand a format a tree of some other census (HW-OBL-0028).
 pub struct Subject<'a> {
     /// The taxonomy package the lock names.
     pub package: &'a str,
@@ -1174,9 +1177,9 @@ pub struct Subject<'a> {
 
 /// The run in one format: the whole of how this engine turns a run into bytes.
 ///
-/// The census and the graph are here because [`text`] writes both and the three
-/// translations write neither. See the module comment for why they are
-/// parameters of the dispatcher rather than of one arm of it.
+/// The census and the graph are here because [`text`] writes both, and every
+/// format writes the census's corpus tree. See the module comment for why they
+/// are parameters of the dispatcher rather than of one arm of it.
 pub fn render(
     run: &Run,
     census: &Taken,
@@ -1200,11 +1203,11 @@ pub fn render(
 ///
 /// [`Format::Text`] is the report a person reads and the only one a width means
 /// anything to. The other three ignore it, exactly as they already ignore
-/// `census` and `graph`: a machine format is parsed rather than read, and a line
-/// break inside one would be a defect rather than a courtesy. `headwater check
-/// --wide` is the one caller in the tree that states a number here, which is why
-/// this is a second entry point rather than a sixth parameter on every call
-/// site.
+/// `graph` and every value of `census` but its tree: a machine format is
+/// parsed rather than read, and a line break inside one would be a defect
+/// rather than a courtesy. `headwater check --wide` is the one caller in the
+/// tree that states a number here, which is why this is a second entry point
+/// rather than a sixth parameter on every call site.
 ///
 /// `verbose` is `headwater check --verbose`, and it too reaches the text format
 /// alone: it adds the scope of each rule and the read set to the report a
@@ -1224,9 +1227,9 @@ pub fn render_at(
 ) -> String {
     match format {
         Format::Text => text::render_at(run, census, graph, subject, width, mode, verbose),
-        Format::Json => json::render(run, subject),
-        Format::Sarif => sarif::render(run, subject),
-        Format::Markdown => markdown::render(run, subject),
+        Format::Json => json::render(run, census, subject),
+        Format::Sarif => sarif::render(run, census, subject),
+        Format::Markdown => markdown::render(run, census, subject),
     }
 }
 

@@ -1173,7 +1173,7 @@ fn the_audited_and_the_unaudited_are_counted_apart() {
         for (format, entries, held, unaudited) in [
             (Format::Text, 2, 0, 2),
             (Format::Json, 1, 0, 1),
-            (Format::Sarif, 8, 6, 2),
+            (Format::Sarif, 8, 7, 1),
             (Format::Markdown, 5, 0, 5),
         ] {
             let artifact = render(&ran, format);
@@ -1436,6 +1436,7 @@ fn an_emitter_that_stops_grading_an_obligation_is_reported_adrift() {
 
     let honest = headwater_adapter::sarif::render_with(
         &ran.run,
+        &ran.census,
         &at,
         headwater_adapter::sarif::obligation_severity,
     );
@@ -1445,7 +1446,7 @@ fn an_emitter_that_stops_grading_an_obligation_is_reported_adrift() {
         "the emitter as it stands is held: {audited:?}"
     );
 
-    let silent = headwater_adapter::sarif::render_with(&ran.run, &at, |_, _| None);
+    let silent = headwater_adapter::sarif::render_with(&ran.run, &ran.census, &at, |_, _| None);
     assert!(
         silent.matches("obligation_severity").count()
             < honest.matches("obligation_severity").count(),
@@ -1608,7 +1609,7 @@ fn every_carrier_renders_the_one_sentence_and_no_two_agree() {
             "properties.headwater.remediation and message.markdown",
             "run.properties.headwater.change",
             "run.properties.headwater.filter",
-            "",
+            "run.properties.headwater.tree",
         ]
     );
 }
@@ -2286,7 +2287,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.9");
+    assert_eq!(headwater_adapter::json::VERSION, "1.10");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.

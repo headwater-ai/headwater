@@ -172,7 +172,6 @@ The second said that a control declares one posture and that [the assurance mode
 [HW-OBL-0056](../obligations/0056-a-lookup-document-has-no-kind-and-the-shelf-layout-cannot-hold.md) is discharged and it is not in the list below. [HW-DR-0117](../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md) lays out the specification shelf as `{slug}.md` in headwater/standard 5.0.0, which `glossary.md` already satisfies, and it deletes the `sequence` facet that nothing cited.
 
 - [HW-OBL-0027](../obligations/0027-what-optional-holds-under-the-package-root.md) — What `optional` holds under the `package` root
-- [HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) — A run cannot report the corpus tree, because nothing computes one
 - [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) — What `headwater query` takes
 - [HW-OBL-0030](../obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) — The provenance block belongs to the engine, and nothing states its shape
 - [HW-OBL-0031](../obligations/0031-list-extension-in-an-add-only-overlay.md) — List extension in an add-only overlay
@@ -256,6 +255,8 @@ The second said that a control declares one posture and that [the assurance mode
 [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is discharged and it is not in the list above. A document that still held the prompts the scaffolder writes passed every check, and no finding named it. `scaffold.placeholder.unwritten` now names each such section and facet as a warning. It reads the exact strings that the scaffolder writes, from one copy that the two share.
 
 [HW-OBL-0032](../obligations/0032-a-remove-that-orphans-a-name-is-refused-and-the-message-names.md) is discharged and it is not in the list above. A `remove` that orphaned a bare name was refused, and the finding named the declaration that read the name and not the `remove`. `taxonomy validate` now reports that refusal at the `remove`, in the file and at the line that wrote it. The message also names the declaration that reads the name.
+
+[HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) is discharged and it is not in the list above. A run reported the lock hash and the read set, and no format wrote the corpus tree. Every format of `headwater check` now writes one tree over every row of the census, from one function of the census. A file that no check reads changes that tree, and it does not change the read set.
 
 ## What else each decision left open
 

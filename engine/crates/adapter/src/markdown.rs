@@ -31,6 +31,7 @@
 //! write, in the one form this format has for anything.
 
 use crate::{reported, Carrier, Escape, Loss, Reported, Subject};
+use headwater_census::census::Census;
 use headwater_check::paint::visible;
 use headwater_check::{Coverage, Run, Scoped, Severity};
 
@@ -80,7 +81,10 @@ pub const LOSS: &[Loss] = &[
 ];
 
 /// One run as Markdown.
-pub fn render(run: &Run, subject: &Subject<'_>) -> String {
+///
+/// The census is here for one value, its corpus tree, which the opening
+/// sentence names beside the lock (HW-OBL-0028).
+pub fn render(run: &Run, census: &Census, subject: &Subject<'_>) -> String {
     use std::fmt::Write;
     let all = reported(run);
     let live: Vec<&Reported<'_>> = all.iter().filter(|entry| entry.is_live()).collect();
@@ -90,13 +94,14 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
     let _ = writeln!(out, "## `headwater check`\n");
     let _ = writeln!(
         out,
-        "{} across {} of {} documents, against `{}` {} at `{}`, evaluated at {}.\n",
+        "{} across {} of {} documents, against `{}` {} at `{}`, over tree `{}`, evaluated at {}.\n",
         headline(&live),
         run.coverage.checked(),
         run.coverage.seen(),
         subject.package,
         subject.version,
         subject.lock,
+        census.tree_digest(),
         subject.now
     );
 

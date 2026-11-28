@@ -139,7 +139,7 @@ pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) 
 /// piped into a file and a run under a terminal write the same bytes unless
 /// somebody asked for something else on the command line.
 ///
-/// `mode` colors the six block headings below and cascades into `run.render`,
+/// `mode` colors every block heading below and cascades into `run.render`,
 /// which colors a finding's severity, path, obligation and `fix` label. The
 /// census and the graph blocks stay uncolored: neither carries a severity, a
 /// path role or a heading role of its own today, and inventing one for a
@@ -173,6 +173,11 @@ pub fn render_at(
     // same value.
     out.push_str(&format!("\n{}\n", paint(Role::Heading, "clock", mode)));
     out.push_str(&format!("  {}\n", subject.now));
+    // The corpus tree: the state this run evaluated, over every row of the
+    // census below, and not the read set (HW-OBL-0028). Every format writes the
+    // same value, because every format takes it from the one census function.
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "tree", mode)));
+    out.push_str(&format!("  {}\n", census.tree_digest()));
     out.push_str(&format!("\n{}\n", paint(Role::Heading, "census", mode)));
     out.push_str(&fill::filled(
         &indent(&census.render(CensusDetail::Exceptions)),
