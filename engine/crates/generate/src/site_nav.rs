@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The site navigation: one file, each shelf's documents in path order,
+//! The site navigation: one file, each shelf's documents in path order or,
+//! for a shelf the declaration names under `precedence`, in the reading order,
 //! written in the shape MkDocs's `nav:` key reads.
 //!
 //! # Path order, where a shelf index prints the reading order
@@ -15,6 +16,19 @@
 //! `by_precedence`, and
 //! [HW-DR-0108](../../../../docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md)
 //! records the amendment.
+//!
+//! # Relation order, for a shelf the declaration names
+//!
+//! A shelf whose files carry no number gives a reader no lookup order, and
+//! alphabetical order by file name tells them nothing about what to read
+//! first. A `site_nav` that lists such a shelf under `precedence` prints its
+//! documents in the order [`headwater_query::Surface::by_precedence`] derives,
+//! which is the order its shelf index prints. Every other shelf keeps path
+//! order. The list is the taxonomy's, shelf by shelf, and never an inference
+//! from a layout, because a rule that read "a layout with no number" would
+//! reorder every unnumbered shelf and the ruling names one.
+//! [HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)
+//! amends HW-DR-0108 for the specification series of this repository.
 //!
 //! [HW-DR-0036](../../../../docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md)
 //! is why this emitter writes that shape and not Docusaurus's `sidebars.js` or
@@ -167,12 +181,17 @@ pub(crate) fn emit(
             return Ok(None);
         }
 
-        // Path order, and not `by_precedence`. A sidebar is a list a reader
-        // looks a document up in, and a shelf of numbered documents has to
-        // read 86 and then 101. The shelf index keeps the derived reading
-        // order. See the module comment.
+        // Path order, and not `by_precedence`, unless the declaration names
+        // this shelf under `precedence`. A sidebar is a list a reader looks a
+        // document up in, and a shelf of numbered documents has to read 86 and
+        // then 101. A shelf whose files carry no number has no lookup order
+        // to keep, and a taxonomy that names it reads it as the shelf index
+        // does. See the module comment.
         let mut ordered = pointers(surface, &on_shelf);
-        ordered.sort_by(|a, b| a.path.cmp(&b.path));
+        match declaration.precedence.iter().any(|shelf| shelf == name) {
+            true => surface.by_precedence(&mut ordered),
+            false => ordered.sort_by(|a, b| a.path.cmp(&b.path)),
+        }
         Ok(Some(Group {
             // The declared display name, through the one function three
             // emitters read. `Group::shelf` is a label and nothing addresses
@@ -195,6 +214,16 @@ pub(crate) fn emit(
     };
 
     let built = (|| -> Result<Vec<Entry>, String> {
+        // A shelf under `precedence` is held to the taxonomy as a shelf under
+        // `for` is, so a misspelled name is a refusal and not a shelf that
+        // silently keeps path order.
+        if let Some(name) = declaration
+            .precedence
+            .iter()
+            .find(|name| !taxonomy.shelves.iter().any(|shelf| &shelf.name == *name))
+        {
+            return Err(name.clone());
+        }
         // The shelves no section names come first, in the order they always
         // had, so a declaration with no `sections` writes the bytes it wrote
         // before the member existed.

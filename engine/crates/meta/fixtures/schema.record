@@ -1,4 +1,4 @@
-headwater/taxonomy 0.11.0
+headwater/taxonomy 0.12.0
 
 declarations
   taxonomy (required) scalar:string
@@ -144,6 +144,7 @@ declarations
               title (required) scalar:string
               for (required) seq of scalar:string
           noindex scalar:boolean
+      precedence seq of scalar:string
       budget members
         per_file (required) scalar:integer
         aggregate (required) scalar:integer

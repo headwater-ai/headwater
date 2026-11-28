@@ -391,6 +391,14 @@ pub struct Declaration {
     /// for every other kind, and for a `site_nav` that states none, which then
     /// writes the flat list it wrote before the member existed (#1681).
     pub sections: Vec<NavSection>,
+    /// The shelves a `site_nav` lists in the reading order that
+    /// [`headwater_query::Surface::by_precedence`] derives, rather than in path
+    /// order. Empty for every other kind, and for a `site_nav` that states
+    /// none, which keeps path order on every shelf as
+    /// [HW-DR-0108](../../../../docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md)
+    /// states. [HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)
+    /// amends that record for a shelf whose files carry no number.
+    pub precedence: Vec<String>,
     /// The chain and the format of a `relation_view` (HW-DR-0114). `None` for
     /// every other kind, which [`relation_view::read`] refuses `relations` on.
     pub view: Option<relation_view::View>,
@@ -611,6 +619,16 @@ impl Projections {
                     continue;
                 }
             };
+            let precedence = match precedence(body, kind, index) {
+                Ok(precedence) => precedence,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
+                }
+            };
             // A view's `format` is its own, `markdown`, `csv` or `json`, and
             // never an export emitter: `json` there would enroll the entry in
             // the emitter set of its profile, and `csv` would be refused as no
@@ -646,6 +664,7 @@ impl Projections {
                 identity,
                 committed,
                 sections,
+                precedence,
                 view,
                 budget,
             });
@@ -859,6 +878,35 @@ fn sections(
         out.push(section);
     }
     Ok(out)
+}
+
+/// The `precedence` member of one projection, empty where it is absent
+/// (#2137).
+///
+/// Only a `site_nav` takes it. It lists the shelves whose documents the
+/// navigation prints in the derived reading order rather than in path order. A
+/// shelf of minted numbers keeps path order, which is numeric order there, so
+/// this is a list the taxonomy writes shelf by shelf and never an inference
+/// from a layout. Whether each name is a declared shelf is the emitter's
+/// reading, as it is for `for`.
+fn precedence(body: &Mapping, kind: Kind, index: usize) -> Result<Vec<String>, String> {
+    let Some(node) = body.get("precedence") else {
+        return Ok(Vec::new());
+    };
+    if kind != Kind::SiteNav {
+        return Err(format!(
+            "`projections.{index}` is a `{}` and states `precedence`, and only a `site_nav` \
+             takes `precedence`",
+            kind.name()
+        ));
+    }
+    let Value::Seq(_) = &node.value else {
+        return Err(format!(
+            "`projections.{index}.precedence` is {}, and it lists shelves",
+            node.value.kind_name()
+        ));
+    };
+    Ok(scalars(body, "precedence"))
 }
 
 fn text_of(map: &Mapping, key: &str) -> Option<String> {

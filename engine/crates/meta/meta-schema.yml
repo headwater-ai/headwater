@@ -104,12 +104,17 @@ meta_schema: headwater/taxonomy
 # because a source that wrote none declares none, and the nav it writes is the
 # flat list it wrote before. HW-DR-0107 records why.
 #
+# 0.12.0 adds `projection.precedence`, the shelves a `site_nav` lists in the
+# derived reading order (#2137). It is a minor, because a source that wrote
+# none declares none, and every shelf then keeps the path order it had.
+# HW-DR-0117 records why.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.11.0
+version: 0.12.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -633,6 +638,12 @@ definitions:
       # `nav:` for that template to read. The engine takes `sections` on a
       # `site_nav` alone, and refuses a shelf named twice.
       sections: {seq: {block: site_nav_section}}
+      # The shelves a `site_nav` lists in the derived reading order rather than
+      # in path order (#2137). Every shelf it does not name keeps path order,
+      # which is numeric order on a shelf of minted numbers (HW-DR-0108). The
+      # engine takes `precedence` on a `site_nav` alone, and refuses a name
+      # that is not a declared shelf. HW-DR-0117 records why.
+      precedence: {seq: {scalar: string}}
       # The byte budget of an agent-facing projection (HW-DR-0115): what one
       # written file may hold, and what every file of the declaration may hold
       # together. The engine takes `budget` on an `agent_rules` alone, because
