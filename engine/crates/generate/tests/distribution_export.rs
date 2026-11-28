@@ -756,6 +756,20 @@ fn names_six(lower: &str) -> Option<usize> {
         .min()
 }
 
+/// The scan above reads a comment by any of the three names, and the earliest
+/// one wins. A comment written after HW-DR-0117 names the part by its title or
+/// its file, and a scan that read only the number would see none of them.
+#[test]
+fn the_quote_scan_reads_the_part_by_its_title_its_file_and_its_old_number() {
+    assert_eq!(names_six("the engine architecture says \"x\""), Some(4));
+    assert_eq!(
+        names_six("see (docs/spec/engine-architecture.md): \"x\""),
+        Some(15)
+    );
+    assert_eq!(names_six("spec 6: \"x\""), Some(0));
+    assert_eq!(names_six("the check layer says \"x\""), None);
+}
+
 /// A comment that quotes a sentence of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section and credits it
 /// to [the engine architecture](../../../../docs/spec/engine-architecture.md) points a reader at a part that no longer holds it. This reads
 /// every comment that names [the engine architecture](../../../../docs/spec/engine-architecture.md) and then opens a quote, and fails when the
