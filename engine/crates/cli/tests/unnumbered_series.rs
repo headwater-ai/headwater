@@ -18,9 +18,9 @@
 //!
 //! The claim is about the file a verb writes and the findings a run prints, so
 //! each case assembles a scratch corpus that takes the vendored package with
-//! the design-spec selection and runs the built binary over it. The corpus
-//! declares no overlay, so what the cases read is the package as an adopter
-//! receives it.
+//! the design-spec selection and runs the built binary over it. Its overlay
+//! declares an identifier scheme and nothing else, so what the cases read is
+//! the series as an adopter receives it.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -44,6 +44,12 @@ fn vendored_version() -> String {
         .to_string()
 }
 
+/// The least an adopter declares before `headwater new design_spec` writes:
+/// the namespace the package leaves to the corpus, and an identifier scheme
+/// for the kind, which the package does not ship. Nothing here touches the
+/// series shelf, its layout or its facets.
+const OVERLAY: &str = "add:\n  identifier_schemes.decision_id.namespace: ACME\n  identifier_schemes.spec_id: {pattern: \"{namespace}-SPEC-{slug}\", namespace: ACME, allocation: minted-once}\n  kinds.design_spec.identifier: {scheme: spec_id}\n";
+
 struct Root {
     at: PathBuf,
 }
@@ -63,11 +69,12 @@ impl Root {
         std::fs::write(
             at.join(".headwater/taxonomy.yml"),
             format!(
-                "taxonomy:\n  package: headwater/standard\n  version: {}\n  bundles: [design-spec, evidence-and-obligation]\n",
+                "taxonomy:\n  package: headwater/standard\n  version: {}\n  bundles: [design-spec, evidence-and-obligation]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
                 vendored_version()
             ),
         )
         .expect("the declaration writes");
+        std::fs::write(at.join(".headwater/overlay.yml"), OVERLAY).expect("the overlay writes");
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);
         assert_eq!(resolved.code, Some(0), "the scratch corpus resolves\n{resolved:?}");
@@ -95,13 +102,22 @@ impl Root {
         }
     }
 
-    /// Every line of the text report that names the rule.
-    fn findings(&self, rule: &str) -> Vec<String> {
+    /// The rule of every finding the text report prints. A finding opens
+    /// with its rule, then ` (` and the obligation or `: ` and the message,
+    /// which the census list of rules that ran never does.
+    fn findings(&self) -> Vec<String> {
         let ran = self.run(&["check", "--no-cache"]);
         ran.out
             .lines()
-            .filter(|line| line.contains(rule))
-            .map(str::to_string)
+            .map(str::trim)
+            .filter_map(|line| {
+                let (rule, _) = line.split_once(' ')?;
+                let rule = rule.strip_suffix(':').unwrap_or(rule);
+                let opens = line[rule.len()..].starts_with(" (") || line[rule.len()..].starts_with(": ");
+                let shaped = rule.contains('.')
+                    && rule.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_');
+                (opens && shaped).then(|| rule.to_string())
+            })
             .collect()
     }
 }
@@ -139,7 +155,7 @@ fn copy(from: &Path, to: &Path) {
 /// about its facets.
 fn part(slug: &str, title: &str, extra: &str) -> String {
     format!(
-        "---\nid: HW-SPEC-{slug}\ndoc_type: design_spec\ntitle: {title}\n{extra}summary: One part of the series.\nstatus: current\nstatus_since: 2026-11-28\nlast_verified: 2026-11-28\n---\n\n# {title}\n\nThis part states one thing about the system.\n"
+        "---\nid: ACME-SPEC-{slug}\ndoc_type: design_spec\ntitle: {title}\n{extra}summary: One part of the series.\nstatus: current\nstatus_since: 2026-11-28\nlast_verified: 2026-11-28\n---\n\n# {title}\n\nThis part states one thing about the system.\n"
     )
 }
 
@@ -178,11 +194,18 @@ fn a_part_with_no_sequence_raises_no_missing_facet() {
         "docs/spec/conceptual-model.md",
         &part("conceptual-model", "Conceptual model", ""),
     );
-    let missing = root.findings("facet.required.missing");
+    let findings = root.findings();
+    assert!(
+        !findings.is_empty(),
+        "the control: the report prints findings, so an empty list below is not a parse that reads nothing"
+    );
+    let missing: Vec<&String> = findings
+        .iter()
+        .filter(|rule| *rule == "facet.required.missing")
+        .collect();
     assert!(
         missing.is_empty(),
-        "no part is missing a required facet:\n{}",
-        missing.join("\n")
+        "no part is missing a required facet: {findings:?}"
     );
 }
 
@@ -197,15 +220,20 @@ fn a_part_left_numbered_by_4_x_raises_nothing_about_its_sequence() {
         "docs/spec/12-check-layer.md",
         &part("check-layer", "The check layer", "sequence: 12\n"),
     );
-    let ran = root.run(&["check", "--no-cache"]);
-    let about: Vec<&str> = ran
-        .out
-        .lines()
-        .filter(|line| line.contains("sequence") || line.contains("facet."))
-        .collect();
+    let findings = root.findings();
+    assert!(
+        !findings.is_empty(),
+        "the control: the report prints findings, so an empty list below is not a parse that reads nothing"
+    );
+    let about: Vec<&String> = findings.iter().filter(|rule| rule.starts_with("facet.")).collect();
     assert!(
         about.is_empty(),
-        "nothing names the left-over number or a facet:\n{}",
+        "nothing names a facet of the left-over part: {findings:?}"
+    );
+    let ran = root.run(&["check", "--no-cache"]);
+    assert!(
+        !ran.out.contains("`sequence`"),
+        "and nothing names the left-over key:\n{}",
         ran.out
     );
 }
