@@ -147,6 +147,24 @@
 
   <p class="note"><strong>An entry arrives when a tag is cut.</strong> A tag is the only condition that fills this page, and not a date and not a milestone. There is no cadence, and this page says so rather than promise one.</p>
 
+  <h2>v0.8.3</h2>
+
+  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.3">A patch release</a>, written on 2026-11-28, adds two rules and one report line, and it comes with <code>headwater/standard</code> 4.31.0.</p>
+
+  <p>The new error rule <code>facet.value.not_of_type</code> reads each document facet that its declaration types as <code>date</code>, <code>integer</code>, <code>boolean</code> or <code>duration</code>. Before, any value passed: <code>2026-02-30</code>, the word <code>yesterday</code> or a nested list. A <code>date</code> value must now be a real calendar date in the form <code>YYYY-MM-DD</code>. A null, a sequence or a mapping on a typed facet is also reported. A facet of <code>type: string</code> stays with <code>facet.value.blank</code>, so one value gets one finding. <code>headwater taxonomy validate</code> and the rule now use the same type test and the same calendar, so a taxonomy value of <code>2026-02-30</code> is now refused there too.</p>
+
+  <p>The new warning rule <code>scaffold.placeholder.unwritten</code> names a document that still holds a prompt that <code>headwater new</code> wrote: a paragraph that reads only <code>TODO write this section.</code>, or a top-level facet whose value is still the scaffolder's prompt. The prompt in a code block, a code span or a quotation is not reported. The rule reads every lifecycle state, <code>draft</code> included. It carries no patch, and a strict run still exits 0 on it.</p>
+
+  <p>In <code>headwater/standard</code> 4.31.0, the control <code>CT-FACET-4</code> binds <code>facet.value.not_of_type</code>, <code>CT-SECT-2</code> binds <code>scaffold.placeholder.unwritten</code>, and <code>CT-COV-4</code> binds <code>shelf.discriminator.unresolved</code>. All three stay advisory. Every rule that the engine ships is now bound to a control of the standard package.</p>
+
+  <p>The text report of <code>headwater check</code> now prints one line for each lexical pattern set that a bound regime reads: how many of its entries produced a finding, against how many it declares. A set where no entry produced a finding gets a warning, because a zero there can mean a clean corpus or a list that nobody writes. The <code>markdown</code>, <code>json</code> and <code>sarif</code> reports do not change, and the check JSON shape stays at 1.9.</p>
+
+  <p>When the engine is outside the range that <code>.headwater/taxonomy.yml</code> asks for, it already wrote one line about it on standard error. The intent hook that <code>headwater init --harness</code> installs now prints that line first, and before it discarded it. The VS Code extension writes it once a session to its <em>Headwater</em> output channel. Run <code>headwater init --harness</code> again to install the new intent hook.</p>
+
+  <p>The rest is held by tests and changes no output: three refusals of <code>headwater probe</code>'s plan, the VS Code client's timeout and one-element refusal, and every intra-doc link in the engine's comments, which CI now builds with <code>cargo doc</code>. The help of <code>neighbors --top</code> now prints <code>[default: 10]</code>.</p>
+
+  <p>Upgrading: a document facet value that is not of its declared type now fails <code>check --strict</code>. Correct the value, or mark a deliberate exception with a <code>headwater allow</code> directive. To take the new controls, move your pin to <code>headwater/standard</code> 4.31.0. The <code>headwater-check</code> action can be pinned to <code>@v0.8.3</code>.</p>
+
   <h2>v0.8.2</h2>
 
   <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.2">A patch release</a>, written on 2026-11-27, fixes six bugs. It adds no rule and no option, and it comes with no taxonomy release. <code>headwater/standard</code> stays at 4.30.0.</p>
