@@ -321,9 +321,14 @@ fn a_purpose_the_consumers_own_overlay_removed_names_no_bundle() {
     scratch.write("adopter.yml", REMOVES);
     let consumer = consumer(&[], Some("adopter.yml"));
 
+    // The refusal stands at the `remove` that orphaned the name (HW-OBL-0032).
     let before = refusal(&scratch, &consumer);
     assert!(
-        before.contains("reads `record`, and no purpose of that name is declared"),
+        before.contains(
+            "adopter.yml `remove.purposes.record` (5:5): referential integrity: removing \
+             `purposes.record` leaves `kinds.note.purpose` reading `record`, and no purpose of \
+             that name is declared"
+        ),
         "the case reproduces the refusal it is about: {before}"
     );
 

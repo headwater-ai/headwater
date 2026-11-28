@@ -1,0 +1,3 @@
+overlay-adopter.yml `remove.kinds.decision` (15:5): referential integrity: removing `kinds.decision` leaves `shelves.decisions.kind` reading `decision`, and no kind of that name is declared
+the resolved taxonomy `shelves.by-decision.path`: referential integrity: reads `decision`, and no facet of that name is declared. A whole `{decision}` segment of a shelf path binds the facet `decision`, and it no longer names a folder called `{decision}`: declare the facet, or rename the folder and the segment
+the resolved taxonomy `shelves.drafts.kind`: referential integrity: reads `decsion`, and no kind of that name is declared
