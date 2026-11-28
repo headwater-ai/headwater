@@ -488,6 +488,42 @@ fn a_departure_whose_prior_did_not_parse_skips_the_instance_and_names_only_that_
     }
 }
 
+/// A prior version that did not open, and one that is not UTF-8, are unread
+/// departures too, and the skip names both.
+///
+/// Neither reached the parser, so neither can say that the bytes held no front
+/// matter. A rule that read either one as a file with no block would pass the
+/// deletion in silence, which is the defect this skip closes. The prior that
+/// did not open has no digest, so the instance goes unkeyed rather than keyed
+/// on nothing.
+#[test]
+fn a_prior_that_did_not_open_or_decode_is_named_in_the_skip() {
+    let run = over(
+        &[
+            departure("retention/kept/gone-missing.md", "missing-prior.md"),
+            departure("retention/kept/gone-latin.md", "not-utf-8.md"),
+        ]
+        .concat(),
+    );
+    let Outcome::Skipped(why) = &instance(&run).outcome else {
+        panic!(
+            "a departure whose prior did not open or decode passed: {:?}",
+            instance(&run).outcome
+        );
+    };
+    assert!(why.contains("retention/kept/gone-missing.md"), "{why}");
+    assert!(why.contains("retention/kept/gone-latin.md"), "{why}");
+    let digest = |path: &str| {
+        instance(&run)
+            .reads
+            .iter()
+            .find(|input| input.path == path)
+            .map(|input| input.digest.is_some())
+    };
+    assert_eq!(digest("retention/kept/gone-missing.md"), Some(false));
+    assert_eq!(digest("retention/kept/gone-latin.md"), Some(true));
+}
+
 /// A refusal outranks the skip, because it already blocks the change.
 ///
 /// The skip arrives on the next run, once the refused document is back. A rule
