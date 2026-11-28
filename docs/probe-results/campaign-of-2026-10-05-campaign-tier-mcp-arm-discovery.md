@@ -400,7 +400,7 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 ## The comparisons this arm takes part in
 
-What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (spec 5).
+What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-mcp-arm-discovery.md`: 88 of 354 graded sessions satisfied their expectation, 24.9%, in a 95% interval of 20.6% to 29.6%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.

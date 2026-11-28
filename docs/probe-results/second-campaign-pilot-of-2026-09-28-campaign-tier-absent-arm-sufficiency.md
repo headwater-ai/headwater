@@ -60,7 +60,7 @@ What the governance changes. The treated arm is the `campaign` present arm and t
 
 The difference is -25.0 points, in a 95% Newcombe interval of -65.5 points to +32.0 points. The transcript of at least one arm is not current, so this page states no direction at the 5% level.
 
-What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
+What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (AI integration).
 
 - treated, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 3 of 4 graded sessions satisfied their expectation, 75.0%, in a 95% interval of 30.1% to 95.4%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/second-campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md`: 1 of 4 graded sessions satisfied their expectation, 25.0%, in a 95% interval of 4.6% to 69.9%. 0 sessions refused by the session itself.

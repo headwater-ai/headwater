@@ -407,28 +407,28 @@ What the governance changes. The treated arm is the `campaign` present arm and t
 
 The difference is -4.2 points, in a 95% Newcombe interval of -11.4 points to +3.0 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
 
-What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (spec 5).
+What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-hook-arm-discovery.md`: 129 of 354 graded sessions satisfied their expectation, 36.4%, in a 95% interval of 31.6% to 41.6%. 0 sessions refused by the session itself.
 
 The difference is +2.3 points, in a 95% Newcombe interval of -4.9 points to +9.3 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
 
-What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (spec 5).
+What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-skills-arm-discovery.md`: 175 of 354 graded sessions satisfied their expectation, 49.4%, in a 95% interval of 44.3% to 54.6%. 0 sessions refused by the session itself.
 
 The difference is -10.7 points, in a 95% Newcombe interval of -17.9 points to -3.4 points. The interval is below zero, so the treated arm satisfied less often at the 5% level.
 
-What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (spec 5).
+What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-claude-md-arm-discovery.md`: 132 of 354 graded sessions satisfied their expectation, 37.3%, in a 95% interval of 32.4% to 42.4%. 0 sessions refused by the session itself.
 
 The difference is +1.4 points, in a 95% Newcombe interval of -5.7 points to +8.5 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
 
-What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (spec 5).
+What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-mcp-arm-discovery.md`: 88 of 354 graded sessions satisfied their expectation, 24.9%, in a 95% interval of 20.6% to 29.6%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.

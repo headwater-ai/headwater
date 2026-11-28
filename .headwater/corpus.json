@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "5.0.0",
-        "lock": "sha256:4de587896c51bd7f7291c76744f7e2fd8c297c295a6eccb1619d0878af000dc1"
+        "lock": "sha256:c88139013bccca3d76b81d4576c51703684ab10622d276e7610d404be64a7575"
       },
       "entry_points": [
         {
@@ -117,7 +117,7 @@
         },
         {
           "shelf": "spec_series",
-          "path": "docs/spec/00-vision-and-scope.md",
+          "path": "docs/spec/vision-and-scope.md",
           "id": "HW-SPEC-vision-and-scope"
         },
         {

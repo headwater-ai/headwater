@@ -400,7 +400,7 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 ## The comparisons this arm takes part in
 
-What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (spec 5).
+What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-hook-arm-discovery.md`: 129 of 354 graded sessions satisfied their expectation, 36.4%, in a 95% interval of 31.6% to 41.6%. 0 sessions refused by the session itself.
