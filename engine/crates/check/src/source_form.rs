@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the source form a language regime fixes.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! separates Document checks from the generated ones because "the body is not
 //! in the graph". This rule reads something one step further out still: not the
 //! body, but the shape of the file the body was written into.
@@ -40,7 +40,7 @@
 //!
 //! # Severity, and why this one is an error
 //!
-//! An error, and it is the [fixability](../../../../docs/spec/12-check-layer.md#fixability)
+//! An error, and it is the [fixability](../../../../docs/spec/check-layer.md#fixability)
 //! bar rather than a judgment about how much a wrap matters. The remediation is
 //! to join two lines. That is mechanical and total, which is the same ground on
 //! which [`crate::language`] makes a contraction an error and leaves a sentence

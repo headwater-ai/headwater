@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The run in the finding shape spec 4 already declares.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings) fixes it:
+//! [Spec 4](../../../../docs/spec/assurance-model.md#findings) fixes it:
 //! "Every finding, from every mechanism, has one shape", and the worked
 //! document there carries `rule`, `severity`, `obligation`, `path`, `line`,
 //! `message`, `remediation` and `fixable`. Those eight members are the members
@@ -11,7 +11,7 @@
 //! # This is not an adapter, and the distinction is the point of the crate
 //!
 //! No platform reads this. It is the neutral surface that
-//! [spec 8](../../../../docs/spec/08-design-departures.md) leaves for an
+//! [spec 8](../../../../docs/spec/design-departures.md) leaves for an
 //! adapter that this repository did not write: a forge, a tracker or a cloud
 //! that nobody here privileged, whose author reads bytes rather than links a
 //! Rust library. The two adapters beside it — [`crate::sarif`] and

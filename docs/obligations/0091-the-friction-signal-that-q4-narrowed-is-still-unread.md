@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q4](../spec/09-decisions.md#q4--relation-storage) refused the annotated prose link and made the friction a check instead. The friction signal survives in a narrower form.
+[Q4](../spec/decisions.md#q4--relation-storage) refused the annotated prose link and made the friction a check instead. The friction signal survives in a narrower form.
 
 ## Obligation
 

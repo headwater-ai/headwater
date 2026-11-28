@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The gate: a published read set, held against a later tree.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! rules what a gate reads, and this module is that ruling as code. The ruling
 //! is one test and it decides three things.
 //!
@@ -42,7 +42,7 @@
 //! verdict survives a merge that added the second claimant, and it is wrong
 //! every time. So a barrier never carries, whatever the listed hashes did.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! fixes which way a doubtful case falls: "a false invalidation costs one run.
 //! A false survival ships an invalid corpus with a green report." Every refusal
 //! here is that asymmetry read once.

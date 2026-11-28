@@ -144,7 +144,7 @@ mod tests {
 
     fn link(destination: &str, text: &str, names: Option<&str>, binding: Binding) -> Link {
         Link {
-            source_path: "docs/spec/12-check-layer.md".to_string(),
+            source_path: "docs/spec/check-layer.md".to_string(),
             destination: destination.to_string(),
             fragment: destination.split_once('#').map(|(_, f)| f.to_string()),
             text: text.to_string(),
@@ -178,7 +178,7 @@ mod tests {
         .expect("a finding");
         assert_eq!(found.rule, self::RULE);
         assert_eq!(found.severity, Severity::Error);
-        assert_eq!(found.path, "docs/spec/12-check-layer.md");
+        assert_eq!(found.path, "docs/spec/check-layer.md");
         assert_eq!(found.line, 40);
         assert_eq!(found.column, 3);
         assert!(found.message.contains("HW-DR-0089"), "{found:#?}");

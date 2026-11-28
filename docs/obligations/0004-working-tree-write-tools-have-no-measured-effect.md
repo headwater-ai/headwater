@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) rules three classes of tool and refuses a landed write. Working-tree write tools should raise the assisted fraction, which [spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) declares as a tracked metric.
+[Q7](../spec/decisions.md#q7--scope-of-the-mcp-surface) rules three classes of tool and refuses a landed write. Working-tree write tools should raise the assisted fraction, which [spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) declares as a tracked metric.
 
 ## Obligation
 

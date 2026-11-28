@@ -2,7 +2,7 @@
 //! Structural conformance: a source read against the meta-schema.
 //!
 //! This is the first bullet of what
-//! [`headwater taxonomy validate`](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
+//! [`headwater taxonomy validate`](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
 //! checks, plus reference well-formedness, and it is every bullet that a single
 //! source can decide on its own. The rest of the list reads a *resolved* tree
 //! and waits for the resolver. [`skipped`] names each one, so a caller can say

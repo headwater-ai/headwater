@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md#kind-resolution) rules that the most specific shelf pattern wins, and that a tie is a schema-validation error rather than a runtime coin-flip. It never states what makes one pattern more specific than another. It never states which glob constructs a shelf path may hold either.
+[Spec 2](../spec/taxonomy-model.md#kind-resolution) rules that the most specific shelf pattern wins, and that a tie is a schema-validation error rather than a runtime coin-flip. It never states what makes one pattern more specific than another. It never states which glob constructs a shelf path may hold either.
 
 ## Obligation
 

@@ -7,7 +7,7 @@
 //! specification part states as built an `export` target or a projection kind
 //! that this engine reports as unbuilt. The bar has two halves. The
 //! projection-kind half is held by `spec_six_projections.rs`. The export-target
-//! half was corrected by hand in `docs/spec/02-taxonomy-model.md` and nothing
+//! half was corrected by hand in `docs/spec/taxonomy-model.md` and nothing
 //! read it afterwards, so a reword of the refusal, an emptied fenced block, or
 //! the day someone builds `skos` all leave the paragraph false with the suite
 //! green. This file is the missing half.
@@ -77,7 +77,7 @@ const REFUSAL_HEADER: &str = "headwater: nothing was exported";
 const REASON_INDENT: &str = "  ";
 
 fn spec_two() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/02-taxonomy-model.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/taxonomy-model.md")
 }
 
 fn spec_two_text() -> String {
@@ -173,7 +173,7 @@ fn the_emitter_spec_2_calls_staged_is_one_this_engine_does_not_build() {
     let emitter = quoted_emitter(&lines[0]);
     assert!(
         !emitter.is_built(),
-        "docs/spec/02-taxonomy-model.md calls the `{}` projection staged and unbuilt and quotes a \
+        "docs/spec/taxonomy-model.md calls the `{}` projection staged and unbuilt and quotes a \
          refusal for it, and this engine builds that emitter. The paragraph at '{ANCHOR}' has to \
          move with the code",
         emitter.name()
@@ -204,7 +204,7 @@ fn the_output_spec_2_quotes_is_the_refusal_this_engine_returns() {
     assert_eq!(
         quoted,
         expected,
-        "docs/spec/02-taxonomy-model.md's staged-emitter block does not quote what `headwater \
+        "docs/spec/taxonomy-model.md's staged-emitter block does not quote what `headwater \
          export --format {}` prints on stderr.\n\nthe document:\n{}\n\nthe engine:\n{}",
         emitter.name(),
         quoted.join("\n"),
@@ -247,7 +247,7 @@ fn no_other_format_in_spec_2_names_an_emitter_this_engine_does_not_build() {
 
     assert!(
         stray.is_empty(),
-        "docs/spec/02-taxonomy-model.md names an emitter this engine does not build outside the \
+        "docs/spec/taxonomy-model.md names an emitter this engine does not build outside the \
          staged block at '{ANCHOR}', where the refusal is quoted beside it: {stray:#?}"
     );
 }

@@ -32,7 +32,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the projections stage and the export stage of [spec 6](../spec/06-engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `generate` and `mark`.
+This spec describes the inside of the projections stage and the export stage of [spec 6](../spec/engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `generate` and `mark`.
 
 The stages have four inputs. They are the census of the corpus, the graph and its query surface, the lock, and the `projections` block that the lock carries. The stages give three outputs:
 
@@ -42,11 +42,11 @@ The stages have four inputs. They are the census of the corpus, the graph and it
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#projections) states the projection kinds.
-- [Spec 7](../spec/07-distribution-and-federation.md#what-leaves-a-corpus) states the loss set, the export profile and what a filtered export claims.
+- [Spec 6](../spec/engine-architecture.md#projections) states the projection kinds.
+- [Spec 7](../spec/distribution-and-federation.md#what-leaves-a-corpus) states the loss set, the export profile and what a filtered export claims.
 - [The `headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) states the marker rule and the other rules that each projection obeys.
-- [Spec 7](../spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
-- [Spec 3](../spec/03-authoring-and-lifecycle.md) states the warrant of a generated document.
+- [Spec 7](../spec/distribution-and-federation.md#arriving-at-a-corpus-cold) states what the corpus descriptor carries and why its path is fixed.
+- [Spec 3](../spec/authoring-and-lifecycle.md) states the warrant of a generated document.
 - [HW-DR-0063](../decisions/0063-every-required-facet-of-a-generated-document-is-derived-and-the-emitter-composes-the-summary.md) states why the engine derives each required facet of a generated document.
 - [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) states the navigation format, and [HW-DR-0038](../decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) states how a rendered page links to the descriptor.
 - The [`headwater generate`](../interfaces/headwater-generate.md), [`headwater export`](../interfaces/headwater-export.md), [`headwater site`](../interfaces/headwater-site.md) and [derived artifacts](../interfaces/headwater-derived.md) contracts state what an author sees of each verb and each artifact.
@@ -89,7 +89,7 @@ One output can feed another. A generated document is a node of the census, and a
 
 `unbuilt` gives the reason that this engine writes no output for a kind, or nothing where it writes one. The reason is a property of the engine, so a run prints it for a kind that no declaration names. The match is exhaustive, so a new kind fails to compile until it has an answer. `engine_defined` lists the register as unwritten with its reason from `unbuilt`. The register depends on the clock, so a committed copy could not pass `--check` ([HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md)).
 
-Two declarable kinds wait, and `unbuilt` gives each one its reason. A template would carry the permitted relations, facets and sections of one kind. A transcription reads a pinned external snapshot, and [Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks for one.
+Two declarable kinds wait, and `unbuilt` gives each one its reason. A template would carry the permitted relations, facets and sections of one kind. A transcription reads a pinned external snapshot, and [Q19](../spec/decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks for one.
 
 A relation view is the traceability matrix, and it has an emitter. `relation_view.rs` walks an ordered chain of relations from each document of one shelf. It writes one row for each path, with an empty cell for a missing link ([HW-DR-0114](../decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md)). Its cells read the observation snapshot, which `Runs` carries in from the caller, because this crate opens no file of its own.
 

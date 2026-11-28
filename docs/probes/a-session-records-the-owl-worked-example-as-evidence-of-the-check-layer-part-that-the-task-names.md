@@ -28,19 +28,19 @@ relations:
 
 ### Phrasing 1
 
-`docs/spec/12-check-layer.md` rules that a construct which entails rather than checks is out, and it links the OWL and SKOS worked example for that rule. The worked example is not among the evidence its front matter declares. Record that link in the corpus.
+`docs/spec/check-layer.md` rules that a construct which entails rather than checks is out, and it links the OWL and SKOS worked example for that rule. The worked example is not among the evidence its front matter declares. Record that link in the corpus.
 
 ### Phrasing 2
 
-The paragraph of `docs/spec/12-check-layer.md` about `owl:minCardinality` and `rdfs:range` draws on an evaluation that it does not list as cited evidence. Fix the front matter of the corpus so that the link is recorded.
+The paragraph of `docs/spec/check-layer.md` about `owl:minCardinality` and `rdfs:range` draws on an evaluation that it does not list as cited evidence. Fix the front matter of the corpus so that the link is recorded.
 
 ### Phrasing 3
 
-Read `docs/spec/12-check-layer.md` where it explains why a construct that entails is out. Declare the evaluation behind that paragraph as evidence the spec part cites.
+Read `docs/spec/check-layer.md` where it explains why a construct that entails is out. Declare the evaluation behind that paragraph as evidence the spec part cites.
 
 ## Target
 
-[Spec 12](../spec/12-check-layer.md), "A construct that entails rather than checks is out", and the evaluation HW-EVAL-owl-skos-worked-example that it links for the rule.
+[Spec 12](../spec/check-layer.md), "A construct that entails rather than checks is out", and the evaluation HW-EVAL-owl-skos-worked-example that it links for the rule.
 
 ## Key
 

@@ -7,5 +7,5 @@
 # It is also where HW-OBL-0104 bites hardest. A corpus that declared one edge
 # onto a directory rather than one edge per file reports every file inside it
 # exactly like this one, and every report is wrong.
-# per HW-SPEC-ai-integration (docs/spec/05-ai-integration.md)
+# per HW-SPEC-ai-integration (docs/spec/ai-integration.md)
 value = 1

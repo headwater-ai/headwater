@@ -21,7 +21,7 @@ provenance:
 
 [Criterion 2](../taxonomies/README.md#what-an-entry-ships) asks an entry to ship one template for every concrete kind it adds. The [`diataxis` entry](../taxonomies/diataxis/doctrine.md#findings) adds no concrete kind, and it ships no `templates/` directory. [HW-OBL-0186](../obligations/0186-a-facet-only-entry-has-no-kind-and-the-entry-anatomy-asks-for-two-things-that-presume-one.md) records that the anatomy names no content for that case.
 
-[#520](https://github.com/headwater-ai/headwater/issues/520) asked the owner to rule on both gaps together. [Spec 2](../spec/02-taxonomy-model.md#the-immutable-core) states the invariant core in resolved-taxonomy language. After resolution, some kind serves the `rationale` purpose, and the check runs against the resolved taxonomy rather than against one overlay's own declarations. Criterion 5, as written, asks more of a single entry than the core it enforces asks of a resolved taxonomy.
+[#520](https://github.com/headwater-ai/headwater/issues/520) asked the owner to rule on both gaps together. [Spec 2](../spec/taxonomy-model.md#the-immutable-core) states the invariant core in resolved-taxonomy language. After resolution, some kind serves the `rationale` purpose, and the check runs against the resolved taxonomy rather than against one overlay's own declarations. Criterion 5, as written, asks more of a single entry than the core it enforces asks of a resolved taxonomy.
 
 ## Decision
 

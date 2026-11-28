@@ -38,7 +38,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the command surface of [spec 6](../spec/06-engine-architecture.md#subsystems). Four crates under `engine/crates/` build it: `cli`, `api`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
+This spec describes the inside of the command surface of [spec 6](../spec/engine-architecture.md#subsystems). Four crates under `engine/crates/` build it: `cli`, `api`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
 
 The subsystem has four parts:
 
@@ -49,7 +49,7 @@ The subsystem has four parts:
 
 Other documents state what a caller gets, and this spec does not repeat them:
 
-- The `### CLI` section of [spec 6](../spec/06-engine-architecture.md#cli) states the grammar of each verb. The [interface contract](../interfaces/README.md) of each verb states its exit status and the stream that it writes. The [verb index](../interfaces/headwater-generate.md#a-verb-index) section of the `headwater generate` contract states the artifact that `headwater generate` writes from the verb list.
+- The `### CLI` section of [spec 6](../spec/engine-architecture.md#cli) states the grammar of each verb. The [interface contract](../interfaces/README.md) of each verb states its exit status and the stream that it writes. The [verb index](../interfaces/headwater-generate.md#a-verb-index) section of the `headwater generate` contract states the artifact that `headwater generate` writes from the verb list.
 - The interface contract of each verb under `docs/interfaces/` states the behavior of that verb. The contracts of [`headwater help`](../interfaces/headwater-help.md), [`headwater completions`](../interfaces/headwater-completions.md), [`headwater json`](../interfaces/headwater-json.md) and [`headwater merge-driver`](../interfaces/headwater-merge-driver.md) describe four verbs whose body is a function in `main.rs`. The `json` body calls `headwater_yaml::json`, and the `merge-driver` body reads `headwater_census::derived::LOCK`.
 - [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) rules that the command line is derived and that a flag belongs to the verb that reads it. [HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md) rules on the first help screen. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules that a refusal under `--json` is one English sentence. [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on the palette and the masthead.
 

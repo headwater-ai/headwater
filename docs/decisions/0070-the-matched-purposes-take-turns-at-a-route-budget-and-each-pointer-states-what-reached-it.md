@@ -24,9 +24,9 @@ provenance:
 
 [Issue #915](https://github.com/headwater-ai/headwater/issues/915) asks for two rulings on `headwater route`. This record rules on the first. [HW-DR-0071](0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) rules on the second.
 
-[Spec 5](../spec/05-ai-integration.md#intent-time-routing) said that lexical ranking orders results within the matched purpose. `engine/crates/query/src/route.rs` implemented that sentence as one total order, with the purpose score first. So the purpose with the highest score took every slot of the budget while it had candidates.
+[Spec 5](../spec/ai-integration.md#intent-time-routing) said that lexical ranking orders results within the matched purpose. `engine/crates/query/src/route.rs` implemented that sentence as one total order, with the purpose score first. So the purpose with the highest score took every slot of the budget while it had candidates.
 
-[The evaluation of the pointer probe](../evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) records the cost. The task "Decide which shelf a new document belongs on, and where its identifier comes from." scores `obligation` 7 and `behavior` 3. On the tree of #914, the first 12 of 220 pointers were all obligation records, and the default five held one kind. A comment on the issue adds a second task, from the cold-agent probe. That task scores six purposes, with `behavior` fifth, and `docs/spec/12-check-layer.md` ranked 127th of 343. It was still the first design spec in that route.
+[The evaluation of the pointer probe](../evaluations/the-pointer-probe-grades-a-session-against-the-router-s-own-first-pick-so-a-correct-session-that-declines-a-wrong-pointer-fails.md) records the cost. The task "Decide which shelf a new document belongs on, and where its identifier comes from." scores `obligation` 7 and `behavior` 3. On the tree of #914, the first 12 of 220 pointers were all obligation records, and the default five held one kind. A comment on the issue adds a second task, from the cold-agent probe. That task scores six purposes, with `behavior` fifth, and `docs/spec/check-layer.md` ranked 127th of 343. It was still the first design spec in that route.
 
 The pointer also carried no evidence. Its JSON members were `id`, `kind`, `name`, `path`, `purpose`, `summary` and `unwarranted`. No member said which task terms reached the document or where it stood in the order. An agent that read five obligation records had no way to see that they shared only the words "new", "document" and "identifier" with its task.
 
@@ -38,7 +38,7 @@ The pointer also carried no evidence. Its JSON members were `id`, `kind`, `name`
 
 **How many slots one kind may take follows from the turns, and no separate cap exists.** A kind takes a second slot only after each matched purpose with a candidate has offered one. Each other kind of its own purpose must also have offered one. A task that matches one purpose of one kind keeps the order by score.
 
-A cap for each kind was measured and rejected. The second task matches `requirement`, `rationale`, `evidence`, `procedure`, `behavior` and `obligation`, and three kinds serve `rationale` alone. With one slot for each kind, the default five fill with the kinds of the first two purposes and never reach `design_spec`. With turns for each purpose, `docs/spec/12-check-layer.md` is the fifth pointer.
+A cap for each kind was measured and rejected. The second task matches `requirement`, `rationale`, `evidence`, `procedure`, `behavior` and `obligation`, and three kinds serve `rationale` alone. With one slot for each kind, the default five fill with the kinds of the first two purposes and never reach `design_spec`. With turns for each purpose, `docs/spec/check-layer.md` is the fifth pointer.
 
 **Each pointer carries its evidence.** In `--json`, each pointer gains an `evidence` object with a `by` token:
 
@@ -53,7 +53,7 @@ The text report prints the same evidence on one dim line under each pointer. Tha
 
 Spec 5's intent-time routing section states the amended rule. The sentence about lexical ranking now says that the matched purposes take turns at the budget.
 
-On this tree the first task offers `HW-OBL-0107`, `docs/spec/12-check-layer.md`, `docs/evaluations/graph-export-and-federation.md`, `docs/how-to/relocate-a-shelf.md` and `HW-DR-0062`. That is five kinds under five purposes. Spec 12 does not answer that task. The documents that answer it are still out of reach, and HW-DR-0071 records why this record does not reach them.
+On this tree the first task offers `HW-OBL-0107`, `docs/spec/check-layer.md`, `docs/evaluations/graph-export-and-federation.md`, `docs/how-to/relocate-a-shelf.md` and `HW-DR-0062`. That is five kinds under five purposes. Spec 12 does not answer that task. The documents that answer it are still out of reach, and HW-DR-0071 records why this record does not reach them.
 
 **Diversity is not precision, and this record does not claim it is.** The change removes the case where one purpose hides every other purpose. It does not make a weak pointer strong. The evidence line is there so that an agent can see a weak pointer, for example one reached only by "where", "comes" and "from".
 

@@ -2,7 +2,7 @@
 //! The runner: seventeen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
+//! [Spec 12](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
 //! splits a run in two. Phase A classifies and builds, and it is
 //! [`headwater_census`] and [`headwater_graph`]. Phase B runs the checks over
 //! the graph that Phase A produced, and it is this crate. The order is the
@@ -14,7 +14,7 @@
 //! kind, a relation, an identifier scheme or a number of days: each reads a
 //! declaration out of the resolved taxonomy and instantiates itself over
 //! whatever that declaration produced.
-//! That is what [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! That is what [spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! means by "a new facet or relation in the taxonomy produces its checks with
 //! no code", and it is why the rule list is short while the instance count is
 //! not. [`coverage`] is the runner's own accounting. [`fragment`] and
@@ -75,7 +75,7 @@
 //!
 //! # Scope is a type, and [`scope`] is where that holds
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-declaration-is-a-type-not-a-returned-value)
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
@@ -251,7 +251,7 @@ use headwater_graph::{Declarations, Graph};
 /// taxonomy decides.
 ///
 /// The order is the five origins of
-/// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
+/// [spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
 pub const RULES: [&str; 60] = [
     facet_required::RULE,
@@ -422,7 +422,7 @@ pub struct Run {
     pub instances: Vec<Instance>,
     pub coverage: Coverage,
     /// Every finding a reader sees, in the one order
-    /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// fixes. A finding an author suppressed is not here, and it is in
     /// [`Run::suppressions`] instead.
     pub findings: Vec<Finding>,
@@ -871,7 +871,7 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
 
 /// The check registry, split in two for one emitter target.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// [Spec 12](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// asks for both halves and for neither to be authored. Both come from
 /// `declared`, so no rule can fall into both or into neither, and a rule
 /// added to the registry lands in one of them without anybody remembering to
@@ -1607,7 +1607,7 @@ pub struct Scoped {
     pub unstated: Vec<(String, String)>,
     /// Warrants that moved from `asserted` to `accepted` in this change.
     ///
-    /// The count [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
+    /// The count [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
     /// asks for, and the one reading that a standing population cannot give: a
     /// bulk stamp lowers the `asserted` count exactly as the same number of
     /// real acceptances would, and it raises this one all at once.

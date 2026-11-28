@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q17](../spec/09-decisions.md#q17--governed-access-and-the-solution-layer) rules that a withheld anchor is counted rather than hidden.
+[Q17](../spec/decisions.md#q17--governed-access-and-the-solution-layer) rules that a withheld anchor is counted rather than hidden.
 
 ## Obligation
 

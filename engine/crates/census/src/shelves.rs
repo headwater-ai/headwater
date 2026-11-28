@@ -2,7 +2,7 @@
 //! The two declarations kind resolution reads, and nothing else.
 //!
 //! Kind resolution needs shelves, and it needs to know which kinds are abstract,
-//! because [spec 2](../../../../docs/spec/02-taxonomy-model.md#abstract-kinds)
+//! because [spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds)
 //! says that no document resolves to one. This module reads exactly those two
 //! declarations out of a resolved taxonomy and refuses what it cannot use.
 //!
@@ -51,7 +51,7 @@ pub struct Shelf {
     /// claim store covers from this member, and `headwater_scaffold` reads the
     /// same member to write a file name. Two readings of one declaration would
     /// be the drift
-    /// [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+    /// [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
     /// rules against, so this is the reader and there is no other.
     pub layout: Option<String>,
     pub body: ShelfBody,
@@ -62,7 +62,7 @@ pub struct Shelf {
 
 /// Steps 2 and 3 of resolution, as a closed set.
 ///
-/// [Q1](../../../../docs/spec/09-decisions.md#q1--implementation-language) gives
+/// [Q1](../../../../docs/spec/decisions.md#q1--implementation-language) gives
 /// the reason for the shape: the classification outcome in the census is a
 /// closed set, so a change to it becomes a compiler-generated list of the sites
 /// to fix rather than a search.
@@ -80,7 +80,7 @@ pub enum ShelfBody {
 #[derive(Clone, Debug)]
 pub struct Kind {
     pub name: String,
-    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#abstract-kinds): an
+    /// [Spec 2](../../../../docs/spec/taxonomy-model.md#abstract-kinds): an
     /// abstract kind is a kind that no document ever is.
     pub is_abstract: bool,
 }

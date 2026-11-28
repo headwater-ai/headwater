@@ -27,7 +27,7 @@ provenance:
 
 ## Context
 
-[#601](https://github.com/headwater-ai/headwater/issues/601) asks what holds a recorded terminal demonstration true against a real run. [HW-DR-0061](0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) answered that question by confining a recording to the tutorial's scratch corpus. Nothing in this repository refreshes a number frozen inside a binary asset. That record left one question with the product owner: whether principle 11 of [spec 0](../spec/00-vision-and-scope.md#design-principles) may relax for a marketing asset. HW-DR-0061 named the question and left the rule in force.
+[#601](https://github.com/headwater-ai/headwater/issues/601) asks what holds a recorded terminal demonstration true against a real run. [HW-DR-0061](0061-q61-how-a-recorded-terminal-demonstration-is-held-against-a-run.md) answered that question by confining a recording to the tutorial's scratch corpus. Nothing in this repository refreshes a number frozen inside a binary asset. That record left one question with the product owner: whether principle 11 of [spec 0](../spec/vision-and-scope.md#design-principles) may relax for a marketing asset. HW-DR-0061 named the question and left the rule in force.
 
 A later build-order run put the question to the owner directly, as `RULING #601`. May a recording show output counts a live run does not reproduce? The condition offered was a visible marker of the recording's own age. The owner answered on the issue's own timeline: "Relax the rule with a `recorded-on-<date>` marker." A recording may show output counts a live run does not reproduce, if it carries a visible `recorded-on-<date>` marker ([comment](https://github.com/headwater-ai/headwater/issues/601#issuecomment-5752910106)).
 

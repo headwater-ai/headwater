@@ -30,4 +30,4 @@ The register states this about itself twelve times, in the form "one evaluation 
 
 ## Discharge
 
-So the conversion declared 23 `traces_to` edges and no edge between two decisions. To mint one from the register prose is to reason about what the prose asserts, which [spec 1](../spec/01-conceptual-model.md) forswears. Either the decision-relation vocabulary gains a co-settlement relation, or the join through the evidence is the answer and spec 2 says so.
+So the conversion declared 23 `traces_to` edges and no edge between two decisions. To mint one from the register prose is to reason about what the prose asserts, which [spec 1](../spec/conceptual-model.md) forswears. Either the decision-relation vocabulary gains a co-settlement relation, or the join through the evidence is the answer and spec 2 says so.

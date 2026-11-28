@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The content-addressed cache, and the key that makes it sound.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [Spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! states the key in one sentence: "the content hashes of the in-scope inputs,
 //! the taxonomy lock hash, the check version, and the injected values. A key
 //! that omits an input is a correctness bug, not a performance bug." It names
 //! the cache a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [correctness root](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! as well: "a cache that can change a verdict is a store under another name."
 //!
 //! So the standing test is a differential rather than a benchmark.
@@ -46,7 +46,7 @@
 //! constant on the scope trait.
 //!
 //! **The injected values are the fourth component.**
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! carried the trap that a component with no instance leaves for whoever adds
 //! the first one. The clock is that first one. A windowed participation
 //! expectation reads `ctx.now`, and a key without it serves yesterday's verdict
@@ -1089,13 +1089,13 @@ mod tests {
             rule: "test.rule",
             severity: Severity::Warn,
             obligation: None,
-            path: "docs/spec/12-check-layer.md".to_string(),
+            path: "docs/spec/check-layer.md".to_string(),
             line: 12,
             column: 3,
             message: "a message with a\ttab and a\nnewline and a \\ in it".to_string(),
             remediation: "do the thing".to_string(),
             patch: Some(Patch::Text {
-                path: "docs/spec/12-check-layer.md".to_string(),
+                path: "docs/spec/check-layer.md".to_string(),
                 start: 41,
                 end: 50,
                 expect: "behaviour".to_string(),

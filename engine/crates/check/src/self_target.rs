@@ -11,7 +11,7 @@
 //!
 //! # Which relations may point at their own document: association alone
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 //! rules it: "Self-reference stays invalid in every family except
 //! association." So the rule is generated from every declared relation whose
 //! family is not `association`, as [`crate::target`] is generated from every

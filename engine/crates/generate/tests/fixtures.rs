@@ -458,7 +458,7 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
 /// about a document that resolves one.
 ///
 /// Nothing reported the drop. `docs/spec/README.md` went from 16 rows to 15 the
-/// day a projection took `docs/spec/09-open-questions.md`, and the only
+/// day a projection took `docs/spec/open-questions.md`, and the only
 /// evidence was the byte diff of a generated file. This test is the evidence
 /// there was none of.
 ///
@@ -751,7 +751,7 @@ fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_account
             "docs/process/explanations/README.md",
             "docs/process/how-to/README.md",
             "docs/subsystems/README.md",
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-0.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-1.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-2.md",
@@ -942,7 +942,7 @@ fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_account
 
 /// The redirect map, which is the artifact the `identity` block exists for.
 ///
-/// `docs/spec/09-open-questions.md` is a tombstone. All twenty-one questions
+/// `docs/spec/open-questions.md` is a tombstone. All twenty-one questions
 /// closed, each one is a document on the decisions shelf, and 136 citations in
 /// this corpus name an anchor in this file. So three properties have to hold at
 /// once, and each one fails differently.
@@ -990,11 +990,11 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
     let map = plan
         .outputs
         .iter()
-        .find(|output| output.path == "docs/spec/09-open-questions.md")
+        .find(|output| output.path == "docs/spec/open-questions.md")
         .map(|output| output.bytes.clone())
         .expect("the redirect map is planned");
     assert_eq!(
-        std::fs::read_to_string(root.join("docs/spec/09-open-questions.md"))
+        std::fs::read_to_string(root.join("docs/spec/open-questions.md"))
             .expect("the redirect map is committed"),
         map,
         "the committed redirect map is not what this corpus and this lock produce"
@@ -1002,7 +1002,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
 
     // 2 and 3: the block, read as the census reads it.
     assert!(
-        headwater_mark::carries_marker("docs/spec/09-open-questions.md", &map),
+        headwater_mark::carries_marker("docs/spec/open-questions.md", &map),
         "the redirect map carries no marker this engine can find"
     );
     assert!(
@@ -1029,7 +1029,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         .collect();
     let mut cited = Vec::new();
     for path in ["docs", ".headwater", "README.md"] {
-        collect_citations(&root.join(path), "09-open-questions.md", &mut cited);
+        collect_citations(&root.join(path), "open-questions.md", &mut cited);
     }
     assert!(
         cited.len() > 100,
@@ -1159,7 +1159,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
 /// The native export carries the graph with no loss, and the round trip is what
 /// proves it.
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
 /// "The native export keeps its round-trip test, because an empty loss set is
 /// exactly what a round trip proves." So this reads the emitted bytes back with
 /// the loader that reads every other file in this engine, and holds what it
@@ -1618,7 +1618,7 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 ///
 /// The first two assertions below are substrings, so they hold that the refusal
 /// happens and names its emitter, and hold nothing about the wording.
-/// `docs/spec/02-taxonomy-model.md` quotes that wording verbatim, and
+/// `docs/spec/taxonomy-model.md` quotes that wording verbatim, and
 /// `tests/spec_two_emitters.rs` is what compares the two byte for byte. Reword
 /// the message and this case stays green; that one reddens.
 ///
@@ -1653,7 +1653,7 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
                         reason.contains(&format!("`{}`", shipped.name())),
                         "the refusal for {} says which emitters ship and does not name {}, which \
                          this engine builds. The sentence is quoted in \
-                         docs/spec/02-taxonomy-model.md, so a list that goes stale takes that \
+                         docs/spec/taxonomy-model.md, so a list that goes stale takes that \
                          document with it:\n{reason}",
                         emitter.name(),
                         shipped.name()

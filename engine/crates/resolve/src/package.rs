@@ -2,10 +2,10 @@
 //! Where the sources come from: the consumer declaration, the package manifest,
 //! and the bundle selection.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#consuming)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#consuming)
 //! gives the consumer declaration its shape — what this repository takes, which
 //! bundles it selects, and where its overlay is — and
-//! [Publishing](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+//! [Publishing](../../../../docs/spec/distribution-and-federation.md#publishing)
 //! gives the manifest its shape. This module reads both and hands the resolver
 //! an ordered list of sources.
 //!
@@ -18,7 +18,7 @@
 //! meta-schema refused it on the first line
 //! ([#49](https://github.com/headwater-ai/headwater/issues/49)). The split is
 //! made here: `package.yml` names the package, `taxonomy.yml` is the taxonomy
-//! source, and [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! source, and [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries the ruling.
 //!
 //! # Finding a package by name, and where it came from
@@ -79,7 +79,7 @@ pub const MANIFEST: &str = "package.yml";
 
 /// The manifest key that states which engines the package is for.
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// puts it in the manifest and until this module nothing read it, so the base
 /// package left it out rather than commit a claim no test could fail.
 /// [`sources`] reads it now, and a package outside the range is refused before
@@ -462,7 +462,7 @@ pub fn content_roots(manifest: &Mapping) -> Vec<String> {
 /// A package declares what it is twice — its name and its version — and this is
 /// the only thing that holds either pair together.
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// gives the manifest a `package` key and a `version` key, and the meta-schema
 /// requires a `taxonomy` and a `version` at the root of a taxonomy source. The
 /// split above says why the two files are two files, and it left both of those
@@ -665,7 +665,7 @@ fn selected(
 /// This is not any consumer's taxonomy and it is not meant to be. It is the most
 /// the artifact can hold, and it is what a payload target is held against: a
 /// value some selection can hold is a value this artifact can hold.
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// [Spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// is what makes it a taxonomy at all — a bundle is add-only, so any subset of
 /// them that is closed under `requires` resolves, and the maximal subset is
 /// closed under every declared dependency. That last clause is the reason this
@@ -894,7 +894,7 @@ pub fn maximal(root: &Path, directory: &Path) -> Result<crate::Resolution, Vec<R
 ///
 /// A migration rewrites the addresses of the file this repository owns. A
 /// bundle is package content, and
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#waivers)
+/// [spec 7](../../../../docs/spec/distribution-and-federation.md#waivers)
 /// gives the reason a local edit to package content does not survive:
 /// `headwater taxonomy vendor` replaces a vendored package directory whole. An
 /// address rewritten inside a bundle is lost at the next upgrade, and the
@@ -2675,7 +2675,7 @@ pub(crate) fn required_kind(key: &str) -> Option<Kind> {
 
 /// Every path the manifest's `contents` declares, held to the tree.
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#publishing):
 /// *"Every `contents` path a publisher writes is read. `taxonomy`, `bundles`,
 /// `assemblies`, `conformance` and `migrations` each reach a verb. A key that
 /// no verb reads is a claim that a publisher makes and a consumer never sees."* This is that
@@ -3639,7 +3639,7 @@ fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
 /// of that set. The base alone is the least any consumer resolves, because a
 /// consumer may select no bundle. [`shipped`] is the most: the base with every
 /// bundle, which
-/// [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// [spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// makes a taxonomy that resolves because a bundle is add-only and any subset of
 /// them commutes. `crate::migration::Scope` carries the two and
 /// `crate::migration::holds` argues which half reads which. The adopter overlay
@@ -4544,7 +4544,7 @@ fn holds_the_same_package(
 /// bytes under its name, with the verb exiting 0.
 ///
 /// **This is not a new rule, and no digest moves.**
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// already says "every consumer-facing reader takes the name from the manifest:
 /// the lookup under `.headwater/packages/`, the release record, the vendor target directory
 /// and the corpus descriptor", and the vendor target was the one reader in that

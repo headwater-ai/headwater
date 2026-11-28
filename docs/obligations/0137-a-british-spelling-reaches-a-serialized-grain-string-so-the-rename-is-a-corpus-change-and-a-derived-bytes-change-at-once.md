@@ -30,7 +30,7 @@ The corpus owes one spelling of this concept.
 
 **Waiting makes the rename cost more.** Before an adopter reads the report, a rename costs a re-bless of the fixtures that pin the bytes, and a version raise. After an adopter reads it, a rename also costs that adopter a migration. So the next act is a ruling, and an adopter is not the trigger.
 
-The rest of the rename is mechanical. A rename of the Rust identifier is a compile-time change, and the compiler finds every site. The specification uses `neighbourhood` as its own term, in `docs/spec/12-check-layer.md` and in `docs/spec/glossary.md`. A rename of the code alone leaves the engine and its own specification with two words for one concept. `centre` occurs in engine source too, and it reaches no serialized value.
+The rest of the rename is mechanical. A rename of the Rust identifier is a compile-time change, and the compiler finds every site. The specification uses `neighbourhood` as its own term, in `docs/spec/check-layer.md` and in `docs/spec/glossary.md`. A rename of the code alone leaves the engine and its own specification with two words for one concept. `centre` occurs in engine source too, and it reaches no serialized value.
 
 ## Discharge
 

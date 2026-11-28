@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) reserves an identifier for five artifacts, and a document of this corpus was not one of them. This register cited a decision as Q13, and it cited an obligation by its position in a list. Neither was a document, so neither reached the identifier index and no edge named one.
+[Spec 3](../spec/authoring-and-lifecycle.md#identifiers) reserves an identifier for five artifacts, and a document of this corpus was not one of them. This register cited a decision as Q13, and it cited an obligation by its position in a list. Neither was a document, so neither reached the identifier index and no edge named one.
 
 A declared obligation was out of this first. It carries an identifier, the identifier is its key, and an address reaches it. The entries of this register were not declarations, so they gained nothing from that change.
 
@@ -32,7 +32,7 @@ A declared obligation was out of this first. It carries an identifier, the ident
 
 A taxonomy for this corpus has to say which decision an evaluation closed, and which obligation a piece of work discharges. Each of them has to be a document with an identifier before it can.
 
-**One naming defect belongs with it.** This specification calls two unrelated things an obligation. [Spec 4](../spec/04-assurance-model.md#obligations-are-data) declares `obligations` as a taxonomy block, which holds invariants that a corpus commits to. This register holds work that a corpus owes. The decision-record entry writes `obligation_record` and mints `OBL-` to keep the two apart in one corpus, and the [glossary](../spec/glossary.md) is where the general fix belongs.
+**One naming defect belongs with it.** This specification calls two unrelated things an obligation. [Spec 4](../spec/assurance-model.md#obligations-are-data) declares `obligations` as a taxonomy block, which holds invariants that a corpus commits to. This register holds work that a corpus owes. The decision-record entry writes `obligation_record` and mints `OBL-` to keep the two apart in one corpus, and the [glossary](../spec/glossary.md) is where the general fix belongs.
 
 ## Discharge
 
@@ -46,4 +46,4 @@ What stays open is the grain below a document. A criterion inside a contract sid
 
 **A third entry records it from a third tradition.** The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md#findings) records it at [line 169](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/brd-prd/doctrine.md#L169). Both traditions that it cites define traceability at the level of one requirement, and a requirement is a numbered line under a heading. `OB-BP-1` and `OB-BP-2` state what the tradition asks for, and no declaration reaches it. Three of the five admitted entries now record this one gap.
 
-**The register measures what that grain costs.** Twenty-one citations in this corpus name a heading of [13 — Open obligations](../spec/13-open-obligations.md), and nine of them name a heading that no document backs. So no partition of the obligations shelf writes those two sections, and [the register](../spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) stays authored for that reason.
+**The register measures what that grain costs.** Twenty-one citations in this corpus name a heading of [13 — Open obligations](../spec/open-obligations.md), and nine of them name a heading that no document backs. So no partition of the obligations shelf writes those two sections, and [the register](../spec/open-obligations.md#a-human-maintains-this-list-by-hand) stays authored for that reason.

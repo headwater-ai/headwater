@@ -24,7 +24,7 @@
 //! 2. **The identity is complete.** Every member of spec 5's run identity is
 //!    present. An incomplete identity is a measurement nobody can locate, and a
 //!    missing served version is the one that
-//!    [spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//!    [spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //!    names outright: "A model name is not a pin."
 //! 3. **Membership.** Every probe an event names is a classified probe of this
 //!    corpus. A probe that is not there is the plainest sign that the
@@ -131,7 +131,7 @@ pub struct Identity {
 }
 
 /// The five things `headwater probe record` confirms, in the order
-/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// [spec 15](../../../../docs/spec/the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
 /// numbers them.
 ///
 /// A closed array for the reason [`IDENTITY_KEYS`] is one: a report that names

@@ -363,7 +363,7 @@ fn prefix_of(pattern: &str, corpus_root: &str) -> String {
 /// against a different way of getting this wrong. **Directly in the shelf's
 /// own directory**, so a nested `README.md` under a deeper directory of the
 /// same shelf is not read as the shelf's index. **A file stem of `README` or
-/// `index`**, so a `shelf_sections` output such as `09-open-questions.md` is
+/// `index`**, so a `shelf_sections` output such as `open-questions.md` is
 /// not swept up and listed a second time under a group that already holds it
 /// as a node. **No document of the graph**, so a projection that declares an
 /// `identity` block and lands on `README.md` stays a node and is listed once,
@@ -502,7 +502,7 @@ fn render_entry(out: &mut String, entry: &Entry, pad: &str, corpus_root: &str) {
 /// One case per condition of [`index_of`], because the corpus this engine runs
 /// over exercises two of the four and no fixture tree reaches the rest.
 ///
-/// The repository's own `docs/spec/09-open-questions.md` is the live case for
+/// The repository's own `docs/spec/open-questions.md` is the live case for
 /// the stem, and `docs/interfaces/README.md` for the kind the rule does not
 /// read. Nothing committed anywhere reaches the nested-directory case or the
 /// case of an index that is also a document, so each of those conditions
@@ -543,11 +543,11 @@ mod index_tests {
         assert_eq!(index_of("docs/decisions/**", &plan, &[]), None);
     }
 
-    /// The stem condition. `docs/spec/09-open-questions.md` is the live case:
+    /// The stem condition. `docs/spec/open-questions.md` is the live case:
     /// a `shelf_sections` output on the shelf, which the group already lists.
     #[test]
     fn an_output_on_the_shelf_that_is_not_an_index_is_not_read_as_one() {
-        let plan = written(&["docs/spec/09-open-questions.md", "docs/spec/SECTIONS.md"]);
+        let plan = written(&["docs/spec/open-questions.md", "docs/spec/SECTIONS.md"]);
         assert_eq!(index_of("docs/spec/**", &plan, &[]), None);
     }
 

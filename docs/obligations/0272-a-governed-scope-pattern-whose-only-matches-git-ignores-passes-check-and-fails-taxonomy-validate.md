@@ -21,7 +21,7 @@ relations:
 [#2099](https://github.com/headwater-ai/headwater/issues/2099) added the rule `relation.scope.unmatched`. It reports each governed scope pattern that matches no entry of the tree, as an error. The rule and `headwater taxonomy validate` call one function, `Scope::coverage` in `engine/crates/graph/src/scope.rs`. The two verbs pass that function different sets of ignored paths.
 
 - `taxonomy validate` passes what git ignores. So an ignored build output or cache on one host is not an entry, which an owner ruled on 2026-09-25 for #951.
-- `headwater check` passes nothing. [Spec 12](../spec/12-check-layer.md) keeps every version control command off the check loop, so the check cannot ask git.
+- `headwater check` passes nothing. [Spec 12](../spec/check-layer.md) keeps every version control command off the check loop, so the check cannot ask git.
 
 ## Obligation
 

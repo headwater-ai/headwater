@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 8](../spec/08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/09-decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
+[Spec 8](../spec/design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
 
 So the measurement that closed Q5 does not run here, and the instrument that produced it is recoverable rather than lost. `tools/ste-lint.py` stands intact at `a39e3fb^`, which is commit `9f0d1d8`. [The evaluation](../evaluations/what-a-check-can-know.md) records the method beside it. The seed is `20260811`, and the samples are 60 of 449 passive findings, 25 of 54 auxiliary, and all 12 progressive. So a reader can repeat that measurement.
 
@@ -66,7 +66,7 @@ Each finding carries one label. `genuine` is a finding to repair. `accepted_devi
 | `docs/interfaces/headwater-probe.md:33` | `no longer` | `false_positive` | a definition |
 | `docs/obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md:29` | `no longer` | `false_positive` | a definition, in the `## Context` section |
 | `docs/obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md:28` | `there was no` | `accepted_deviation` | history in the `## Context` section |
-| `docs/spec/07-distribution-and-federation.md:159` | `no longer` | `false_positive` | a conditional inside a hypothetical |
+| `docs/spec/distribution-and-federation.md:159` | `no longer` | `false_positive` | a conditional inside a hypothetical |
 | `docs/spec/glossary.md:592` | `no longer` | `false_positive` | the definition of a retired term |
 | `docs/spec/glossary.md:811` | `used to` | `false_positive` | a heading |
 | `docs/taxonomies/README.md:225` | `used to` | genuine | tells what a fixture README said before |

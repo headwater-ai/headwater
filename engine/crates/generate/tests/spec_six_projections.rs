@@ -3,7 +3,7 @@
 //!
 //! # Why this file exists
 //!
-//! `docs/spec/06-engine-architecture.md` stated eight projection kinds as
+//! `docs/spec/engine-architecture.md` stated eight projection kinds as
 //! implemented, four of which this engine does not emit
 //! ([#576](https://github.com/headwater-ai/headwater/issues/576)). The check a
 //! reader could run by hand — `headwater generate --check` beside a `grep` of
@@ -68,7 +68,7 @@ const RUNS: &str = "runs";
 const WAITS: &str = "waits";
 
 fn spec_six() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/06-engine-architecture.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/engine-architecture.md")
 }
 
 /// The `runs` and `waits` groups of spec 6's projection-kinds block.
@@ -150,14 +150,14 @@ fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_dec
         .collect();
     assert!(
         unknown.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {unknown:?}, which is \
+        "docs/spec/engine-architecture.md's projection-kinds block names {unknown:?}, which is \
          no projection kind this engine carries"
     );
 
     assert_eq!(
         named.len(),
         Kind::ALL.len(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {} kinds and this \
+        "docs/spec/engine-architecture.md's projection-kinds block names {} kinds and this \
          engine carries {}. The block is {:?} under `{RUNS}` and {:?} under `{WAITS}`",
         named.len(),
         Kind::ALL.len(),
@@ -168,7 +168,7 @@ fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_dec
     let overlap: Vec<&String> = runs.intersection(&waits).collect();
     assert!(
         overlap.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {overlap:?} under both \
+        "docs/spec/engine-architecture.md's projection-kinds block names {overlap:?} under both \
          `{RUNS}` and `{WAITS}`"
     );
 }
@@ -212,7 +212,7 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
         .collect();
     assert!(
         stated_built_but_waiting.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block puts {:?} under `{RUNS}`, \
+        "docs/spec/engine-architecture.md's projection-kinds block puts {:?} under `{RUNS}`, \
          and `headwater_generate::unbuilt` gives each one a reason it writes nothing: {:#?}",
         stated_built_but_waiting
             .iter()
@@ -230,7 +230,7 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
     assert!(
         emitted_but_not_stated.is_empty(),
         "this engine emits {emitted_but_not_stated:?} and \
-         docs/spec/06-engine-architecture.md's projection-kinds block does not name them under \
+         docs/spec/engine-architecture.md's projection-kinds block does not name them under \
          `{RUNS}`. The block is {runs:?} under `{RUNS}` and {waits:?} under `{WAITS}`"
     );
 }
@@ -255,7 +255,7 @@ fn the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints() {
     );
     assert!(
         text.contains(reason),
-        "docs/spec/06-engine-architecture.md does not quote the reason \
+        "docs/spec/engine-architecture.md does not quote the reason \
          `headwater generate --check` prints for `coverage_report`:\n\n{reason}"
     );
 }

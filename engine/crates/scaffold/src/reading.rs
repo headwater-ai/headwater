@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The capture-cost store: one reading per run of `headwater new`.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)
 //! makes capture cost a tracked metric and says the fraction trends. A verb
 //! that prints one number trends nothing, and the run is the only moment the
 //! number is knowable: Q4 keeps `created_by` on the relation type, so no later
@@ -20,7 +20,7 @@
 //! - `date` is the injected clock, so a reading is reproducible under `--now`.
 //! - `surface` names what called the verb, and it is the term
 //!   [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
-//!   asks for. [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+//!   asks for. [Q7](../../../../docs/spec/decisions.md#q7--scope-of-the-mcp-surface)
 //!   claims that a working-tree write tool raises the assisted fraction, and
 //!   that claim is a comparison of two arms. Without this member a reading
 //!   taken at a terminal and a reading taken over the protocol are one
@@ -62,7 +62,7 @@
 //! author's fumbling, which is the field above under another name.
 //!
 //! **Nothing a hook or a skill did.**
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+//! [Spec 5](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
 //! says a hook binds nothing and that a session in which no hook spoke is no
 //! evidence. A "the hook fired" counter has a denominator that `disableAllHooks`
 //! empties with no record anywhere, so the number would fall when a harness

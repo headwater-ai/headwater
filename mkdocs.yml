@@ -31,7 +31,7 @@ site_name: Headwater
 #
 # The trailing slash matters. `use_directory_urls` is at its MkDocs default, so
 # every generated page is served at a directory URL, and the canonical of
-# `spec/12-check-layer/index.html` is `https://headwater.tools/spec/12-check-layer/`.
+# `spec/check-layer/index.html` is `https://headwater.tools/spec/check-layer/`.
 # The CI step "Every rendered page carries its own canonical URL" asserts that
 # each page's canonical equals the URL that page is served at, so a typo in this
 # value fails the build rather than being published to a search engine.
@@ -172,7 +172,7 @@ exclude_docs: |
 
 # THE HEADING ANCHOR, AND WHICH OF THE THREE RULES MOVED
 #
-# This corpus's prose writes in-repo fragment links: `09-decisions.md#q10--naming`.
+# This corpus's prose writes in-repo fragment links: `decisions.md#q10--naming`.
 # Two rules already agree on what that anchor is, and both are GitHub's:
 #
 #   the prose  — the corpus is read on GitHub today, and every citation

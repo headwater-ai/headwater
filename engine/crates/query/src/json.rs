@@ -18,7 +18,7 @@
 //! write one shape should not make a reader re-read it.
 //!
 //! **An absent value is an absent member.** [`Json`] carries no `null`
-//! ([Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)), so an
+//! ([Q2](../../../../docs/spec/decisions.md#q2--schema-format)), so an
 //! `Option::None` writes nothing at all rather than a member with an empty
 //! string in it. A member whose absence would be ambiguous is written on every
 //! run instead, and each one below says so where that is the case.

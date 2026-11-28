@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q4](../spec/09-decisions.md#q4--relation-storage) rules that front matter is authoritative and that a relation instance is an object. It carries a claim that no run supports: the promotion fix should raise author-attributable edges without a rise in hand entry.
+[Q4](../spec/decisions.md#q4--relation-storage) rules that front matter is authoritative and that a relation instance is an object. It carries a claim that no run supports: the promotion fix should raise author-attributable edges without a rise in hand entry.
 
 ## Obligation
 
@@ -30,9 +30,9 @@ The assisted fraction and the audit report are the instruments, and this corpus 
 
 ## Discharge
 
-The first typing of this corpus supplies the other end of that scale. An agent typed 36 documents and 203 edge halves with no scaffolder and no engine, so the assisted fraction of the run is zero. [What the first typing found](../spec/13-open-obligations.md#what-the-first-typing-of-this-corpus-found) records where the cost fell.
+The first typing of this corpus supplies the other end of that scale. An agent typed 36 documents and 203 edge halves with no scaffolder and no engine, so the assisted fraction of the run is zero. [What the first typing found](../spec/open-obligations.md#what-the-first-typing-of-this-corpus-found) records where the cost fell.
 
-**A scaffolder exists, and it reports the fraction of the run it just did.** `headwater new` counts what it supplied against the four terms [spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. This record carried a sentence that the treatment had never been applied to anything, and that sentence is false. What stays open is the claim itself, and the paragraphs below say why the verb does not settle it.
+**A scaffolder exists, and it reports the fraction of the run it just did.** `headwater new` counts what it supplied against the four terms [spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. This record carried a sentence that the treatment had never been applied to anything, and that sentence is false. What stays open is the claim itself, and the paragraphs below say why the verb does not settle it.
 
 **One run is not a trend, and the metric that Q4 tests is a trend.** The claim is that author-attributable edges rise without a rise in hand entry. That compares two populations over time, and a verb that prints one number stores nothing.
 
@@ -42,7 +42,7 @@ The first typing of this corpus supplies the other end of that scale. An agent t
 
 **A taxonomy-wide reading exists and it is not this one.** [HW-OBL-0109](0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) records 48 of 56 over the eight scaffoldable kinds, with no edge proposed in any of the eight. It is a reading of the denominator rather than of a trend, and it states what the denominator counts.
 
-**No reading of a committed corpus can supply the other half either.** [Q4](../spec/09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so the value states who a taxonomy expects to pay for an edge and never who wrote one. A scaffolded `supersedes` and a hand-typed `supersedes` are one string on disk. `taxonomy audit` counts edges by declared creator, which measures the intent of a declaration against a corpus. It cannot count what a scaffolder did. So the assisted fraction has to be taken at the moment the work happens, and every later reader of the corpus is blind to it.
+**No reading of a committed corpus can supply the other half either.** [Q4](../spec/decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so the value states who a taxonomy expects to pay for an edge and never who wrote one. A scaffolded `supersedes` and a hand-typed `supersedes` are one string on disk. `taxonomy audit` counts edges by declared creator, which measures the intent of a declaration against a corpus. It cannot count what a scaffolder did. So the assisted fraction has to be taken at the moment the work happens, and every later reader of the corpus is blind to it.
 
 **The audit half of the instrument runs now, and it found that the comparison has no control arm.** `headwater taxonomy audit` reports edge counts by declared creator, over relations rather than over edge instances, which is the grain Q4 fixes. Over this repository at `--now 2026-08-14` it reports 397 halves under 9 relations: 359 under `hook`, 38 under `scaffold`, and 0 under `agent`. It reports that no relation of this taxonomy declares `author`, `generator` or `import`. Q4's claim compares an assisted creator against an unassisted one. This taxonomy declares no `author` relation at all, so the missing arm is a property of the schema. That is a different absence from the one the paragraphs above record.
 

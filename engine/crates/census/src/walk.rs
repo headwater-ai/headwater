@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The walk over a corpus root.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) puts
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) puts
 //! this on the correctness-root list and states the failure precisely: "every
 //! coverage guarantee (OB-COV-1..3) assumes that the walk enumerates the corpus
 //! root correctly. A glob or symlink bug quietly shrinks the denominator, which
@@ -23,7 +23,7 @@
 //!   census reports the link rather than hiding it.
 //! - **A declared exclusion does not stop the walk.** An excluded file still
 //!   yields an entry, carrying the rule that excluded it.
-//!   [Spec 7](../../../../docs/spec/07-distribution-and-federation.md) states
+//!   [Spec 7](../../../../docs/spec/distribution-and-federation.md) states
 //!   the reason under a different mechanism: "no threshold ever converts an
 //!   accounting into a silence". A subtree that vanishes from the walk is that
 //!   conversion, whatever the reason for it was.

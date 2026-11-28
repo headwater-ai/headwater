@@ -5,7 +5,7 @@
 //!
 //! Nothing in this file tests a model. The middle part of a sweep is a model
 //! reading documents, no test can fix its output, and
-//! [spec 5](../../../../docs/spec/05-ai-integration.md) says as much about a
+//! [spec 5](../../../../docs/spec/ai-integration.md) says as much about a
 //! skill rather than pretending otherwise. `fixtures/return.yml` is written by
 //! hand and it stands for what a model returns.
 //!

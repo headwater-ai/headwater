@@ -7,7 +7,7 @@
 //! The subject vocabulary is stated twice: once as
 //! [`Subject::NAMES`](headwater_resolve::migration::Subject::NAMES), which is
 //! what a payload may write and what the refusal message prints, and once as a
-//! three-row table in `docs/spec/07-distribution-and-federation.md`, which is
+//! three-row table in `docs/spec/distribution-and-federation.md`, which is
 //! what a publisher reads before writing one. Until this file, nothing held the
 //! two together in either direction. [#543](https://github.com/headwater-ai/headwater/issues/543)
 //! reported the sharper form of the same gap: both lines of the paragraph that
@@ -54,7 +54,7 @@ const HEADER: &str = "| subject | what it moves | the dimension it is a remedy f
 
 fn spec_seven() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../docs/spec/07-distribution-and-federation.md")
+        .join("../../../docs/spec/distribution-and-federation.md")
 }
 
 /// The text of spec 7's *The migration payload* section, from its heading to
@@ -140,7 +140,7 @@ fn the_subject_table_of_spec_7_names_the_subjects_a_payload_may_write() {
     let unknown: Vec<&&str> = named.difference(&known).collect();
     assert!(
         unknown.is_empty(),
-        "docs/spec/07-distribution-and-federation.md's subject table names {unknown:?}, which no \
+        "docs/spec/distribution-and-federation.md's subject table names {unknown:?}, which no \
          `headwater_resolve::migration::Subject` arm carries. A payload naming one is refused, and \
          the refusal prints {:?}",
         Subject::NAMES
@@ -149,14 +149,14 @@ fn the_subject_table_of_spec_7_names_the_subjects_a_payload_may_write() {
     let unstated: Vec<&&str> = known.difference(&named).collect();
     assert!(
         unstated.is_empty(),
-        "a payload may write {unstated:?} and docs/spec/07-distribution-and-federation.md's \
+        "a payload may write {unstated:?} and docs/spec/distribution-and-federation.md's \
          subject table gives them no row. The table names {named:?}"
     );
 
     assert_eq!(
         rows.len(),
         Subject::NAMES.len(),
-        "docs/spec/07-distribution-and-federation.md's subject table holds {} rows and a payload \
+        "docs/spec/distribution-and-federation.md's subject table holds {} rows and a payload \
          may write {} subjects. The rows are {rows:?}",
         rows.len(),
         Subject::NAMES.len()
@@ -496,7 +496,7 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
         assert!(
             paragraph.contains(&ruling),
             "{}: the 4.0.0 paragraph does not carry the ruling that \
-             docs/spec/07-distribution-and-federation.md states, so the record says what the \
+             docs/spec/distribution-and-federation.md states, so the record says what the \
              absence means in its own words rather than in the words of the part that ruled it. \
              Spec 7 says:\n\n{ruling}\n\nThe paragraph says:\n\n{paragraph}",
             path.display()
@@ -506,7 +506,7 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
             assert!(
                 !lowered.contains(deferring),
                 "{}: the 4.0.0 paragraph calls the facet-required absence {deferring:?}. \
-                 docs/spec/07-distribution-and-federation.md rules it \"a ruling rather than an \
+                 docs/spec/distribution-and-federation.md rules it \"a ruling rather than an \
                  omission\", so this record tells a publisher to wait for a mechanism that will \
                  not come. The paragraph is:\n\n{paragraph}",
                 path.display()

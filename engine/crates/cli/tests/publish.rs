@@ -2547,12 +2547,12 @@ fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references
 
     let readme = bundles.join("README.md");
     let mut body = std::fs::read_to_string(&readme).expect("the copied README reads");
-    body.push_str("\n[a planted reference](../../spec/07-distribution-and-federation.md)\n");
+    body.push_str("\n[a planted reference](../../spec/distribution-and-federation.md)\n");
     std::fs::write(&readme, body).expect("the copied README writes");
     let manifest = source.join("package.yml");
     let mut declared = std::fs::read_to_string(&manifest).expect("the copied manifest reads");
     declared.push_str(&format!(
-        "\n{}:\n  bundles/README.md:\n    - spec/07-distribution-and-federation.md\n",
+        "\n{}:\n  bundles/README.md:\n    - spec/distribution-and-federation.md\n",
         headwater_resolve::package::RECORDED_REFERENCES
     ));
     std::fs::write(&manifest, declared).expect("the copied manifest writes");
@@ -2570,7 +2570,7 @@ fn the_shipped_starter_recipe_inherits_no_record_of_another_artifacts_references
         recorded_references(&plain.join("package.yml")),
         vec![(
             "bundles/README.md".to_string(),
-            "spec/07-distribution-and-federation.md".to_string()
+            "spec/distribution-and-federation.md".to_string()
         )],
         "the plant did not reach the plain artifact, so the control holds nothing"
     );

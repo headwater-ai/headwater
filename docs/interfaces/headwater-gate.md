@@ -78,6 +78,6 @@ The verb writes no file and does not change the corpus or cache.
 
 [`headwater check`](headwater-check.md) writes a read set with `--read-set`.
 
-[Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) defines the read set, its barriers and the limit of a carried verdict.
+[Spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) defines the read set, its barriers and the limit of a carried verdict.
 
 [`headwater conformance`](headwater-conformance.md) evaluates adoption of a package rather than carrying a prior check result.

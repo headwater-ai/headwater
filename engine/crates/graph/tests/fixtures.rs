@@ -493,7 +493,7 @@ fn a_query_string_leaves_the_path_and_a_leading_separator_reads_from_the_root() 
 
 /// A generated document that declares an identity is a node at both ends.
 ///
-/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) says
+/// [Spec 6](../../../../docs/spec/engine-architecture.md#projections) says
 /// no check reads a generated document, and the reason it gives is that an
 /// author cannot repair its content in the file. That reason is about checks.
 /// The identity of such a file comes from the declaration that writes it, and
@@ -576,7 +576,7 @@ fn every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind() {
 
 /// An imported edge and an authored one are two different things in the graph.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 /// names an importer a correctness root because "a wrong imported edge produces
 /// a *correct* check result over a *wrong* graph". Nothing downstream can act on
 /// that unless the graph holds the difference, so this asserts that it does.
@@ -669,7 +669,7 @@ fn scratch_corpus(name: &str, files: &[(&str, &str)]) -> (Scratch, Graph) {
 
 /// A former identifier names the document that carried it (#2025).
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
 /// says that given an identifier and nothing else, the engine resolves it to a
 /// path. A document that changed its identifier lists the old one, and an edge
 /// written to the old one binds to the document under its live identifier.

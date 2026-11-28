@@ -14,7 +14,7 @@
 //! **Its inputs carry no prose.** A transcript is an event log whose every key
 //! is a member of a closed set, and an expectation is one of five predicates
 //! that the taxonomy fixes. Nothing here reads a sentence, so nothing here
-//! needs a rubric, and [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+//! needs a rubric, and [spec 5](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
 //! sends a question that needs one to the sweep instead.
 //!
 //! **Every satisfied verdict carries a witness, and the type is what carries
@@ -1095,7 +1095,7 @@ fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
 /// Equality, or the argument ending at a path boundary. The recorder writes the
 /// argument as the session passed it, and a session driven from another working
 /// directory passes an absolute path for the same file. A boundary is required
-/// so that `…/05-ai-integration.md.bak` does not match the document it was
+/// so that `…/ai-integration.md.bak` does not match the document it was
 /// copied from.
 fn names(argument: &str, target: &Examined) -> bool {
     names_path(argument, &target.path)
@@ -1647,16 +1647,16 @@ mod tests {
 
     #[test]
     fn a_tool_call_names_a_document_by_equality_or_at_a_path_boundary() {
-        let want = target(Some("HW-SPEC-05"), "docs/spec/05-ai-integration.md");
-        assert!(names("docs/spec/05-ai-integration.md", &want));
-        assert!(names("/home/a/repo/docs/spec/05-ai-integration.md", &want));
+        let want = target(Some("HW-SPEC-05"), "docs/spec/ai-integration.md");
+        assert!(names("docs/spec/ai-integration.md", &want));
+        assert!(names("/home/a/repo/docs/spec/ai-integration.md", &want));
         assert!(names("C:\\repo\\docs\\spec\\05-ai-integration.md", &want));
         assert!(
-            !names("docs/spec/05-ai-integration.md.bak", &want),
+            !names("docs/spec/ai-integration.md.bak", &want),
             "a copy is not the document"
         );
         assert!(
-            !names("otherdocs/spec/05-ai-integration.md", &want),
+            !names("otherdocs/spec/ai-integration.md", &want),
             "the boundary is what stops a suffix from matching a different tree"
         );
     }

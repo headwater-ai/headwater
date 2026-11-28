@@ -2,7 +2,7 @@
 //! The audit as text.
 //!
 //! Every section states its population before it states a number, on the rule
-//! [`headwater capture`](../../../../docs/spec/03-authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to)
+//! [`headwater capture`](../../../../docs/spec/authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to)
 //! already keeps: a figure with no denominator beside it is a figure nobody
 //! should cite. The two places that rule bites hardest here are a creator that
 //! no relation declares and a rate over an empty population, and both are

@@ -1445,7 +1445,7 @@ step_diff_baseline() {
 # (`engine/crates/mark/src/lib.rs`, verify round 2 of #1384). A commented
 # format carries it on the first line. A Markdown file with front matter
 # carries it as the member `"headwater:generated":` inside the block, because
-# its first line is `---`: `docs/spec/09-open-questions.md` is one, and a
+# its first line is `---`: `docs/spec/open-questions.md` is one, and a
 # first-line rule recorded it as produced. JSON carries it as a top-level
 # member. Only those places are read, so a document that quotes the marker in
 # its prose is not taken for a generated file.

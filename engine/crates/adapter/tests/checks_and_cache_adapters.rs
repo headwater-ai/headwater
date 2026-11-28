@@ -60,7 +60,7 @@ fn checks_and_cache() -> String {
 }
 
 fn spec_six() -> String {
-    read("docs/spec/06-engine-architecture.md")
+    read("docs/spec/engine-architecture.md")
 }
 
 /// The adapter sections of checks-and-cache: every line from [`FIRST`] to
@@ -468,7 +468,7 @@ const MOVED_CLAIMS: [&str; 6] = [
 /// Where `text`, in lower case, first names spec 6: the words `spec 6`, or a
 /// link into its file, whatever the link text says.
 fn spec_six_mention(text: &str) -> Option<usize> {
-    ["spec 6", "06-engine-architecture.md"]
+    ["spec 6", "engine-architecture.md"]
         .iter()
         .filter_map(|m| text.find(m))
         .min()
@@ -478,7 +478,7 @@ fn spec_six_mention(text: &str) -> Option<usize> {
 /// points a reader at a part that no longer holds it.
 ///
 /// It reads every comment line that names spec 6, in words or by a link to
-/// `06-engine-architecture.md`, joined with the five lines after it, and
+/// `engine-architecture.md`, joined with the five lines after it, and
 /// fails when the text from that mention on opens a quote that the
 /// adapter sections hold, or states one of [`MOVED_CLAIMS`] within 240 bytes.
 /// A quote of text that spec 6 keeps is not this test's business, and neither

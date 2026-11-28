@@ -43,7 +43,7 @@
 //! # Where the finding reports, and why it offers no fix
 //!
 //! At the value, because that is the text to change. No fix is offered:
-//! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) makes one
+//! [spec 12](../../../../docs/spec/check-layer.md#fixability) makes one
 //! mechanical only where there is one correct outcome derivable without
 //! judgment, and the value of a blank `title` is a name somebody has to write.
 //! Deleting the key is the other legal repair wherever the kind does not

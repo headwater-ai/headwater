@@ -2,7 +2,7 @@
 //! A check at corpus grain: a prose link's fragment names a heading of the
 //! document it points at, whether that is the citing document or another one.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists prose-link resolution among the Document-origin examples, and
 //! [`headwater_graph::links`] left the far half deliberately undone: "whether
 //! `#q4--relation-storage` names a heading of the target is a Document check
@@ -113,7 +113,7 @@ const NO_ANCHORS: &str = "the view carries no document headings for this corpus"
 
 /// The check. It reads no declaration, and the module comment says why: the
 /// taxonomy language has no member that turns prose-link resolution on or off,
-/// because [spec 1](../../../../docs/spec/01-conceptual-model.md#prose-links-are-not-relations)
+/// because [spec 1](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 /// makes it a property of a corpus rather than of a kind.
 pub struct Fragments;
 
@@ -498,7 +498,7 @@ mod comment_links {
                 // holds that class out.
                 //
                 // A dotless relative destination such as
-                // `docs/spec/02-taxonomy-model.md#x` is neither. It resolves
+                // `docs/spec/taxonomy-model.md#x` is neither. It resolves
                 // against the source file's own directory exactly as
                 // `./docs/...` does, in a browser and here, so it is checked
                 // rather than skipped. Requiring the leading `.` skipped it
@@ -577,13 +577,13 @@ mod comment_links {
     #[test]
     fn a_broken_link_in_a_comment_is_named() {
         let depth = comment_markdown(
-            "//! see [spec 2](../../../docs/spec/02-taxonomy-model.md) for the rule\n",
+            "//! see [spec 2](../../../docs/spec/taxonomy-model.md) for the rule\n",
         );
         let scanned = headwater_doc::body::scan(&depth, &depth, 0);
         assert_eq!(scanned.links.len(), 1, "the link is found in the comment");
         assert_eq!(
             scanned.links[0].destination,
-            "../../../docs/spec/02-taxonomy-model.md"
+            "../../../docs/spec/taxonomy-model.md"
         );
 
         let quoted = comment_markdown("let s = \"[a](../../../docs/nope.md)\"; // and\n");
@@ -597,7 +597,7 @@ mod comment_links {
         // is the rule above, so this also pins the em-dash reading that made
         // twenty-seven of these look broken to a checker that kept the dash.
         assert_eq!(slug("Q4 — Relation storage"), "q4--relation-storage");
-        let real = anchors_of(&repository_root().join("docs/spec/09-decisions.md"));
+        let real = anchors_of(&repository_root().join("docs/spec/decisions.md"));
         assert!(real.contains(&"q4--relation-storage".to_string()));
         assert!(!real.contains(&"the-four-scopes".to_string()));
     }
@@ -665,14 +665,14 @@ mod comment_links {
     fn a_comment_fragment_that_differs_only_in_case_is_named() {
         let dir = scratch("comment-case");
         write(
-            &dir.join("docs/spec/02-taxonomy-model.md"),
+            &dir.join("docs/spec/taxonomy-model.md"),
             "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
         );
         write(
             &dir.join("engine/crates/check/src/sample.rs"),
             concat!(
-                "//! [exact](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
-                "//! [cased](../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here)\n",
+                "//! [exact](../../../../docs/spec/taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [cased](../../../../docs/spec/taxonomy-model.md#The-Heading-That-Is-Here)\n",
             ),
         );
 
@@ -680,7 +680,7 @@ mod comment_links {
         std::fs::remove_dir_all(&dir).ok();
 
         let expected = "engine/crates/check/src/sample.rs:2: no such heading: \
-                        ../../../../docs/spec/02-taxonomy-model.md#The-Heading-That-Is-Here";
+                        ../../../../docs/spec/taxonomy-model.md#The-Heading-That-Is-Here";
         assert_eq!(found, [expected]);
     }
 
@@ -696,30 +696,30 @@ mod comment_links {
     fn the_filter_chain_names_what_it_holds_and_passes_what_it_does_not() {
         let dir = scratch("filter-chain");
         write(
-            &dir.join("docs/spec/02-taxonomy-model.md"),
+            &dir.join("docs/spec/taxonomy-model.md"),
             "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
         );
         // Four levels below the tree root, as this crate's own sources are.
         write(
             &dir.join("engine/crates/check/src/sample.rs"),
             concat!(
-                "//! [here](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [here](../../../../docs/spec/taxonomy-model.md#the-heading-that-is-here)\n",
                 "//! [gone](../../../../docs/spec/99-not-a-document.md)\n",
-                "//! [retitled](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-not)\n",
+                "//! [retitled](../../../../docs/spec/taxonomy-model.md#the-heading-that-is-not)\n",
                 "//! [rustdoc](../../headwater_doc/struct.Body.html)\n",
-                "//! [remote](https://example.invalid/docs/spec/02-taxonomy-model.md)\n",
+                "//! [remote](https://example.invalid/docs/spec/taxonomy-model.md)\n",
             ),
         );
         // The dotless class, both directions, one level below the tree root.
         write(
-            &dir.join("engine/docs/spec/02-taxonomy-model.md"),
+            &dir.join("engine/docs/spec/taxonomy-model.md"),
             "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
         );
         write(
             &dir.join("engine/probe.rs"),
             concat!(
-                "//! [here](docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
-                "//! [retitled](docs/spec/02-taxonomy-model.md#the-heading-that-is-not)\n",
+                "//! [here](docs/spec/taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [retitled](docs/spec/taxonomy-model.md#the-heading-that-is-not)\n",
             ),
         );
 
@@ -733,9 +733,9 @@ mod comment_links {
                 "engine/crates/check/src/sample.rs:2: no such file: \
                  ../../../../docs/spec/99-not-a-document.md",
                 "engine/crates/check/src/sample.rs:3: no such heading: \
-                 ../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-not",
+                 ../../../../docs/spec/taxonomy-model.md#the-heading-that-is-not",
                 "engine/probe.rs:2: no such heading: \
-                 docs/spec/02-taxonomy-model.md#the-heading-that-is-not",
+                 docs/spec/taxonomy-model.md#the-heading-that-is-not",
             ]
         );
     }
@@ -1326,7 +1326,7 @@ mod arms {
     use headwater_doc::LinkForm;
     use headwater_yaml::{Position, Span};
 
-    const CITER: &str = "docs/spec/01-conceptual-model.md";
+    const CITER: &str = "docs/spec/conceptual-model.md";
     const TARGET: &str = "docs/spec/glossary.md";
 
     fn span() -> Span {

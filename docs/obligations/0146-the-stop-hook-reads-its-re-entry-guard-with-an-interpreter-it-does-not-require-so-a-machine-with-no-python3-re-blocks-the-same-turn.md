@@ -19,7 +19,7 @@ waiting_on: adopter
 
 ## Context
 
-`.claude/hooks/lib.sh` reads every field of the harness JSON payload by shelling out to `python3`, through the helper `hw_field`. Three hook positions call it: `intent.sh`, `write.sh`, and `review.sh`. `intent.sh` and `write.sh` guard that read with `|| exit 0`. Without `python3` the read fails there, and each hook exits silently rather than deciding. That silence matches [the hook contract](../spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind): a hook unable to decide lets the action proceed. `review.sh:29` reads `stop_hook_active`, the flag marking a re-entry after the hook already stopped the turn once, and it carries no such guard. On a machine with no `python3` that read resolves to an empty string instead of an exit. The hook then proceeds into the commit gate rather than out of it.
+`.claude/hooks/lib.sh` reads every field of the harness JSON payload by shelling out to `python3`, through the helper `hw_field`. Three hook positions call it: `intent.sh`, `write.sh`, and `review.sh`. `intent.sh` and `write.sh` guard that read with `|| exit 0`. Without `python3` the read fails there, and each hook exits silently rather than deciding. That silence matches [the hook contract](../spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind): a hook unable to decide lets the action proceed. `review.sh:29` reads `stop_hook_active`, the flag marking a re-entry after the hook already stopped the turn once, and it carries no such guard. On a machine with no `python3` that read resolves to an empty string instead of an exit. The hook then proceeds into the commit gate rather than out of it.
 
 ## Obligation
 

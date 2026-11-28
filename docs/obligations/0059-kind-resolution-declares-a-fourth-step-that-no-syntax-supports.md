@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The fourth step of [kind resolution](../spec/02-taxonomy-model.md#kind-resolution) applies "any path-pattern refinement that the shelf declares". Nothing gives that declaration a form. Spec 2 illustrates the step in prose, the base package declares no refinement, and the design-spec bundle declares none either.
+The fourth step of [kind resolution](../spec/taxonomy-model.md#kind-resolution) applies "any path-pattern refinement that the shelf declares". Nothing gives that declaration a form. Spec 2 illustrates the step in prose, the base package declares no refinement, and the design-spec bundle declares none either.
 
 ## Obligation
 

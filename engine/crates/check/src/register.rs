@@ -9,7 +9,7 @@
 //!
 //! # What a finding needs, and where the binding lives
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings): "Every
+//! [Spec 4](../../../../docs/spec/assurance-model.md#findings): "Every
 //! finding names the obligation that it serves." An obligation is data, and so
 //! is the binding. A control names a mechanism and the obligations that
 //! mechanism discharges, and the base package writes
@@ -39,7 +39,7 @@
 //!
 //! # The projection, and the one rule it enforces about itself
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition)
+//! [Spec 4](../../../../docs/spec/assurance-model.md#every-obligation-has-exactly-one-disposition)
 //! makes the register "generated, never authored": coverage by obligation, the
 //! disposition of each, control health and the escaped findings are a
 //! projection of the two declarations and of one run over them. [`Projection`]
@@ -107,7 +107,7 @@
 //!
 //! # Where this differs from spec 12, and it is worth stating
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-plugin-interface)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! writes `obligation() -> ObligationId` as a method that a check implements.
 //! That would be a second place where the binding lives, and spec 4 rules on
 //! the general form of that mistake: "Two sources of truth for one binding is
@@ -116,7 +116,7 @@
 //! not rebind it without an edit to code they do not own. So the check declares
 //! its id, the taxonomy binds the id to an obligation, and the runner stamps
 //! the finding.
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries the disagreement.
 
 use crate::finding::{Finding, Severity};

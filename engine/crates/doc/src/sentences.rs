@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Sentence segmentation, over the text this document's own author wrote.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! puts segmentation on the correctness-root list, and
-//! [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) says why
+//! [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) says why
 //! it is there rather than the pattern sets: over this repository's own
 //! specification, most errors of a lexical checker came from the decision about
 //! which text is a sentence, and 32 of 58 sentence-length errors on one landing
@@ -36,7 +36,7 @@
 //! end no sentence, and the parser marks that run [`Ownership::Code`] without
 //! any rule here knowing what a file name looks like.
 //!
-//! **A quoted block holds no sentence of this document.** [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+//! **A quoted block holds no sentence of this document.** [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 //! rules that a quotation is outside every voice rule by construction, and this
 //! is that construction: a block another author wrote produces no sentence, so
 //! no rule downstream declares an exemption for one.

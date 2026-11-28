@@ -5,7 +5,7 @@
 //!
 //! A founding is a property of the application order and not of the resolved
 //! taxonomy. Two overlays that write leaves nowhere near each other commute,
-//! and [spec 2](../../../../docs/spec/02-taxonomy-model.md) guarantees that
+//! and [spec 2](../../../../docs/spec/taxonomy-model.md) guarantees that
 //! every legal order of a set of overlays yields one taxonomy. One of those
 //! orders can put the overlay that reaches into a kind before the overlay that
 //! declares it, and only that order records a founding.

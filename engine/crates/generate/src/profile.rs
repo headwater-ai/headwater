@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The export profile: the declaration that says what leaves a corpus.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-profile-carries-a-filter)
 //! makes an export profile "an entry under `projections`" that names an
 //! audience, an emitter target, an output path, a filter over facet values and
 //! a tombstone grain. The meta-schema already declares every one of those
@@ -23,7 +23,7 @@
 //! declare two different filters. **They may not, and the engine refuses a
 //! disagreement.** A profile is an audience, a filter is what that audience may
 //! see, and two answers for one audience is the same defect confluence refuses
-//! in an overlay ([spec 7](../../../../docs/spec/07-distribution-and-federation.md)).
+//! in an overlay ([spec 7](../../../../docs/spec/distribution-and-federation.md)).
 //! One of the two would win, the winner would be whichever the reader reached
 //! last, and the artifact that lost would carry more than the profile permits.
 //!
@@ -47,7 +47,7 @@ pub const DEFAULT: &str = "default";
 headwater_check::enumerated! {
     /// An emitter target: the vocabulary an export speaks.
     ///
-    /// Seven, from [Q13](../../../../docs/spec/09-decisions.md#q13--linkml-and-shacl-as-substrate)'s
+    /// Seven, from [Q13](../../../../docs/spec/decisions.md#q13--linkml-and-shacl-as-substrate)'s
     /// staging order. Two are built. The other five parse, because a taxonomy that
     /// names one has declared something legal and the engine owes it a reason
     /// rather than "not a format". Q13 puts each of the five behind a named

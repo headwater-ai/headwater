@@ -38,9 +38,9 @@ The measurement over this repository, at `--now 2026-08-14`, is what makes the g
 | discriminator distribution | `spec_series` at 13 of 16 one kind | none |
 | state dwell | every document in one state, 0 to 13 days | none |
 
-The `status` row is the sharpest. [Spec 2](../spec/02-taxonomy-model.md#facet-acceptance-tests) puts the acceptance test on a facet as "does it separate documents that a reader treats differently". The state facet holds four declared values, every document of this corpus carries one of them, and it separates nothing at all today. That is a fact about a young corpus rather than a defect in the taxonomy, which is why the engine cannot decide it.
+The `status` row is the sharpest. [Spec 2](../spec/taxonomy-model.md#facet-acceptance-tests) puts the acceptance test on a facet as "does it separate documents that a reader treats differently". The state facet holds four declared values, every document of this corpus carries one of them, and it separates nothing at all today. That is a fact about a young corpus rather than a defect in the taxonomy, which is why the engine cannot decide it.
 
-`governs` at 0.6% of eligible documents is the case [spec 2](../spec/02-taxonomy-model.md#who-creates-each-edge) writes out in words. It reads: "a relation declared `created_by: author` but present on 4% of eligible documents visibly receives no maintenance". Spec 2 names 4% and names no rule, so 0.6% is a number a person reads.
+`governs` at 0.6% of eligible documents is the case [spec 2](../spec/taxonomy-model.md#who-creates-each-edge) writes out in words. It reads: "a relation declared `created_by: author` but present on 4% of eligible documents visibly receives no maintenance". Spec 2 names 4% and names no rule, so 0.6% is a number a person reads.
 
 ## Obligation
 
@@ -48,11 +48,11 @@ The corpus owes a statement of which audit readings carry a bar and where each b
 
 **A bar could live in the taxonomy, beside the reading it governs.** A facet would declare the concentration it accepts, and a relation would declare the capture it expects. That puts the judgment where the rest of the schema is, and it costs every adopter a decision on first contact.
 
-**A bar could live in the corpus, as an obligation with a control.** [Spec 4](../spec/04-assurance-model.md#obligations-are-data) already carries that shape. An audit reading is then evidence for a claim rather than a rule of its own.
+**A bar could live in the corpus, as an obligation with a control.** [Spec 4](../spec/assurance-model.md#obligations-are-data) already carries that shape. An audit reading is then evidence for a claim rather than a rule of its own.
 
-**A bar could stay absent, and the readings stay readings.** This is what ships, and it is defensible. [Spec 6](../spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) calls the verb "a periodic design review with a tool attached", and a design review reads numbers. What it costs is a corpus with no trend anybody is answerable for. A facet that stops separating documents then does so with nothing to report it.
+**A bar could stay absent, and the readings stay readings.** This is what ships, and it is defensible. [Spec 6](../spec/engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) calls the verb "a periodic design review with a tool attached", and a design review reads numbers. What it costs is a corpus with no trend anybody is answerable for. A facet that stops separating documents then does so with nothing to report it.
 
-The engine may not settle this on its own. A threshold that this engine invented would be a verdict derived from nothing a corpus declared. That is the failure mode [spec 12](../spec/12-check-layer.md) refuses for a check, and an advisory posture does not excuse it.
+The engine may not settle this on its own. A threshold that this engine invented would be a verdict derived from nothing a corpus declared. That is the failure mode [spec 12](../spec/check-layer.md) refuses for a check, and an advisory posture does not excuse it.
 
 ## Discharge
 

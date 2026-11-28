@@ -2,7 +2,7 @@
 //! The loaded tree.
 //!
 //! There is no `Null` variant, and no `Bool` or `Int` either. That is the whole
-//! shape of [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format):
+//! shape of [Q2](../../../../docs/spec/decisions.md#q2--schema-format):
 //! *scalar types come from the meta-schema and never from the YAML resolver*.
 //! A loader that decided here which scalars are null would be the YAML resolver
 //! under another name, and the meta-schema would inherit a typing it never

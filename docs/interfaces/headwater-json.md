@@ -69,6 +69,6 @@ None. The verb reads standard input and writes standard output, and it opens no 
 
 [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) rules why a verb answers a wire format and an interpreter does not.
 
-[Spec 5](../spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) carries the hook contract, whose third term this verb answers to.
+[Spec 5](../spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) carries the hook contract, whose third term this verb answers to.
 
 [`headwater route`](headwater-route.md) writes the document that the intent position reads back through this verb.

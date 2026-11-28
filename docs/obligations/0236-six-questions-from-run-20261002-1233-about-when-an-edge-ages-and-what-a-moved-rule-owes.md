@@ -29,7 +29,7 @@ Run `20261002-1233` moved rules out of spec 6, stamped edges by the rule of #152
 
 **What a moved rule owes.**
 
-- Slice 4b of #1572 moved rules from spec 6 into `docs/interfaces/headwater-taxonomy.md`, `docs/subsystems/projections-and-export.md` and `docs/spec/12-check-layer.md`. No relation records the move on either side, and no rule says that a move of prose owes a `traces_to` edge.
+- Slice 4b of #1572 moved rules from spec 6 into `docs/interfaces/headwater-taxonomy.md`, `docs/subsystems/projections-and-export.md` and `docs/spec/check-layer.md`. No relation records the move on either side, and no rule says that a move of prose owes a `traces_to` edge.
 - HW-DR-0106 states its rule for "a link". Slice 4c also retargeted two `traces_to` edges under it: HW-DR-0035 to HW-IFACE-headwater-taxonomy, and HW-OBL-0110 to HW-SPEC-distribution-and-federation. The question is whether one sentence extends HW-DR-0106 to a declared relation whose only credit moved.
 - HW-DR-0092 says that the comments that name an identifier "make no claim that the checker can hold". `engine/crates/cli/tests/spec_six_overview.rs` now holds a claim over the comments that credit spec 6. The question is whether HW-DR-0092 still describes that population of comments.
 

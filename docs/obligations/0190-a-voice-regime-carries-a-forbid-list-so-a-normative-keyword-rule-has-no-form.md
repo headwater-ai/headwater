@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md)'s worked example promises "normative keywords on standards" for the product-suite column, and "mandatory normative keyword usage" for the regulated one. A voice regime carries a `forbid` list and nothing else.
+[Spec 2](../spec/taxonomy-model.md)'s worked example promises "normative keywords on standards" for the product-suite column, and "mandatory normative keyword usage" for the regulated one. A voice regime carries a `forbid` list and nothing else.
 
 A rule that every normative sentence uses one of a fixed keyword set is the opposite shape. It is a requirement to use a word rather than a refusal to use one. The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) binds `declarative` on all three of its kinds and states the gap. Its fourth finding at [line 158](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L158) holds the argument. A standard whose requirements avoid every normative keyword passes every rule that this language can write.
 

@@ -7,7 +7,7 @@
 //! run measured on this repository's own corpus. Renaming `### Projection` to
 //! `### Projection of a graph` in `docs/spec/glossary.md` turned four *bare*
 //! `#projection` links red, all four inside `glossary.md` itself, and produced
-//! nothing at all for `docs/spec/06-engine-architecture.md:137`, which writes
+//! nothing at all for `docs/spec/engine-architecture.md:137`, which writes
 //! `[the glossary](glossary.md#projection)`. One broken heading: four findings
 //! from inside the file, silence from every document outside it.
 //!

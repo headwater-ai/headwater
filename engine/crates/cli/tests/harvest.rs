@@ -2,7 +2,7 @@
 //! A solution corpus resolves an anchor against the export it pinned, and
 //! against no other one.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
 //! says a tier above a corpus reaches it through one anchor kind, that exactly
 //! one resolver owns that kind, and that the resolver reads a pinned corpus
 //! export. It also says what happens when the export cannot be read: "a

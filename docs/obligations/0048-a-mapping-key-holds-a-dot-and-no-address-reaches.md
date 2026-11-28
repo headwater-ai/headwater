@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The worked example keys `facet_values` with a facet and one of its values, joined by a dot, as `status.current`. The [sublanguage](../spec/02-taxonomy-model.md#the--reference-sublanguage) rules that a declared key with a dot makes an address ambiguous, and that the meta-schema refuses to declare one. Both clauses belong to [spec 2](../spec/02-taxonomy-model.md#mapping-between-taxonomies).
+The worked example keys `facet_values` with a facet and one of its values, joined by a dot, as `status.current`. The [sublanguage](../spec/taxonomy-model.md#the--reference-sublanguage) rules that a declared key with a dot makes an address ambiguous, and that the meta-schema refuses to declare one. Both clauses belong to [spec 2](../spec/taxonomy-model.md#mapping-between-taxonomies).
 
 ## Obligation
 

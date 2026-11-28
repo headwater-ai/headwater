@@ -1,5 +1,5 @@
 #!/bin/sh
-# What holds the decision register: [docs/spec/09-decisions.md](../../docs/spec/09-decisions.md)
+# What holds the decision register: [docs/spec/decisions.md](../../docs/spec/decisions.md)
 # names no decision record that the shelf does not carry, and it no longer
 # claims to supersede the generated register that lists every record.
 #
@@ -10,11 +10,11 @@
 #
 # Measured on 2026-09-21 against `docs/decisions/*.md` (excluding
 # `README.md`) and the `[HW-DR-NNNN]` citations of
-# `docs/spec/09-decisions.md`: the shelf held 80 records and the hand-authored
+# `docs/spec/decisions.md`: the shelf held 80 records and the hand-authored
 # register named 37 of them. Its front matter still declared
 # `supersedes: HW-REG-open-questions`, an edge that claims a completeness the
 # file did not have, against the generated register at
-# `docs/spec/09-open-questions.md`, which `headwater generate` writes with one
+# `docs/spec/open-questions.md`, which `headwater generate` writes with one
 # heading for every one of the 80 and `generate --check` holds whole or not at
 # all. Two readers relied on the hand register's last heading to pick the next
 # decision number on 2026-09-11 and both minted `HW-DR-0044`, a number the
@@ -42,12 +42,12 @@
 # is never misread.
 #
 # THE NAMED RECORDS are every identifier cited in the bracket form
-# `[HW-DR-NNNN]` anywhere in `docs/spec/09-decisions.md`, deduplicated. That is
+# `[HW-DR-NNNN]` anywhere in `docs/spec/decisions.md`, deduplicated. That is
 # the form every citation in the file already takes, in running prose and not
 # only on a line of its own, because a hand-authored register argues each
 # decision in prose rather than bulleting it.
 #
-# THE SUPERSEDES CLAIM is whether `docs/spec/09-decisions.md`'s front matter
+# THE SUPERSEDES CLAIM is whether `docs/spec/decisions.md`'s front matter
 # declares `HW-REG-open-questions` under `supersedes`.
 #
 # # THE POPULATION GUARD, WHICH IS NOT A COUNT
@@ -78,7 +78,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 decisions="$root/docs/decisions"
-register="$root/docs/spec/09-decisions.md"
+register="$root/docs/spec/decisions.md"
 
 for required in "$decisions" "$register"; do
     if [ ! -e "$required" ]; then

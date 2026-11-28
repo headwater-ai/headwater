@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q15](../spec/09-decisions.md#q15--a-synthesized-content-tier) rules that a synthesized content tier exists. Whether anything is ever promoted out of it is open.
+[Q15](../spec/decisions.md#q15--a-synthesized-content-tier) rules that a synthesized content tier exists. Whether anything is ever promoted out of it is open.
 
 ## Obligation
 

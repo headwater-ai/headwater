@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The identifier claim store, and the two rules that hold it to the corpus.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers):
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#identifiers):
 //! "Allocation reads a tree, and a tree holds no history… So the highest value
 //! that a run finds is a lower bound on every value ever allocated." A tree
 //! also holds no concurrency. Every branch cut from one `main` reads the same
@@ -52,7 +52,7 @@
 //! the corpus spends on a shelf the store covers with no file claiming it.
 //! [`takes_a_claim`] is the predicate that decides which those are. The
 //! correction is one file whose content is the document's own path, with no
-//! judgment in it, which is the [fixability](../../../../docs/spec/12-check-layer.md#fixability)
+//! judgment in it, which is the [fixability](../../../../docs/spec/check-layer.md#fixability)
 //! bar.
 //!
 //! `identifier.claim.stale` is advisory: a claim that does not name the

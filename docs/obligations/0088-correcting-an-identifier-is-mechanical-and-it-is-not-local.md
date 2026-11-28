@@ -22,9 +22,9 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#fixability) lists four mechanical fixes, and one of them is to correct the format of an identifier. Two of the three ways an identifier fails its pattern do have one derivable outcome. A wrong namespace has the declared namespace, and a short sequence has the declared width.
+[Spec 12](../spec/check-layer.md#fixability) lists four mechanical fixes, and one of them is to correct the format of an identifier. Two of the three ways an identifier fails its pattern do have one derivable outcome. A wrong namespace has the declared namespace, and a short sequence has the declared width.
 
-Neither fix is confined to the document that holds the finding. An identifier is the one value that other documents keep copies of, because [Q4](../spec/09-decisions.md#q4--relation-storage) rules that a relation target is an identifier. This corpus names `HW-SPEC-taxonomy-model` from three other documents, so a patch that rewrote it would leave three dangling edges behind. The zero-padding case is worse, because allocation is reconcile-first and the padded value may already belong to another document.
+Neither fix is confined to the document that holds the finding. An identifier is the one value that other documents keep copies of, because [Q4](../spec/decisions.md#q4--relation-storage) rules that a relation target is an identifier. This corpus names `HW-SPEC-taxonomy-model` from three other documents, so a patch that rewrote it would leave three dangling edges behind. The zero-padding case is worse, because allocation is reconcile-first and the padded value may already belong to another document.
 
 ## Obligation
 

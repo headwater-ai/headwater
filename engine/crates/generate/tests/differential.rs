@@ -2,7 +2,7 @@
 //! The `exportable_as` differential: does the emitted schema catch exactly what
 //! the native check catches?
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+//! [Spec 12](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 //! lets a check name an emitter target only when the emitted constraint catches
 //! exactly what the native check catches. This file is the test that permits the
 //! two `jsonschema` values in the check registry, and it holds them to both

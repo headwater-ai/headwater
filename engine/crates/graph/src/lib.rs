@@ -2,7 +2,7 @@
 //! Graph build: edges, the identifier index, external anchors, and a report of
 //! what did not resolve.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md) puts this phase
+//! [Spec 6](../../../../docs/spec/engine-architecture.md) puts this phase
 //! after the census and before every check: it "resolves relations into edges,
 //! indexes identifiers, binds external anchors (code paths, work items, URLs),
 //! and reports what it could not resolve".
@@ -24,7 +24,7 @@
 //! It decides identity: which document an identifier names, which node two
 //! spellings of an anchor are, and which relation an authored name is. Each one
 //! is a **correctness root** in the sense of
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots):
+//! [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots):
 //! wrong, it produces no error anywhere, and every check over it passes on the
 //! wrong graph.
 //!
@@ -76,7 +76,7 @@ use headwater_paint::visible;
 /// Both are parameters, and both are settled. [HW-DR-0068](../../../../docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md)
 /// names `id` as the key that carries the value a kind's `identifier:
 /// {scheme: …}` facet mints, and
-/// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) names
+/// [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) names
 /// `relations:`. Each stays a parameter rather than a literal, so a future
 /// change to either declaration changes one default and not every call site.
 #[derive(Clone, Debug)]

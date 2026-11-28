@@ -74,7 +74,7 @@ relations:
 
 ## The three classes
 
-**The bar for safe autofix is [spec 12](../spec/12-check-layer.md#fixability).** The remedy must be mechanical and total, and it must fit a `Patch::Text` whose `expect` bytes match the file.
+**The bar for safe autofix is [spec 12](../spec/check-layer.md#fixability).** The remedy must be mechanical and total, and it must fit a `Patch::Text` whose `expect` bytes match the file.
 
 - **Safe autofix: RepeatedWords only, and only as a candidate.** Its suggestion replaces the pair with one word, and the fixture shows that the range and the `expect` bytes match the file. It fired on no document of the sample.
 - **Advisory with a suggestion:** AnA, SpellCheck for a regional spelling, CompoundNouns, DisjointPrefixes, DiscourseMarkers, OxfordComma, Codebase, WouldNeverHave, and the three expansions ExpandTimeShorthands, ExpandMemoryShorthands and ExpandConfiguration. AnA is not safe, because it reads the letters of a code span and not the sound, so "an `<h2>`" is wrong to it.
@@ -109,7 +109,7 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 
 **Two numbers the issue asked for are not here.** The engine pins no toolchain, and it declares `rust-version = "1.91"` as its floor. To measure the engine binary with `harper-core` 2.11.0 linked, the whole engine must build on rustc 1.98.1 or a compiler near it. This spike built only itself in that image. A `wasm32-unknown-unknown` build was not tried, because the container has no such target installed. Harper ships a WebAssembly package of its own, but this page did not measure it.
 
-**For scale, the engine's whole budget for a change-scoped check is 200 ms** ([spec 6](../spec/06-engine-architecture.md#performance-targets)). One document through Harper takes more than that.
+**For scale, the engine's whole budget for a change-scoped check is 200 ms** ([spec 6](../spec/engine-architecture.md#performance-targets)). One document through Harper takes more than that.
 
 ## Determinism
 

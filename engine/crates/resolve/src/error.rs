@@ -32,7 +32,7 @@ impl ResolveError {
 
 /// The two declarations an `add` collision names.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// [Spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// makes a collision "always a task for a human", and a task a person can act
 /// on shows both sides. The values are rendered in the canonical form
 /// [`crate::render`] writes the lock in, so what a reader compares is the text
@@ -55,7 +55,7 @@ pub struct Collision {
 pub enum ResolveErrorKind {
     /// The source does not load, or the meta-schema refuses it. The engine
     /// never applies a taxonomy that does not validate, and there is no
-    /// partial-load mode ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)).
+    /// partial-load mode ([spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)).
     SourceRefused(String),
     /// A source that has to be a taxonomy carries operations, or the reverse.
     WrongRole { expected: &'static str },
@@ -126,7 +126,7 @@ pub enum ResolveErrorKind {
 impl ResolveErrorKind {
     /// Whether this refusal is about an address that an overlay wrote.
     ///
-    /// Spec 2's [`addressability`](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+    /// Spec 2's [`addressability`](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
     /// dimension asks whether every path an overlay can address still exists
     /// and means the same thing, and it is the one dimension whose subject is
     /// the schema rather than a corpus. This is the engine's answer, and it is
@@ -255,7 +255,7 @@ impl std::fmt::Display for ResolveError {
 }
 
 /// Every `add` collision of one refused resolution, as the judgment task
-/// [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// [spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// owes a consumer: both declarations, both files, the address, and the two
 /// operations that settle it.
 ///

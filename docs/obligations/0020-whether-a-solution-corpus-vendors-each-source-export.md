@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q9](../spec/09-decisions.md#q9--multi-repository-corpora) rules that the tier above harvests pinned exports. Whether a solution corpus vendors each source export or references it is open.
+[Q9](../spec/decisions.md#q9--multi-repository-corpora) rules that the tier above harvests pinned exports. Whether a solution corpus vendors each source export or references it is open.
 
 ## Obligation
 

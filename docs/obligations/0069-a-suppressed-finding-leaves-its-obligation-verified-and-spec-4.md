@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-A [suppression](../spec/04-assurance-model.md#suppression) runs after the runner stamps each finding with the obligation that its control discharges, so the inventory holds findings that name obligations. Spec 4 does not say what an obligation with two accepted deviations against it is.
+A [suppression](../spec/assurance-model.md#suppression) runs after the runner stamps each finding with the obligation that its control discharges, so the inventory holds findings that name obligations. Spec 4 does not say what an obligation with two accepted deviations against it is.
 
 ## Obligation
 

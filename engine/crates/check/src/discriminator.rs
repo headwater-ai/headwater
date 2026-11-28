@@ -4,7 +4,7 @@
 //!
 //! # The finding spec 2 states and nothing raised
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#kind-resolution), step
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution), step
 //! 3: on a heterogeneous shelf the kind comes from the discriminator facet,
 //! and "a missing or unrecognized value is a finding". The census stops
 //! resolution there and counts the document as untyped, which is correct. But

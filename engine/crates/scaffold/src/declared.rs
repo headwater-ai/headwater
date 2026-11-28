@@ -14,7 +14,7 @@
 //!
 //! Each one moves into its own typed reader on the day a check reads it. Until
 //! then a second reader would be the drift that
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against.
 //!
 //! `regimes.lifecycle.<name>.initial` was the fourth and it left on that day.

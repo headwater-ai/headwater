@@ -2747,7 +2747,7 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
 /// The defect this holds is the one `f615fb86` landed in the repository above:
 /// a transcript whose `lock` member names a taxonomy this tree no longer
 /// carries is refused whole by the first of the five confirmations
-/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// [spec 15](../../../../docs/spec/the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
 /// states, the refusal text *is* the derived output, so `generate --check`
 /// regenerates it faithfully and stays green, and no check rule reads a probe
 /// result. The corpus then published three measurements taken off a result

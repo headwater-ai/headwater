@@ -54,7 +54,7 @@ expected: [command]
 
 - HW-DR-0083 itself, which is `superseded`.
 - [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md), at `discharged`: "No verb of this engine writes either edge".
-- The generated index `docs/decisions/README.md` and the tombstone `docs/spec/09-open-questions.md`, which each print the summary of HW-DR-0083 beside the mark `superseded`.
+- The generated index `docs/decisions/README.md` and the tombstone `docs/spec/open-questions.md`, which each print the summary of HW-DR-0083 beside the mark `superseded`.
 
 The other candidate sentences are about another relation or another artifact. `docs/taxonomies/brd-prd/doctrine.md` says that a person types the line of a relation between a business need and a product document, and it cites HW-DR-0083. It does not name `governs`, so the count leaves it out. HW-DR-0104 and [the contract of `headwater new`](../interfaces/headwater-new.md) state the expected answer. The contract says that `--relates` accepts a relation that declares `created_by: agent`.
 

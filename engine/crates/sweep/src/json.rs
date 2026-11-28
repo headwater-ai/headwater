@@ -2,7 +2,7 @@
 //! One sweep in the finding shape spec 4 declares, with the two members a
 //! sweep adds.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings): "Every
+//! [Spec 4](../../../../docs/spec/assurance-model.md#findings): "Every
 //! finding, from every mechanism, has one shape." This is that shape, written
 //! by the mechanism that is not a check. `headwater_adapter::json` writes the
 //! same members for a run of the checks, and the two are deliberately separate

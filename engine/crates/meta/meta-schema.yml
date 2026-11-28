@@ -688,7 +688,7 @@ definitions:
   # it is what the document is called, and the taxonomy already demands one from
   # any generated document whose kind requires the facet in the `name` role.
   # `decision_register` requires `title`, and the tombstone at
-  # `docs/spec/09-open-questions.md` is a `decision_register` that had no way to
+  # `docs/spec/open-questions.md` is a `decision_register` that had no way to
   # supply it, so every emitter that labels a document fell through to its
   # identifier and a reader met `HW-REG-open-questions` in the sidebar, the
   # browser tab and the shelf's own index (#627).
@@ -729,7 +729,7 @@ definitions:
   # a heterogeneous shelf, and the facet in the `name` role. A required facet in
   # that set that the declaration does not state is named and the declaration
   # writes no file. Before this refusal existed, `decision_register` required
-  # `title` and the tombstone at `docs/spec/09-open-questions.md` went without
+  # `title` and the tombstone at `docs/spec/open-questions.md` went without
   # one for the whole life of the projection with nothing anywhere reporting it
   # (#780): the census exempts a generated document from `facet.required.missing`
   # on the ground that `generate --check` holds it instead, and `generate --check`

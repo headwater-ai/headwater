@@ -416,7 +416,7 @@ pub const VERBS: &[Verb] = &[
     // position could not read its re-entry guard, and it re-blocked the same
     // turn with no way out.
     //
-    // The [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+    // The [hook contract](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
     // forbids a `headwater hook <moment>` verb, and the reason it gives is
     // drift: two entry points to one answer are two answers. This verb is
     // outside that reason rather than inside an exception to it. It answers

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The deterministic query surface: reads of the graph a run already built.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#library) makes the
+//! [Spec 6](../../../../docs/spec/engine-architecture.md#library) makes the
 //! CLI "a thin shell over a library API — load, graph, check, query, generate",
 //! and says that "The MCP server consumes the library in the same process."
 //! This crate is `query`. It adds no phase to a
@@ -11,7 +11,7 @@
 //!
 //! # What ships, and why the list is spec 5's rather than spec 6's
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#agent-surfaces) names
+//! [Spec 5](../../../../docs/spec/ai-integration.md#agent-surfaces) names
 //! the tools of the query class: `route`, `governing_docs_for_path`,
 //! `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The first five
 //! are the reads of the graph here, and [`kinds`] is the one read of the
@@ -23,14 +23,14 @@
 //! Spec 6's CLI list also holds `headwater query <expression>`, and no document
 //! of the specification states what an expression is. This crate therefore has
 //! no `query` function, and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries the gap. The posture is the resolver's over a `$package` reference:
 //! name the gap rather than invent a form and have every later adopter live
 //! with it.
 //!
 //! # Determinism, concretely
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [Spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! binds the check layer to "same corpus, same lock, same injected clock,
 //! byte-identical output", and a read that an agent depends on is held to the
 //! same bar. Three rules carry it here.
@@ -303,7 +303,7 @@ impl<'a> Surface<'a> {
     /// the files that a projection took over.
     ///
     /// That disagreement was live, and nothing reported it. `docs/spec/README.md`
-    /// indexes the `spec_series` shelf; `docs/spec/09-open-questions.md` is a
+    /// indexes the `spec_series` shelf; `docs/spec/open-questions.md` is a
     /// document of that shelf, carrying an identifier that three edges and 136
     /// citations reach; and the index dropped the row on the day a projection
     /// took the path. The export called its own node set "every node the census
@@ -312,7 +312,7 @@ impl<'a> Surface<'a> {
     /// So a shelf index is the set of *documents*, and never the set of
     /// documents that a human typed. Which verb writes a file is a fact about
     /// its maintenance, and
-    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#projections)
+    /// [spec 6](../../../../docs/spec/engine-architecture.md#projections)
     /// spends that fact on excusing the file from checks. It is not a fact
     /// about whether the corpus holds the document, and no reader of an index
     /// asks the first question.

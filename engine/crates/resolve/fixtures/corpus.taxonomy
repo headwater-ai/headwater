@@ -1282,7 +1282,7 @@ projections:
   - kind: shelf_sections
     for:
       - decisions
-    output: docs/spec/09-open-questions.md
+    output: docs/spec/open-questions.md
     identity:
       id: HW-REG-open-questions
       kind: decision_register

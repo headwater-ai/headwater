@@ -18,7 +18,7 @@ patch -p1 --quiet <<'R2_REFERENCE'
 --- a/engine/crates/check/src/language.rs
 +++ b/engine/crates/check/src/language.rs
 @@ -93,7 +93,7 @@
- /// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) measured
+ /// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) measured
  /// that a lexicon of exact strings is the highest-precision shape a lexical
  /// rule takes.
 -const SPELLINGS: [(&str, &str); 24] = [
@@ -64,7 +64,7 @@ wrong() {
 --- a/engine/crates/check/src/language.rs
 +++ b/engine/crates/check/src/language.rs
 @@ -93,6 +93,9 @@
- /// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) measured
+ /// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) measured
  /// that a lexicon of exact strings is the highest-precision shape a lexical
  /// rule takes.
 +/// The sentences a paragraph holds before it reports.
@@ -125,7 +125,7 @@ limit_alone() {
 --- a/engine/crates/check/src/language.rs
 +++ b/engine/crates/check/src/language.rs
 @@ -93,6 +93,9 @@
- /// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) measured
+ /// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) measured
  /// that a lexicon of exact strings is the highest-precision shape a lexical
  /// rule takes.
 +/// The sentences a paragraph holds before it reports.

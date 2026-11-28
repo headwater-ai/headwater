@@ -4,17 +4,17 @@
 //! Two things need this. A round-trip fixture needs a text to load again, which
 //! is how a resolver demonstrates that its result is a taxonomy source and not
 //! an internal structure that happens to answer questions
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)).
+//! ([spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)).
 //! And the lock is this text with a hash over it, which is
 //! [#51](https://github.com/headwater-ai/headwater/issues/51).
 //!
-//! Declaration order is kept, because [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+//! Declaration order is kept, because [spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 //! wants a resolution result that "is reproducible and reviewable in a diff",
 //! and a writer that sorted keys would move half the file whenever an overlay
 //! added a declaration in the middle.
 //!
 //! A scalar is written plain where every character allows it and double-quoted
-//! otherwise. Nothing here decides a type: [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
+//! otherwise. Nothing here decides a type: [Q2](../../../../docs/spec/decisions.md#q2--schema-format)
 //! rules that types come from the meta-schema, so `no` is written back as `no`
 //! and reads back as the string it was.
 

@@ -22,9 +22,9 @@ relations:
 
 Issue #88 is the probe campaign. It runs the probe shelf against a corpus-present arm and a corpus-absent arm, and it publishes the rate with its counterfactual. Issue #1015 asked which external tool the campaign builds on, and which public benchmark supplies its scenarios. This evaluation answers both questions against three contracts that already stand:
 
-- [Spec 5](../spec/05-ai-integration.md#measuring-whether-any-of-this-works) states that the grader is never the system under test, and that no grader reads prose.
-- [Spec 5](../spec/05-ai-integration.md#what-earns-the-grader-the-right-that-every-other-agent-facing-mechanism-is-denied) names `headwater probe grade` as the grader. A recorded fixture set holds its verdicts, and it has a version.
-- [Spec 15](../spec/15-the-recorder-contract.md#a-recorder-is-a-driver-and-a-transform-and-the-channel-between-them-is-the-condition) and [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) admit a recorder that is a driver and a transform. The condition is that the log reaches the transform by a channel that the model cannot write to.
+- [Spec 5](../spec/ai-integration.md#measuring-whether-any-of-this-works) states that the grader is never the system under test, and that no grader reads prose.
+- [Spec 5](../spec/ai-integration.md#what-earns-the-grader-the-right-that-every-other-agent-facing-mechanism-is-denied) names `headwater probe grade` as the grader. A recorded fixture set holds its verdicts, and it has a version.
+- [Spec 15](../spec/the-recorder-contract.md#a-recorder-is-a-driver-and-a-transform-and-the-channel-between-them-is-the-condition) and [HW-DR-0059](../decisions/0059-a-transform-over-a-harness-session-log-is-an-observed-transcript-when-the-log-arrives-by-a-channel-the-model-cannot-write-to.md) admit a recorder that is a driver and a transform. The condition is that the log reaches the transform by a channel that the model cannot write to.
 
 The grader is therefore fixed before any tool is compared. An external tool can have one role only: the **driver**, which starts the sessions and runs the matrix of model, arm and repetition. [HW-EVAL-adjacent-work §M.3](adjacent-work.md#m3-the-grader-decides-the-answer-and-the-literature-proves-it) is the evidence against a model judge, and this document does not repeat it.
 

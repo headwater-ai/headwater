@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-The [key](../spec/12-check-layer.md#determinism-concretely) carries the version of the check that reached the verdict, and that version is what makes the entries of an earlier edition stale. Nothing derives the number. Two editions of one rule read the same documents and the same lock, and they differ only in code that no digest covers. So an author who changes what a rule decides and leaves the version alone reads the verdicts of the rule before the change.
+The [key](../spec/check-layer.md#determinism-concretely) carries the version of the check that reached the verdict, and that version is what makes the entries of an earlier edition stale. Nothing derives the number. Two editions of one rule read the same documents and the same lock, and they differ only in code that no digest covers. So an author who changes what a rule decides and leaves the version alone reads the verdicts of the rule before the change.
 
 **A verdict ledger now catches a version left alone, where a recorded corpus shows the change ([#1105](https://github.com/headwater-ai/headwater/issues/1105)).** The test `engine/crates/check/tests/editions.rs` keeps one row in `engine/crates/check/fixtures/editions.ledger` for each rule over each recorded corpus that it reaches. The row holds the version, a fingerprint of the corpus and a digest of every verdict that the cache would store. A digest that moves while the version and the corpus stay fails the test, and the test names the rule. `HEADWATER_BLESS` does not record that row again, so a bless cannot hide the defect.
 

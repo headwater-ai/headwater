@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Spec 5](../spec/05-ai-integration.md#write-time-hooks) states that a document can declare that it governs code, and that an edit to that code raises an advisory prompt. The [glossary](../spec/glossary.md) repeats it. [Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) makes anchor resolution a correctness root for the same reason.
+[Spec 5](../spec/ai-integration.md#write-time-hooks) states that a document can declare that it governs code, and that an edit to that code raises an advisory prompt. The [glossary](../spec/glossary.md) repeats it. [Spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) makes anchor resolution a correctness root for the same reason.
 
 `Surface::governing_docs_for_path` answers the query, and it compares the path it is asked about against the string each edge reached. The comparison is equality. Its own doc comment states the rule: the path is matched against what an edge reached rather than against a pattern. A resolver normalizes two spellings of one target into one node, and that is the whole of what the comparison tolerates.
 
@@ -38,7 +38,7 @@ This repository now declares four edges, one for each file under that directory,
 
 The corpus owes a ruling on what a `code_path` anchor denotes. One file, or a subtree, and spec 2 states neither.
 
-Under equality, an author pays one edge for every file that a document governs. [Spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names that cost as the thing that killed every prior design-rationale tool. A directory of forty files takes forty hand-typed edges, and [HW-OBL-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that nothing mechanical writes even one of them.
+Under equality, an author pays one edge for every file that a document governs. [Spec 3](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names that cost as the thing that killed every prior design-rationale tool. A directory of forty files takes forty hand-typed edges, and [HW-OBL-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that nothing mechanical writes even one of them.
 
 The failure mode is silence rather than error. A hook that finds no governing document exits 0 and reports nothing. A rename inside a governed directory produces an unresolved anchor, which a check does report, but a *new* file in that directory produces nothing anywhere. Impact detection is then green over code that a document governs in every sense except the one the engine reads.
 

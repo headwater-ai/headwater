@@ -25,7 +25,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#instances-and-why-coverage-needs-them) offers `Corpus` as a scope. It also rules that a classified document with zero instances is a finding, which is OB-COV-2 of [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for). The two meet badly. A corpus-scoped instance reads every document, so coverage counts every document as checked, and that finding can never fire again.
+[Spec 12](../spec/check-layer.md#instances-and-why-coverage-needs-them) offers `Corpus` as a scope. It also rules that a classified document with zero instances is a finding, which is OB-COV-2 of [spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for). The two meet badly. A corpus-scoped instance reads every document, so coverage counts every document as checked, and that finding can never fire again.
 
 ## Obligation
 
@@ -37,7 +37,7 @@ The first of the two options holds. A corpus-scoped instance counts toward cover
 
 Coverage counts routing, and routing is the generation step: a template, a declaration, and one instance per target. A document-scoped instance covers its document, and an edge-scoped one covers both endpoints. A corpus-scoped instance has one target, and that target is the corpus, so it accounts against no document whatever it read. `Grain::routes` in `engine/crates/check/src/scope.rs` carries the ruling. The match over the five grains is exhaustive, so a sixth grain answers this question rather than inherits an answer.
 
-[Spec 12](../spec/12-check-layer.md#instances-and-why-coverage-needs-them) states it, and one test holds it. `identifier.claimed_twice` is the first corpus-scoped check, it reads `check/spec/03-no-instance.md`, and the coverage finding against that file survives.
+[Spec 12](../spec/check-layer.md#instances-and-why-coverage-needs-them) states it, and one test holds it. `identifier.claimed_twice` is the first corpus-scoped check, it reads `check/spec/03-no-instance.md`, and the coverage finding against that file survives.
 
 The second option is refused. An instance that counted only for the documents its findings name makes coverage a function of the verdict. A rule that finds nothing then covers nothing, and a corpus with a defect reports higher coverage than a clean one.
 

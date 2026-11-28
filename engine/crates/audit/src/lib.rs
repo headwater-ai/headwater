@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `taxonomy audit`: the schema measured against a corpus.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)
+//! [Spec 6](../../../../docs/spec/engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)
 //! separates this from `taxonomy validate` on the standard TBox/ABox line.
 //! `validate` decides the schema alone and it gates. This measures the schema
 //! *against documents*, its findings are about the taxonomy rather than about
@@ -16,7 +16,7 @@
 //! a facet may get before it separates nothing, or how low a capture rate may
 //! fall before a relation is unmaintained. A number invented here would be a
 //! verdict this engine derived from nothing a corpus declared, which is the one
-//! thing [spec 12](../../../../docs/spec/12-check-layer.md) rules out of a
+//! thing [spec 12](../../../../docs/spec/check-layer.md) rules out of a
 //! check.
 //!
 //! # The promotion rate is not a wait of this verb, and never was
@@ -258,7 +258,7 @@ pub struct ShelfReading {
 
 /// One shelf that declares a layout, measured against the files on it.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#templates-and-scaffolding)
+/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#templates-and-scaffolding)
 /// makes a layout a convention at birth: `headwater new` writes the name and no
 /// check reads it afterwards, so a rename answers to nothing
 /// ([HW-OBL-0106](../../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md)).
@@ -307,7 +307,7 @@ impl DwellReading {
     }
 }
 
-/// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
+/// The closed warrant set of [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
 /// in the order that document's table lists it.
 ///
 /// Written out rather than derived from the values in use, for the reason
@@ -408,7 +408,7 @@ impl Warrants {
 /// A fourth arm stood here and is gone. `Unbuilt` said that an input this
 /// engine designs is not implemented, and one wait ever reached it: the
 /// promotion count, which needed the `needs_prior` input of
-/// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
+/// [spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
 /// `headwater_check::promotion` declares that input now, and the reading left
 /// this verb rather than starting to run in it: a rate whose numerator is
 /// change-scoped is not a wait of a verb that reads one working tree. So the
@@ -1423,7 +1423,7 @@ fn layouts(
 
 /// Dwell in the current state, per state.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle):
+/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle):
 /// "dwell in a non-terminal state is observable, not policed". So this reports
 /// a distribution and never a verdict, and the state list comes from the facet
 /// in the `state` role rather than from the values in use, so a state that no

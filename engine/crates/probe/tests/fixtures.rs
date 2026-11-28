@@ -348,7 +348,7 @@ fn examine_a_generated_document(at: &Path) {
 /// verdict.
 ///
 /// No probe of this repository reached that path until one examined
-/// `docs/spec/09-open-questions.md`, which is a generated shelf index that the
+/// `docs/spec/open-questions.md`, which is a generated shelf index that the
 /// decision register superseded. Both assertions below are needed: the first
 /// says the member carries a digest at all, and the second says the digest is
 /// the one that moves, because a member carrying a constant would pass the

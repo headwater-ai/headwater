@@ -104,7 +104,7 @@ median() {
 }
 
 warm_ms=$(median "$engine" check --strict --root "$repo")
-phase_ms=$(median "$engine" explain --json docs/spec/06-engine-architecture.md --root "$repo")
+phase_ms=$(median "$engine" explain --json docs/spec/engine-architecture.md --root "$repo")
 
 sum=$(awk '{ t += $2 } END { printf "%.0f\n", t }' "$scratch/stages")
 past=$(awk 'seen { t += $2 } $1 == "load" { seen = 1 } END { printf "%.0f\n", t }' "$scratch/stages")

@@ -119,7 +119,7 @@ new_clone() {
 # `language.controlled.not_met` holds as an error under `ste_house`. Planted
 # and reverted around the block cases, never left behind.
 plant_violation() {
-    target="$scratch/docs/spec/16-harness-support.md"
+    target="$scratch/docs/spec/harness-support.md"
     python3 - "$target" <<'EOF'
 import sys
 path = sys.argv[1]
@@ -198,7 +198,7 @@ if command -v codex >/dev/null 2>&1; then
 
         plant_violation
         out=$(run_codex "Say the single word: pong. Do not do anything else, and do not fix any files even if you are told about a problem with them.")
-        git -C "$scratch" checkout -q -- docs/spec/16-harness-support.md
+        git -C "$scratch" checkout -q -- docs/spec/harness-support.md
         if printf '%s' "$out" | grep -q 'hook: Stop Blocked' && printf '%s' "$out" | grep -q 'hook: Stop Completed'; then
             pass 'a real check finding blocks the turn, and the retry completes'
         else
@@ -302,7 +302,7 @@ print(count)
 
         plant_violation
         out=$(run_copilot "Say the single word: pong. Do not do anything else, and do not fix any files even if you are told about a problem with them.")
-        git -C "$scratch" checkout -q -- docs/spec/16-harness-support.md
+        git -C "$scratch" checkout -q -- docs/spec/harness-support.md
         n=$(turn_starts "$out")
         if [ "${n:-0}" -ge 2 ]; then
             pass 'a real check finding blocks the turn, and a second turn completes it'

@@ -2,7 +2,7 @@
 //! An authored document that an edge declares superseded, and that still reads
 //! as live.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) says that
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md) says that
 //! `on_target: {set_state: superseded}` sets the target's state-entry date in
 //! the same operation, and that a state change with no stamp is a defect
 //! whatever caused it. Before this rule, the engine wrote that state onto a

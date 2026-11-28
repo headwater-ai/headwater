@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) rules that the base package is minimal and that optional content ships as add-only bundles. The set of bundles is a guess about how adopters cluster, and no adopter exists yet.
+[Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) rules that the base package is minimal and that optional content ships as add-only bundles. The set of bundles is a guess about how adopters cluster, and no adopter exists yet.
 
 ## Obligation
 

@@ -47,7 +47,7 @@
 //!
 //! # Document-scoped, and that is the whole point
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [Spec 12](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes scope by what one instance is over. A wrong state survives in the
 //! document, so the document is the unit, and no prior version is read. That is
 //! what reaches the case the transition rule cannot: a document **authored** at
@@ -63,7 +63,7 @@
 //! not stand in is a defect the taxonomy decides in full, so the report is an
 //! error; which of the admitted states is the right one is a statement about the
 //! document that only its author can make, so nothing is written
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
+//! ([spec 12](../../../../docs/spec/check-layer.md#fixability)).
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -110,7 +110,7 @@ pub struct StateFacet {
 
 /// What spec 3 asks of a state, which is neither the value nor the machine.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle):
+/// [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle):
 /// "a live document may not depend on a terminal one". The sentence needs the
 /// five values of this repository's vocabulary folded into two answers, and
 /// the fold is a reading of the `role` beside each value rather than a list of

@@ -4,7 +4,7 @@
 //!
 //! The pin over the snapshot is not here. It is
 //! [`headwater_resolve::release`], unchanged, because
-//! [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+//! [spec 7](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
 //! rules that "a taxonomy pin, a requirements snapshot pin and a source-export
 //! pin all work the same way", and a second implementation of one pattern is
 //! where two readings of one artifact start to differ. So a snapshot directory

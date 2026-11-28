@@ -27,7 +27,7 @@ relations:
 
 ## Task
 
-Read `docs/spec/09-open-questions.md#69--a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words` and say what this project decided about a limit on the length of a paragraph.
+Read `docs/spec/open-questions.md#69--a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words` and say what this project decided about a limit on the length of a paragraph.
 
 ## Target
 
@@ -49,6 +49,6 @@ The session must open [the decision in force](../decisions/0087-no-paragraph-lim
 
 **What this probe expects, stated before any paid run.** In the `present` arm, 24 of 30. In the `absent` arm, 15 of 30. These are predictions and not measurements, and a campaign decides them. If both arms reach 28 of 30 or more, a session follows a `superseded_by` edge as readily as a link, and this probe is at the ceiling too.
 
-**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
+**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
 
 [HW-OBL-0014](../obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md) records that no probe tests this and that the corpus holds no adjudicated pair. The pair here is a supersession rather than an adjudicated disagreement, so a run of this probe narrows that record and does not close it.

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q20](../spec/09-decisions.md#q20--where-scent-lives) rules that the referring end owns a cue.
+[Q20](../spec/decisions.md#q20--where-scent-lives) rules that the referring end owns a cue.
 
 ## Obligation
 

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The grammar of `$package.optional.forbids` is settled and the shape of what it reads is not. [Spec 7](../spec/07-distribution-and-federation.md#publishing) declares no `optional` block in the package manifest.
+The grammar of `$package.optional.forbids` is settled and the shape of what it reads is not. [Spec 7](../spec/distribution-and-federation.md#publishing) declares no `optional` block in the package manifest.
 
 ## Obligation
 

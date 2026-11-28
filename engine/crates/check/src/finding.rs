@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The finding, and the one order it is ever written in.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings) fixes the
+//! [Spec 4](../../../../docs/spec/assurance-model.md#findings) fixes the
 //! shape: a rule, a severity, an obligation, a path, a line, a message, a
 //! remediation, and whether a fix is mechanical. Every field below is that
 //! field, and one of them is an `Option` for a reason the next paragraph gives.
@@ -9,7 +9,7 @@
 //! # The obligation is optional here, and it says what a taxonomy declared
 //!
 //! Spec 4 says every finding names the obligation it serves, and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-plugin-interface)
+//! [spec 12](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! makes `obligation()` required so that the check surface does not become the
 //! place where a rule escapes the "every rule earns its place" discipline. An
 //! obligation is **data**: a taxonomy declares `obligations` and `controls`,
@@ -24,7 +24,7 @@
 //!
 //! Two scales share one word, and reading them as one is the mistake this
 //! paragraph exists to prevent.
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)
+//! [Spec 12](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)
 //! rules that a check reports severity and that whether it blocks is the
 //! control's business. That is the field below, and its values are `error`,
 //! `warn` and `info`. An obligation also declares a severity, on the scale
@@ -37,7 +37,7 @@
 //! # Fixability is the patch, and it stopped being a field
 //!
 //! Spec 4 lists fixability among the members and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) says what may
+//! [spec 12](../../../../docs/spec/check-layer.md#fixability) says what may
 //! carry it: "A check may return a patch alongside a finding." Until `--fix`
 //! there was no patch, so a `fixable: bool` stood in for one, and three files
 //! said in a comment that a flag with nothing behind it claims a capability the
@@ -54,7 +54,7 @@
 use crate::paint::{visible, ColorMode, Role};
 
 /// What a check says about a finding. Whether it blocks is the control's
-/// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
+/// business ([spec 12](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Severity {
     Error,
@@ -91,7 +91,7 @@ pub struct Finding {
     pub remediation: String,
     /// The correction this engine will write under `check --fix`, and nothing
     /// where it will write none
-    /// ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
+    /// ([spec 12](../../../../docs/spec/check-layer.md#fixability)).
     pub patch: Option<crate::Patch>,
 }
 
@@ -102,7 +102,7 @@ impl Finding {
         self.patch.is_some()
     }
 
-    /// The sort key [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// The sort key [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// fixes: path, line, check id, message.
     ///
     /// The column joins it after the line, because two findings on one line are

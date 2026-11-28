@@ -35,7 +35,7 @@ One [evaluation](../evaluations/the-serving-boundary.md) settles this with [Q14]
 
 The case for inversion is that no one can enforce access control on files that someone already cloned. That is true, and it is the right instinct pointed at the wrong layer. Inversion costs four things that the design gets free. The low capture cost of spec 3. Review on a pull request, where documents diff. The detectability of a projector defect against the Markdown. And provenance from git. Against that it buys nothing that the ruling below does not give.
 
-There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organization for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe". That is [spec 0](../spec/00-vision-and-scope.md)'s central bet, and the reason that capture is cheap. It is a **pivot, not an extension**.
+There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organization for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe". That is [spec 0](../spec/vision-and-scope.md)'s central bet, and the reason that capture is cheap. It is a **pivot, not an extension**.
 
 ## Decision
 
@@ -43,7 +43,7 @@ There is a coherent version of the proposal. Name it, so that no one adopts it b
 
 The open-question entry placed enforcement at the federated layer: "the federated graph is a filtered view, and the filtering happens there". That is one tier too far out, on the entry's own argument. A harvesting tier holds pinned, committed exports, so a filter that the tier applies acts on bytes that already crossed the boundary. That is [Serena's failure](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove, and the entry diagnosed that failure and then reproduced it.
 
-So the serving boundary is the **export step of each publishing corpus** ([spec 7](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
+So the serving boundary is the **export step of each publishing corpus** ([spec 7](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
 
 ### The unit is a destination, and there are no principals
 
@@ -57,7 +57,7 @@ An **export profile** names an audience, an emitter target, an output path, a fi
 
 **Two of those six came from the prior art rather than from the argument.** The attenuating-credential literature records that a credential which lists what it forbids widens silently the first time its target grows an operation. And one observed case had a correct text redaction defeated by an alphabetized word index that shipped beside it. A shelf index built at full visibility is that failure, in our own artifact set.
 
-**No facet role was needed.** The entry said that `confidentiality` is a named facet and proposed to promote it to an enforced control. [Spec 1](../spec/01-conceptual-model.md) lists it as an example of what facets express, and no role carries it. A filter that names its own facet and values inside the profile is [principle 1](../spec/00-vision-and-scope.md#design-principles) working, and the closed role registry stays closed. What survives is the entry's best observation, sharpened. A facet that a filter reads is a facet whose every change is a disclosure decision.
+**No facet role was needed.** The entry said that `confidentiality` is a named facet and proposed to promote it to an enforced control. [Spec 1](../spec/conceptual-model.md) lists it as an example of what facets express, and no role carries it. A filter that names its own facet and values inside the profile is [principle 1](../spec/vision-and-scope.md#design-principles) working, and the closed role registry stays closed. What survives is the entry's best observation, sharpened. A facet that a filter reads is a facet whose every change is a disclosure decision.
 
 ## Consequences
 
@@ -73,13 +73,13 @@ So the grain is declared per profile. `sealed` gives only the fact of the filter
 
 A check runs inside the publishing repository, over the full graph, on a runner that holds every byte. Filtering is strictly downstream, in a projection, so no configuration exists in which a check sees a partial graph. The entry's worry about "checks that run as the user who made the request" dissolves along with the request.
 
-What is new is a third resolution outcome. An anchor whose target a profile withheld is **withheld**, not unresolved ([spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits)). Without that distinction, every filtered harvest produces a wall of dangling-anchor findings, and operators learn to ignore the class that also carries real defects.
+What is new is a third resolution outcome. An anchor whose target a profile withheld is **withheld**, not unresolved ([spec 2](../spec/taxonomy-model.md#behavior-at-the-limits)). Without that distinction, every filtered harvest produces a wall of dangling-anchor findings, and operators learn to ignore the class that also carries real defects.
 
 ### Why "visibility before blocking" cannot apply, derived
 
-[Principle 4](../spec/00-vision-and-scope.md#design-principles) is right to except this, and the exception follows from an error asymmetry rather than from the subject matter. A withholding that fires wrongly is visible, cheap and reversible. A withholding that fails to fire is invisible to both promotion instruments, and it is not reversible at all. So the general rule lands in [spec 4](../spec/04-assurance-model.md#where-promotion-does-not-apply). A control walks the promotion path when both error classes are recoverable, and otherwise it ships at its final posture. A withholding rule is the one instance today, it is not suppressible, and it is not waivable.
+[Principle 4](../spec/vision-and-scope.md#design-principles) is right to except this, and the exception follows from an error asymmetry rather than from the subject matter. A withholding that fires wrongly is visible, cheap and reversible. A withholding that fails to fire is invisible to both promotion instruments, and it is not reversible at all. So the general rule lands in [spec 4](../spec/assurance-model.md#where-promotion-does-not-apply). A control walks the promotion path when both error classes are recoverable, and otherwise it ships at its final posture. A withholding rule is the one instance today, it is not suppressible, and it is not waivable.
 
-[Principle 7](../spec/00-vision-and-scope.md#design-principles) resolves the same way. Its positional form is shorthand for a rule about cost, so an exporter that cannot evaluate its filter emits nothing and fails the run.
+[Principle 7](../spec/vision-and-scope.md#design-principles) resolves the same way. Its positional form is shorthand for a rule about cost, so an exporter that cannot evaluate its filter emits nothing and fails the run.
 
 ### Topology, stated as mitigation
 
@@ -91,23 +91,23 @@ Shelf and kind names leak organizational structure. Counts and edge shapes leak 
 
 **Declared anchors, and there are now two arguments.** The first is the entry's, and it is about truth. A node that asserts a service's properties takes on an obligation to stay true, and nothing in the design carries it. Its drift then reads as structural rather than editorial ([HW-EVAL-adjacent-work §A.1](../evaluations/adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary)).
 
-The second is about enforcement, and it did not exist before the ruling above. A filter has nothing to attach to on a node that carries properties. A document has facets that a predicate reads, and an anchor is carried whole or withheld whole. Declared anchors are what make a solution-layer export filterable at all ([spec 7](../spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). Revisit only against a concrete need that the anchor form cannot meet, argued as the model change that it would be.
+The second is about enforcement, and it did not exist before the ruling above. A filter has nothing to attach to on a node that carries properties. A document has facets that a predicate reads, and an anchor is carried whole or withheld whole. Declared anchors are what make a solution-layer export filterable at all ([spec 7](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). Revisit only against a concrete need that the anchor form cannot meet, argued as the model change that it would be.
 
 ### What the project takes on, and what it declines
 
 The entry says that documentation tooling with an access model is security software. Four things follow, by its account: a threat model, an audit obligation, a disclosure process, and a class of bug that nobody can fix forward. Under the destination model the first three shrink and the fourth stays whole.
 
-Headwater authenticates nobody, holds no session, evaluates no policy at request time, issues and revokes no credential, and records no read. Those obligations stay with the platform that already discharges them for the Markdown. [Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) now says so in the table of what we do not build. What Headwater does is generate an artifact from a declared rule and account for what it left out. That is a redaction tool, and it keeps the worst property of an authorization system. A leak cannot be fixed forward.
+Headwater authenticates nobody, holds no session, evaluates no policy at request time, issues and revokes no credential, and records no read. Those obligations stay with the platform that already discharges them for the Markdown. [Spec 0](../spec/vision-and-scope.md#what-we-do-not-build) now says so in the table of what we do not build. What Headwater does is generate an artifact from a declared rule and account for what it left out. That is a redaction tool, and it keeps the worst property of an authorization system. A leak cannot be fixed forward.
 
 So the project takes on three things, and they arrive with the first filtered profile.
 
 | Obligation | What discharges it |
 |---|---|
-| The exporter emits exactly the declared set | The projection census, plus a differential fixture set per profile ([spec 12](../spec/12-check-layer.md#the-correctness-roots)) |
+| The exporter emits exactly the declared set | The projection census, plus a differential fixture set per profile ([spec 12](../spec/check-layer.md#the-correctness-roots)) |
 | Somebody outside the project can report a defect | A stated coordinated-disclosure process |
-| The control never ships in a state where it may be wrong for a while | The [principle 4](../spec/00-vision-and-scope.md#design-principles) exception, recorded in the register |
+| The control never ships in a state where it may be wrong for a while | The [principle 4](../spec/vision-and-scope.md#design-principles) exception, recorded in the register |
 
-**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 7](../spec/07-distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and six non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits. Until 2026-10-03 this paragraph gave the count of non-claims as five. The sixth, that no claim about a license reaches any content, came from the warrant ruling of 2026-08-10, which [Q19](0019-inbound-integration-an-external-system-of-record.md) states.
+**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 7](../spec/distribution-and-federation.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and six non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits. Until 2026-10-03 this paragraph gave the count of non-claims as five. The sixth, that no claim about a license reaches any content, came from the warrant ruling of 2026-08-10, which [Q19](0019-inbound-integration-an-external-system-of-record.md) states.
 
 **One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([HW-EVAL-adjacent-work §O.12](../evaluations/adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
 

@@ -13,7 +13,7 @@
 //! answer is the same on every run. Before this rule nothing told the author
 //! that the page states one of two answers
 //! ([#1086](https://github.com/headwater-ai/headwater/issues/1086), first
-//! recorded in [spec 13](../../../../docs/spec/13-open-obligations.md) from
+//! recorded in [spec 13](../../../../docs/spec/open-obligations.md) from
 //! #820).
 //!
 //! # The documents it reads, and the edges

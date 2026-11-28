@@ -22,7 +22,7 @@ fn read(rel: &str) -> String {
 }
 
 fn spec_six() -> String {
-    read("docs/spec/06-engine-architecture.md")
+    read("docs/spec/engine-architecture.md")
 }
 
 /// Text with Markdown link targets, emphasis and code ticks removed, in lower
@@ -165,7 +165,7 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
         );
         assert!(
             pointer.contains(
-                "](09-decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"
+                "](decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"
             ),
             "the pointer paragraph of spec 6's `### CLI` does not cite Q43, which rules a refusal"
         );
@@ -363,7 +363,7 @@ const MOVED_CLAIMS: [&str; 6] = [
 /// Where `text`, in lower case, first names spec 6: the words `spec 6`, or a
 /// link into its file, whatever the link text says.
 fn spec_six_mention(text: &str) -> Option<usize> {
-    ["spec 6", "06-engine-architecture.md"]
+    ["spec 6", "engine-architecture.md"]
         .iter()
         .filter_map(|m| text.find(m))
         .min()

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#two-phases-and-why-the-order-matters) states what Phase A produces. "Failures here are structural findings: an unparseable file, an unclassifiable path, a dangling edge, an ambiguous shelf match." A reader takes that to mean four kinds of failure that a run reports as a finding.
+[Spec 12](../spec/check-layer.md#two-phases-and-why-the-order-matters) states what Phase A produces. "Failures here are structural findings: an unparseable file, an unclassifiable path, a dangling edge, an ambiguous shelf match." A reader takes that to mean four kinds of failure that a run reports as a finding.
 
 **Two of the four were measured on a scratch copy of this corpus, and neither produces one.** A Markdown file with no front matter was put on `docs/probe-runs/`. The census counts it, moves the untyped row from two to three, and names the file. The finding count holds at 523 and `headwater check --strict` exits 0. A file with unterminated front matter was then put under `docs/spec/`. The same thing happened, at the same count and the same exit status.
 
@@ -40,8 +40,8 @@ The corpus owes one sentence that says which Phase A outcomes are findings and w
 
 ## Discharge
 
-**What would discharge this.** One correction in [spec 12](../spec/12-check-layer.md#two-phases-and-why-the-order-matters), separating the Phase A outcomes that a rule reports from the ones the census and the conformance ladder report. The evidence for the separation is the control declaration on `OB-COV-1`, which already draws it.
+**What would discharge this.** One correction in [spec 12](../spec/check-layer.md#two-phases-and-why-the-order-matters), separating the Phase A outcomes that a rule reports from the ones the census and the conformance ladder report. The evidence for the separation is the control declaration on `OB-COV-1`, which already draws it.
 
 **What would not discharge this.** A new rule that turns an untyped file into a finding. That would move a decision the taxonomy has already taken, and it would take it in a diff about wording. It would also break the exemption this corpus relies on. `docs/doctrine/maturity-model.md` and `docs/w3id/README.md` stand untyped by choice, and the conformance gap is where that choice is reported.
 
-**Why this record exists rather than a correction.** The sentence is a normative claim of a specification part, and a change to it is a change to what an adopter is promised. [Q29](../spec/09-decisions.md#q29--whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach) leaned on the same sentence for a gloss and had to withdraw it, which is how this was found. The finding is filed here so that the correction is argued in its own change rather than inside a ruling about something else.
+**Why this record exists rather than a correction.** The sentence is a normative claim of a specification part, and a change to it is a change to what an adopter is promised. [Q29](../spec/decisions.md#q29--whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach) leaned on the same sentence for a gloss and had to withdraw it, which is how this was found. The finding is filed here so that the correction is argued in its own change rather than inside a ruling about something else.

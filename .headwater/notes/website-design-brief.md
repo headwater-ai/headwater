@@ -245,5 +245,5 @@ Specifics for the designer:
 - [LeanCTX](https://leanctx.com/) · [lean-ctx on GitHub](https://github.com/yvgude/lean-ctx) · [LeanCTX docs](https://leanctx.com/docs/)
 - [TrustGraph](https://trustgraph.ai/) · [trustgraph on GitHub](https://github.com/trustgraph-ai/trustgraph) · [TrustGraph docs](https://docs.trustgraph.ai/)
 - [Vale](https://vale.sh/) · [Vale docs](https://docs.vale.sh/) · [vale on GitHub](https://github.com/vale-cli/vale)
-- Internal: `docs/decisions/0016-public-presence.md`, `docs/evaluations/first-contact.md`, `docs/evaluations/adjacent-work.md` §I and §J, `docs/spec/00-vision-and-scope.md`, `README.md`
+- Internal: `docs/decisions/0016-public-presence.md`, `docs/evaluations/first-contact.md`, `docs/evaluations/adjacent-work.md` §I and §J, `docs/spec/vision-and-scope.md`, `README.md`
 - Measured: `headwater check` against this repository, 2026-08-23, taxonomy `headwater/standard 3.3.0`

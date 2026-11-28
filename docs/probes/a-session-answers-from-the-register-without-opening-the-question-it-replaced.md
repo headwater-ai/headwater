@@ -33,7 +33,7 @@ The task names no verb and no file. It asks for one settled answer, and this cor
 
 ## Target
 
-The session answers from [the decision register](../spec/09-decisions.md). The key reads a different document, the superseded list that the session must not open.
+The session answers from [the decision register](../spec/decisions.md). The key reads a different document, the superseded list that the session must not open.
 
 ## Key
 
@@ -43,7 +43,7 @@ The session answers from [the decision register](../spec/09-decisions.md). The k
 
 **The task names a question that both registers carry, and that is a measured choice rather than a convenience.** On the commit that lands this probe, the superseded document holds 62 headings and the register that replaced it holds 36. So the superseded document is the wider index, and a question the register does not carry would make this predicate unreachable rather than hard. Q20 is carried by both.
 
-**The document this examines is a generated one, and that costs a recorded result its lifetime.** `docs/spec/09-open-questions.md` carries a generated marker, so `headwater generate` rewrites it whenever the decisions shelf moves and the read-set digest moves with it. A result recorded against this probe is therefore reported stale on the next decision this repository lands. That is the right answer rather than a defect: the document under test did move, and a run over the old bytes says nothing about the new ones. It is stated here because a reader who sees a result void itself weekly should know which of the two reasons it is.
+**The document this examines is a generated one, and that costs a recorded result its lifetime.** `docs/spec/open-questions.md` carries a generated marker, so `headwater generate` rewrites it whenever the decisions shelf moves and the read-set digest moves with it. A result recorded against this probe is therefore reported stale on the next decision this repository lands. That is the right answer rather than a defect: the document under test did move, and a run over the old bytes says nothing about the new ones. It is stated here because a reader who sees a result void itself weekly should know which of the two reasons it is.
 
 **A session that did nothing is not a session that avoided anything.** The grader refuses `not_opened` where the transcript records no tool call at all, because such a session would satisfy the predicate without ever being at risk of failing it. So a refusal leaves the denominator and never the numerator, and the count of refusals is printed beside the rate.
 

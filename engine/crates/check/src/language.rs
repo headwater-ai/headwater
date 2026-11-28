@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the controlled language a kind declares.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists normative language among the Document-origin examples, and a language
 //! regime is where a taxonomy says which prose rules its documents obey.
 //!
@@ -31,10 +31,10 @@
 //!
 //! - **Sentence length**, ASD-STE100 writing rule 6.3 for descriptive text.
 //!   Advisory: the remediation is a rewrite, and
-//!   [spec 4](../../../../docs/spec/04-assurance-model.md#where-promotion-cannot-finish)
+//!   [spec 4](../../../../docs/spec/assurance-model.md#where-promotion-cannot-finish)
 //!   makes that permanently advisory whatever the precision turns out to be.
 //! - **No contraction.** An error, because the expansion is mechanical and
-//!   total, which is the bar [spec 12](../../../../docs/spec/12-check-layer.md#fixability)
+//!   total, which is the bar [spec 12](../../../../docs/spec/check-layer.md#fixability)
 //!   sets. A patch rides along for the endings whose expansion is one word.
 //!   [`EXPANSIONS`] is that table, and the paragraph below says which endings
 //!   are not in it.
@@ -53,7 +53,7 @@
 //! `he'd` is `he had` or `he would`. Only a reader of the sentence decides
 //! those, so they fail the mechanical-and-total bar that the two above meet.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) puts the bar on
+//! [Spec 12](../../../../docs/spec/check-layer.md#fixability) puts the bar on
 //! the **fix** rather than on the rule, and [`crate::Finding`] carries the patch
 //! per finding, so the split needs no second rule and no second severity. A
 //! contraction in [`EXPANSIONS`] carries a patch. One outside it carries the
@@ -90,7 +90,7 @@ const HOUSE: [(&str, Option<&str>); 2] = [("ASD-STE100", Some("house")), ("ste-h
 /// The list is the one `CLAUDE.md` states, moved to where a check reads it.
 /// A closed table of exact words rather than a suffix rule, because a suffix
 /// rule reports `enterprise` and `precise`, and
-/// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) measured
+/// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) measured
 /// that a lexicon of exact strings is the highest-precision shape a lexical
 /// rule takes.
 const SPELLINGS: [(&str, &str); 24] = [

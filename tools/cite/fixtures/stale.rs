@@ -9,5 +9,5 @@
 //
 // A checker that found only the invented class would report nothing here and
 // still look green.
-// per HW-SPEC-ai-integration (docs/spec/05-ai-integration.md)
+// per HW-SPEC-ai-integration (docs/spec/ai-integration.md)
 pub fn nothing() {}

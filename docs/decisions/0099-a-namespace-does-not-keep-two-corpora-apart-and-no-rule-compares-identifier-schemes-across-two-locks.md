@@ -20,11 +20,11 @@ relations:
 
 ## Context
 
-[HW-DR-0009](0009-multi-repository-corpora.md#context) says that namespaced identifiers stop two corpora in one tree from colliding. [Spec 1](../spec/01-conceptual-model.md#the-corpus) and [spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) made the same promise, and so does one paragraph of [HW-EVAL-graph-export-and-federation](../evaluations/graph-export-and-federation.md). The promise is false, and [#1368](https://github.com/headwater-ai/headwater/issues/1368) reported it.
+[HW-DR-0009](0009-multi-repository-corpora.md#context) says that namespaced identifiers stop two corpora in one tree from colliding. [Spec 1](../spec/conceptual-model.md#the-corpus) and [spec 3](../spec/authoring-and-lifecycle.md#identifiers) made the same promise, and so does one paragraph of [HW-EVAL-graph-export-and-federation](../evaluations/graph-export-and-federation.md). The promise is false, and [#1368](https://github.com/headwater-ai/headwater/issues/1368) reported it.
 
 **A namespace does not make two schemes disjoint.** One namespace plus a literal can spell another namespace. The scheme `{namespace}-{slug}` under the namespace `ZED-SPECIFICATION` and the scheme `{namespace}-SPECIFICATION-{slug}` under `ZED` both admit `ZED-SPECIFICATION-scope`. The test `a_namespace_that_spells_another_with_its_literal_is_not_disjoint` in `engine/crates/meta/src/identifier.rs` holds that pair as overlapping ([#1357](https://github.com/headwater-ai/headwater/issues/1357)).
 
-**Inside one lock, a rule already refuses such a pair.** The identifier-integrity rule of [spec 2](../spec/02-taxonomy-model.md#the-meta-schema) compares every pair of schemes in the resolved taxonomy, whatever their namespaces. `headwater taxonomy resolve` writes no lock while one pair overlaps. `headwater new` reads the same comparison when it proposes a scheme. Both readers see one resolved taxonomy, and so one lock.
+**Inside one lock, a rule already refuses such a pair.** The identifier-integrity rule of [spec 2](../spec/taxonomy-model.md#the-meta-schema) compares every pair of schemes in the resolved taxonomy, whatever their namespaces. `headwater taxonomy resolve` writes no lock while one pair overlaps. `headwater new` reads the same comparison when it proposes a scheme. Both readers see one resolved taxonomy, and so one lock.
 
 **Across two locks, nothing compares them, and the engine has no place to do it.** Three facts, measured against `main` at `a0736315`, stop a rule from being written now:
 

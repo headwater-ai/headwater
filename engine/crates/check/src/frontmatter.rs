@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The prose a document writes in its front matter, for the rules that read it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! held the Document origin to the body for two editions, and a `summary` is
 //! prose that `headwater generate` publishes verbatim onto a shelf index. So the
 //! most-read line of a document answered to no rule.

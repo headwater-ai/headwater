@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The fixture set that lets an imported edge carry full weight.
 //!
-//! [Q19](../../../../docs/spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record)
+//! [Q19](../../../../docs/spec/decisions.md#q19--inbound-integration-an-external-system-of-record)
 //! rules that an imported edge carries full weight from the first release, and
 //! its argument for that is not a posture. It is that "an importer is not a
 //! rule. It is a producer of graph facts, and a wrong imported edge produces a

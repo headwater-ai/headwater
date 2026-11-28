@@ -133,9 +133,9 @@ copy="$scratch/site"
 mkdir -p "$copy"
 cp -R "$deploy"/. "$copy"/ 2>/dev/null
 
-victim="$copy/spec/09-decisions/index.html"
+victim="$copy/spec/decisions/index.html"
 if [ ! -f "$victim" ]; then
-    echo "  FAIL  the fixture page \`spec/09-decisions/index.html\` is not in the" >&2
+    echo "  FAIL  the fixture page \`spec/decisions/index.html\` is not in the" >&2
     echo "        assembled site, so the doctored cases below cannot run. This" >&2
     echo "        suite names one page on purpose: if the specification moves," >&2
     echo "        this line is the notice." >&2
@@ -161,7 +161,7 @@ report "  and it names the source line a person edits" 1 "$status" "docs/" "$scr
 # 4. Break the other side: an href that names an anchor nothing carries. Same
 #    defect from the citing document's end.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
@@ -175,11 +175,11 @@ report "a same-page href to no anchor fails the run" 1 "$status" "q10--no-such-h
 # 5. A cross-page href to no anchor, which is the exact shape of all 335
 #    findings #431 recorded.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s = s.replace('</body>', '<a href="../06-engine-architecture/#no-such-anchor">x</a></body>', 1)
+s = s.replace('</body>', '<a href="../engine-architecture/#no-such-anchor">x</a></body>', 1)
 open(p, "w", encoding="utf-8").write(s)
 PY
 status=$(run "$copy")
@@ -189,7 +189,7 @@ echo "what must not fire"
 
 # 6. An external URL carrying a fragment is somebody else's page.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
@@ -202,7 +202,7 @@ report "an external fragment is not checked" 0 "$status" "0 dead fragments" "$sc
 # 7. The pre-HTML5 `<a name>` anchor is a target a browser honours, so a
 #    checker that read only `id` would report a link that in fact resolves.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
@@ -215,7 +215,7 @@ report "an \`<a name>\` anchor resolves" 0 "$status" "0 dead fragments" "$scratc
 
 # 8. A percent-encoded fragment names the same anchor a browser resolves it to.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
@@ -228,7 +228,7 @@ report "a percent-encoded fragment resolves" 0 "$status" "0 dead fragments" "$sc
 # 9. A fragment is compared exactly. #208 records that this corpus's own rule
 #    folds case where a browser does not, and this checker must not repeat it.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
@@ -242,7 +242,7 @@ echo "the path half, which reports and does not fail"
 
 # 10. A dead path is a different defect and #406 owns it. It reports.
 cp -R "$deploy"/. "$copy"/
-python3 - "$copy/spec/09-decisions/index.html" <<'PY'
+python3 - "$copy/spec/decisions/index.html" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()

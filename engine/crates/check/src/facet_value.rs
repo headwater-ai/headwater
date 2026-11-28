@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Shape-origin check, generated from the value set a facet declares.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists "enum membership" second among the Shape-origin examples. Nothing
 //! below names a facet or a value. The instance set is every typed document,
 //! and the rule reads the declared set of every facet the document wrote.
@@ -15,7 +15,7 @@
 //! At the value, because that is the text to change. The remediation names the
 //! whole admitted set rather than one member of it: which value is correct is a
 //! statement about the document that only its author can make, so no fix is
-//! mechanical ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
+//! mechanical ([spec 12](../../../../docs/spec/check-layer.md#fixability)).
 //!
 //! # The admitted set is per kind, and a kind that narrows nothing admits all
 //!

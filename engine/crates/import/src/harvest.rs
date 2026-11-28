@@ -2,7 +2,7 @@
 //! The pinned-export anchor resolver: a document identity that another
 //! repository's committed export holds.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
 //! says how a tier above a corpus reaches the corpora below it. It declares an
 //! anchor kind, exactly one resolver owns that kind, and "that resolver reads
 //! pinned corpus exports, in the way that the `code_path` resolver reads a

@@ -2,7 +2,7 @@
 //! The standing test of a correctness root: a cache that cannot change a
 //! verdict.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots):
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots):
 //! "a cache that can change a verdict is a store under another name.
 //! `headwater check --no-cache` and `headwater check` produce byte-identical
 //! output, and that comparison is a fixture rather than an assumption."
@@ -458,7 +458,7 @@ fn rewrite(path: &Path, from: &str, to: &str) {
 
 /// A day that passed is not served from the entry written before it.
 ///
-/// This is the hole [spec 13](../../../../docs/spec/13-open-obligations.md)
+/// This is the hole [spec 13](../../../../docs/spec/open-obligations.md)
 /// recorded against the key, closed and then held closed. `zeta.md` is inside
 /// its participation window on the first date and outside it on the second, so
 /// the two runs reach two verdicts over a corpus whose bytes never moved.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The path patterns a shelf and an exclusion are written in.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#kind-resolution) says
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#kind-resolution) says
 //! that kind resolution "matches the path against shelf patterns — the most
 //! specific wins, and ties are a schema-validation error, not a runtime
 //! coin-flip". It does not say what the pattern language is, and it does not say
@@ -12,7 +12,7 @@
 //! # Why the meta-schema owns this
 //!
 //! The language started in `headwater-census`, which was the first code to read
-//! a shelf declaration. [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! a shelf declaration. [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! then recorded that the ordering "belongs to the meta-schema", and the
 //! determinism rule of `taxonomy validate` proved the point: that rule asks
 //! whether two shelf patterns can match one path, and it runs before any corpus
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn a_trailing_any_depth_matches_the_directory_and_everything_under_it() {
         let pattern = Pattern::new("docs/spec/**");
-        assert!(pattern.matches("docs/spec/12-check-layer.md"));
+        assert!(pattern.matches("docs/spec/check-layer.md"));
         assert!(pattern.matches("docs/spec/deep/deeper/file.md"));
         assert!(pattern.matches("docs/spec"));
         assert!(!pattern.matches("docs/evaluations/a.md"));
@@ -767,7 +767,7 @@ mod tests {
         "docs/spec",
         "docs/spec/02.md",
         "docs/spec/deep/a.md",
-        "docs/spec/12-check-layer.md",
+        "docs/spec/check-layer.md",
         "docs/12-check-layer.md",
         "docs/1-check-layer.md",
         "docs/evaluations/a.md",

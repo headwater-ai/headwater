@@ -260,7 +260,7 @@ fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
 ///
 /// This repository's own overlay addresses exactly one kind that the base
 /// declares. It is `kinds.decision.language`, which
-/// [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// [Q27](../../../../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
 /// added, and `specification` is the base kind it does not reach. This section
 /// needs an entry over a base kind that the candidate renames, and the overlay's
 /// one entry is over the wrong member: [`Root::without`] explains that renaming
@@ -922,7 +922,7 @@ fn a_major_upgrade_with_no_payload_is_reported() {
 /// that reports a document. The accounting therefore comes from the
 /// classification half alone, which no other case reaches.
 ///
-/// The isolation is built rather than assumed. [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// The isolation is built rather than assumed. [Q27](../../../../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
 /// binds the house language regime to `decision`, and that kind comes from the
 /// base, so the copied overlay is what takes three rules off three documents
 /// when the rename lands. [`Root::without`] removes the line first.
@@ -1028,7 +1028,7 @@ fn a_target_no_bundle_declares_stops_the_publish() {
 /// the source half is held against the base alone.
 ///
 /// The base alone is what a consumer who selects no bundle resolves, and a
-/// bundle is add-only ([spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)),
+/// bundle is add-only ([spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)),
 /// so a value the base declares is declared under every selection. That is what
 /// "renames something that did not move" means, and it is the only reading of it
 /// a publisher can certify. A value only a bundle declares moved for the

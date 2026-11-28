@@ -31,7 +31,7 @@ A **lifecycle regime** names a subset of the state vocabulary, and a kind binds 
 
 A **shelf discriminator** narrows a value set per kind, at census time rather than at check time. `doc_type` is the discriminator of `spec_series` and of `reviews`, and kind resolution refuses a value the shelf does not admit. The discriminator needs a bijection, because the value *is* the kind. It cannot say that one kind takes two of five values.
 
-**`facets.forbid`** removes the whole facet from a kind. [Spec 2](../spec/02-taxonomy-model.md) already states that it takes away and adds nothing. It has no subset form.
+**`facets.forbid`** removes the whole facet from a kind. [Spec 2](../spec/taxonomy-model.md) already states that it takes away and adds nothing. It has no subset form.
 
 So subset narrowing, on a facet with no machine and no shelf that discriminates on it, is expressible by nothing. Eight of the fourteen facets in this repository's resolved taxonomy declare a closed value set. One of the eight is the state facet and one is `doc_type`. Each of the other six is required by exactly one kind, so **a per-kind value set changes no verdict in this corpus**. The reader is an adopter who writes a taxonomy, and [#222](https://github.com/headwater-ai/headwater/issues/222) names that reader.
 

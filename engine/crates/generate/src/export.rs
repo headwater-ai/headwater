@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `headwater export`: the emitters, the loss set, and the projection census.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 //! settles the shape of this module in three sentences. "A graph export is a
 //! projection like the others." "Every emitter declares a **loss set**: the node
 //! classes, edge classes, and attributes that its target cannot carry, each with
@@ -23,7 +23,7 @@
 //!
 //! So the loss set is a claim and the census is the audit of it, and neither
 //! alone is worth much. That is the coverage doctrine of
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! applied one layer out, which is what spec 7 says it is.
 //!
 //! # The denominator is the corpus, not the identifier index
@@ -40,7 +40,7 @@
 //! # exact
 //!
 //! JSON has numbers and YAML has a core schema that resolves them
-//! ([Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)). An emitter
+//! ([Q2](../../../../docs/spec/decisions.md#q2--schema-format)). An emitter
 //! that resolved a scalar into a JSON number would export `1.10` as `1.1`, and
 //! the native export claims no loss. The text a document wrote is what travels,
 //! and a consumer that wants a type reads the facet declaration that the same
@@ -165,7 +165,7 @@ pub struct Emission {
 
 /// Why an export produced nothing.
 ///
-/// An exporter fails closed ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter)):
+/// An exporter fails closed ([spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-profile-carries-a-filter)):
 /// "An exporter that cannot evaluate its filter emits nothing and fails the run.
 /// It never emits an unfiltered artifact, and it never emits a partly filtered
 /// one."
@@ -209,7 +209,7 @@ impl Refusal {
 /// # Why this is counted rather than typed
 ///
 /// The sentence [`Refusal::reason`] returns is quoted verbatim in
-/// `docs/spec/02-taxonomy-model.md`, and `tests/spec_two_emitters.rs` compares
+/// `docs/spec/taxonomy-model.md`, and `tests/spec_two_emitters.rs` compares
 /// the two. A hardcoded "six" makes that comparison worthless: the day a third
 /// emitter ships, the document and the literal are false in the same words, the
 /// test compares one false thing to another, and it stays green. Counted off
@@ -420,7 +420,7 @@ fn rule_for(withheld: &[(String, String)], key: &str) -> Option<String> {
 
 /// The native export: the property graph, with no loss.
 ///
-/// [Q13](../../../../docs/spec/09-decisions.md#q13--linkml-and-shacl-as-substrate)
+/// [Q13](../../../../docs/spec/decisions.md#q13--linkml-and-shacl-as-substrate)
 /// puts it second in the staging order and gives the reason it ships without an
 /// external consumer: the solution corpus of Q9 reads it, and so does any local
 /// tool. Its loss set is empty, and the round-trip test is what proves that
@@ -634,7 +634,7 @@ fn of_value(value: &Value) -> Json {
 ///
 /// # What it constrains, and why the list is short
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// [Spec 12](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// admits a target only when "the emitted constraint catches exactly what the
 /// native check catches". Two check families clear that bar and no third one
 /// does.
@@ -932,7 +932,7 @@ fn constraint(shape: &headwater_check::Shape, kind: &str, name: &str) -> Json {
 /// instance over a kind that forbids the facet, which is the whole of what the
 /// prohibition does natively. A schema keyword that rejected it would report an
 /// error the engine does not, and
-/// [spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// [spec 12](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// rules that an emitter omits a construct whose meaning inverts. The loss set
 /// records the drop, which is a different statement: less coverage, not a
 /// wrong answer.
@@ -1087,7 +1087,7 @@ fn withholding(rule: &str) -> String {
 
 /// The artifact: the marker, what this export is, what it dropped, and the body.
 ///
-/// The declaration travels with the artifact ([spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)),
+/// The declaration travels with the artifact ([spec 12](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)),
 /// so the loss set and the census are members of the file rather than lines of a
 /// report. A consumer who copies the export copies its limits with it, and one
 /// who reads a copy that arrived without the report is the reader this rule is

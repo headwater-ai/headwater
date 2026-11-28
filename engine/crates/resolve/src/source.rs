@@ -2,7 +2,7 @@
 //! A source on its way into a resolution: loaded, named, and validated against
 //! the meta-schema before anything merges it.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema): "The
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema): "The
 //! engine never applies a taxonomy that does not validate. There is no partial
 //! load mode." So validation is here rather than in a verb that a caller may
 //! forget to run, and `headwater taxonomy validate`

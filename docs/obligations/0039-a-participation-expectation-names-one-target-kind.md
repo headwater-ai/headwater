@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The [declaration](../spec/02-taxonomy-model.md#participation-expectations) carries one `to_kind`. A corpus that expects a citation from any one of several register kinds cannot state that.
+The [declaration](../spec/taxonomy-model.md#participation-expectations) carries one `to_kind`. A corpus that expects a citation from any one of several register kinds cannot state that.
 
 ## Obligation
 
@@ -32,7 +32,7 @@ The route that does run is the one the runtime already took. `Participation::sat
 
 ## Discharge
 
-The meta-schema now declares `to_kind` optional. [Spec 2](../spec/02-taxonomy-model.md#participation-expectations) states what the absence means, and `requirement-verified` declares no `to_kind`.
+The meta-schema now declares `to_kind` optional. [Spec 2](../spec/taxonomy-model.md#participation-expectations) states what the absence means, and `requirement-verified` declares no `to_kind`.
 
 Two fixtures hold the change. `engine/crates/resolve/fixtures/validate/valid/` is the passing side, where an expectation with no `to_kind` resolves and validates clean. `engine/crates/check/tests/participation_target.rs` holds the behavior. Its broad arm reports only the document that reaches nothing, and its narrow arm still reports the probe-verified one.
 

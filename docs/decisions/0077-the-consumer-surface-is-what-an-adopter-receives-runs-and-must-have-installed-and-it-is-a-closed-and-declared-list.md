@@ -34,7 +34,7 @@ An audit of the tree on 2026-09-20 measured what that silence costs. [#892](http
 
 **The merge hazard ships and the protection does not.** `headwater generate` writes folds over the whole corpus into every adopter's tree. [HW-DR-0049](0049-a-corpus-wide-fold-is-derived-and-never-stored.md) names the hazard and says that an adopter inherits the rule rather than the artifacts. The hooks that protect this repository resolve an engine under `engine/target`, which no adopter has. Each `python3` call in them guards a check of this repository's own site and fails open. The general half of the merged-state check is already two verbs, `headwater generate --check` and `headwater taxonomy resolve --check`.
 
-**Two specification parts promise what no release carries.** [Spec 0](../spec/00-vision-and-scope.md) says that the skills and the hooks ship with the first release. [Spec 5](../spec/05-ai-integration.md) calls that machinery the adoption model. The release archive holds a binary and a license, and the package holds no harness file.
+**Two specification parts promise what no release carries.** [Spec 0](../spec/vision-and-scope.md) says that the skills and the hooks ship with the first release. [Spec 5](../spec/ai-integration.md) calls that machinery the adoption model. The release archive holds a binary and a license, and the package holds no harness file.
 
 The owner's statement for release 0.2 is that an adopter needs nothing but the `headwater` binary. No Rust toolchain, no Python and no script of this repository is part of it. The owner ruled on ten questions from the audit on 2026-09-20, and the comment of that date on #892 records each answer. This record is where those rulings live.
 

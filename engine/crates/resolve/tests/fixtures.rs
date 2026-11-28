@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The resolver's fixture corpus.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! asks this component for two things by name: "The resolver carries its own
 //! round-trip and confluence fixtures." Both are here, and neither is an
 //! assertion in Rust that a later rewrite could quietly weaken.
@@ -259,7 +259,7 @@ fn a_resolved_taxonomy_resolves_to_itself() {
 
 /// The rules of `taxonomy validate` that read a resolved taxonomy.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship):
+/// [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship):
 /// "every check ships with at least one fixture that it fails and one that it
 /// passes." `validate/valid/` is the passing side for every rule at once, and
 /// each other directory is a mutation of it that trips a named group.

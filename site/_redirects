@@ -52,7 +52,7 @@
 /obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge/ /process/obligations/0221-subagents-read-skills-from-the-shared-checkout-and-a-worktree-isolated-integrator-cannot-fast-forward-it-after-a-merge/ 301
 /process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-reads-and-an-unset-value-falls-back-to-ubuntu-latest/ /process/decisions/0016-ci-runner-is-an-opt-in-that-only-a-push-or-a-merge-group-reads-and-an-unset-value-falls-back-to-ubuntu-latest/ 301
 /process/decisions/0018-a-router-sends-a-push-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away/ /process/decisions/0018-a-router-sends-a-push-or-merge-group-run-to-a-hosted-runner-when-the-self-hosted-pool-is-full-and-it-can-only-take-work-away/ 301
-/spec/08-prior-art-and-departures/ /spec/08-design-departures/ 301
+/spec/08-prior-art-and-departures/ /spec/design-departures/ 301
 /spec/10-theoretical-foundations/ /evaluations/theoretical-foundations/ 301
 /spec/11-adjacent-work/ /evaluations/adjacent-work/ 301
 /spec/17-orchestration-architecture/ /process/specs/orchestration-architecture/ 301

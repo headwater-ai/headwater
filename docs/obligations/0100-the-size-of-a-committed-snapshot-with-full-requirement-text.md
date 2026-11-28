@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) rules that a pointer resolves offline against a committed snapshot.
+[Q19](../spec/decisions.md#q19--inbound-integration-an-external-system-of-record) rules that a pointer resolves offline against a committed snapshot.
 
 ## Obligation
 
@@ -31,4 +31,4 @@ The corpus owes the size of a committed snapshot that carries full requirement t
 
 ## Discharge
 
-That is the same question that [Q9](../spec/09-decisions.md#q9--multi-repository-corpora) holds about a vendored source export, and no importer has run to answer either.
+That is the same question that [Q9](../spec/decisions.md#q9--multi-repository-corpora) holds about a vendored source export, and no importer has run to answer either.

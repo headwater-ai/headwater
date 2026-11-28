@@ -1270,7 +1270,7 @@ mod tests {
     /// them from one that does not.
     fn disagreeing() -> Population {
         let generated = Output {
-            path: "docs/spec/06-engine-architecture.md".to_string(),
+            path: "docs/spec/engine-architecture.md".to_string(),
             producer: Producer::Generate,
         };
         let lock = Output {
@@ -1327,7 +1327,7 @@ mod tests {
         assert!(!rendered.contains('\x1b'), "{rendered:?}");
         assert!(rendered.starts_with("2 derived artifacts, computed from 4 producers\n"));
         assert!(rendered.contains("  headwater generate — carries the generated-file marker"));
-        assert!(rendered.contains("    docs/spec/06-engine-architecture.md\n"));
+        assert!(rendered.contains("    docs/spec/engine-architecture.md\n"));
         assert!(rendered.contains("these are written by a producer and carry neither"));
         assert!(rendered.contains("these declare `merge=headwater-regenerate` and no producer"));
         assert!(rendered.contains("    docs/handbook.md\n"));
@@ -1347,7 +1347,7 @@ mod tests {
                 "\x1b[1m2 derived artifacts, computed from 4 producers\x1b[0m",
             ),
             ("verb", "\x1b[1;32mheadwater generate\x1b[0m"),
-            ("path", "\x1b[36mdocs/spec/06-engine-architecture.md\x1b[0m"),
+            ("path", "\x1b[36mdocs/spec/engine-architecture.md\x1b[0m"),
             ("unproduced path", "\x1b[36mdocs/handbook.md\x1b[0m"),
             (
                 "undeclared refusal",

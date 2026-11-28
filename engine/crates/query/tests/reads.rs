@@ -251,7 +251,7 @@ fn the_fixture_tree_answers_the_recorded_reads() {
 
 /// Two surfaces over one corpus answer identically.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+/// [Spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// binds a run to "same corpus, same lock, same injected clock, byte-identical
 /// output", and a read an agent depends on is held to the same bar. This is
 /// that comparison, run over this repository rather than over the tree written
@@ -268,7 +268,7 @@ fn two_reads_of_one_corpus_are_byte_identical() {
             "{task}"
         );
     }
-    let target = "docs/spec/05-ai-integration.md";
+    let target = "docs/spec/ai-integration.md";
     assert_eq!(
         first
             .explain(target)

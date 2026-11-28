@@ -27,7 +27,7 @@ A kind declares `identifier: {scheme: …}`. The meta-schema's `kind_identifier`
 
 The typing pass wrote `id` anyway, because every governed document in this corpus needs one. `headwater_graph::Config` carries the key as a parameter, `identifier_facet`, defaulted to `"id"`. That way the index and the generated identifier check read the same key. `.headwater/README.md`'s guess table carries the row, and [HW-OBL-0053](../obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md) carries the debt.
 
-[Q2](../spec/09-decisions.md#q2--schema-format) already rules that Headwater owns its own schema language. So this record is not blocked on that ruling. It is blocked on someone stating the declaration inside the language Q2 settled.
+[Q2](../spec/decisions.md#q2--schema-format) already rules that Headwater owns its own schema language. So this record is not blocked on that ruling. It is blocked on someone stating the declaration inside the language Q2 settled.
 
 [Q4](0004-relation-storage.md) met the same shape of gap for `relations:`. It closed the gap the same way: a fixed literal key, stated once for every kind, and never a per-kind parameter. A relation instance and a minted identifier are both values that every kind's front matter carries in a predictable place. An author, or a check, would otherwise look up the key per kind before it reads a document. That lookup is the cost the fixed key removes.
 
@@ -41,6 +41,6 @@ The front-matter key `id` carries the value that a kind's `identifier: {scheme: 
 
 **`.headwater/README.md`'s guess table loses the row for this gap.** The table lists what the typing pass still had to guess, and this row named a settled question.
 
-**[HW-OBL-0053](../obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md) discharges.** The obligation was to state the declaration, and this record is that statement. Its entry leaves [13 — Open obligations](../spec/13-open-obligations.md) to match.
+**[HW-OBL-0053](../obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md) discharges.** The obligation was to state the declaration, and this record is that statement. Its entry leaves [13 — Open obligations](../spec/open-obligations.md) to match.
 
 **Every existing document keeps validating.** Every `kinds.*.identifier` declaration in the base package and the overlay already uses only `{scheme: …}`. Every governed document already writes `id`. The decision states what the corpus already does. It changes no file under `docs/` beyond the ones this record names.

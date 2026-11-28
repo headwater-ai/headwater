@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/07-distribution-and-federation.md#conformance) says that a rule no tree decides degrades to a recorded attestation with an owner and a date. It adds that such rules are not silently dropped. The verb keeps the second half of that promise and cannot keep the first.
+[Spec 7](../spec/distribution-and-federation.md#conformance) says that a rule no tree decides degrades to a recorded attestation with an owner and a date. It adds that such rules are not silently dropped. The verb keeps the second half of that promise and cannot keep the first.
 
 The measurement over this repository, at `--now 2026-08-14`:
 
@@ -40,7 +40,7 @@ That is what holds the ladder at three rungs. [The maturity model](https://githu
 
 The corpus owes a record format for an attestation: what it asserts, who owns it, the date it was taken, and what makes it stale. Nothing today states any of the four.
 
-Two constraints are already fixed and neither is negotiable. An attestation is a claim a person makes about a thing this engine cannot read. It is evidence rather than a measurement, so a rung that rests on one rests on a person's word. And [spec 4](../spec/04-assurance-model.md#accuracy-audit) rules that an audit output which is not addressable is theater. The same argument holds one level down: an attestation that is not a typed, tracked document is a checkbox.
+Two constraints are already fixed and neither is negotiable. An attestation is a claim a person makes about a thing this engine cannot read. It is evidence rather than a measurement, so a rung that rests on one rests on a person's word. And [spec 4](../spec/assurance-model.md#accuracy-audit) rules that an audit output which is not addressable is theater. The same argument holds one level down: an attestation that is not a typed, tracked document is a checkbox.
 
 The open question is the expiry. A waiver and a suppression each carry a mandatory one. An attestation states that something was true on a date, and says nothing about the day after. So it may need a staleness window rather than an expiry, and no document states which.
 

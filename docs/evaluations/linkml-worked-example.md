@@ -19,7 +19,7 @@ relations:
 
 # The Headwater taxonomy in LinkML — a worked example
 
-Evidence for [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate). [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
+Evidence for [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate). [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
 
 ## The schema
 
@@ -280,7 +280,7 @@ That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* 
 
 Everything Headwater-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them. It gives no validation, no generator output, and no error when `headwater:nuclearity` is misspelled or set to a value that does not exist.
 
-So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary. Authors would then face two languages in one file, with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#2--schema-format) is meant to catch.
+So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary. Authors would then face two languages in one file, with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/open-questions.md#2--schema-format) is meant to catch.
 
 Writing it out is what made this concrete. It reads fine until you notice that a third of the semantics is inert.
 
@@ -303,4 +303,4 @@ Take **option 3** into the Q2 walkthrough as the leading candidate, with these c
 - It removes the Q1 tension entirely. A Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling.
 - The SHACL question resolves itself. SHACL becomes an output artifact for external consumers, so its poor error messages never reach a Headwater author.
 - The cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents Headwater accepts, which is a real and ongoing cost.
-- The shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.
+- The shape/graph boundary needs to be stated in [spec 6](../spec/engine-architecture.md) as an architectural seam, because it is one.

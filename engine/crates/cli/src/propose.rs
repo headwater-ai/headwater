@@ -2,7 +2,7 @@
 //! The overlay fragment `headwater infer` proposes from a tree, and the files
 //! the fragment leaves untyped.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md) and
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md) and
 //! HW-DR-0012 name three artifacts of one read of a tree: an overlay, a report
 //! of what no proposed shelf or kind explains, and the adoption payload. The
 //! payload is built in the verb. This module builds the first two, as a pure

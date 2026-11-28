@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-The measurement layer declared two kinds and five facets, and getting them declared met two rules of this language at once. The [facet canons](../spec/02-taxonomy-model.md) refuse a facet that no kind requires, no shelf discriminates on, no expectation reads and no projection filters on. `headwater new` refuses a kind that requires a facet with a closed value set that no engine role determines. So a facet is required or it is unread, and a value that an author chooses is neither.
+The measurement layer declared two kinds and five facets, and getting them declared met two rules of this language at once. The [facet canons](../spec/taxonomy-model.md) refuse a facet that no kind requires, no shelf discriminates on, no expectation reads and no projection filters on. `headwater new` refuses a kind that requires a facet with a closed value set that no engine role determines. So a facet is required or it is unread, and a value that an author chooses is neither.
 
 Both refusals were measured on this repository rather than argued:
 
@@ -35,7 +35,7 @@ The first is what the resolver says when `probe_category` is optional. The secon
 
 **The first gap is closed and the second is not.** `oracle` names the check that a `patched` expectation grades a produced patch against, and it applies to one value of `expectation` and to no other. The language cannot say that. So `oracle` is required of every probe, and four of the five expectation forms write `none` into it.
 
-The corpus owes a way to state that a facet is required when another facet holds a named value. Two shapes are candidates. A `required_when` member on the facet, read by `facet.required.missing`, would put the condition where the facet is. The other shape is a kind for each expectation form. It costs five kinds that differ in one value. [Spec 2](../spec/02-taxonomy-model.md) refuses that shape: two documents that differ only in a value are one kind with a facet.
+The corpus owes a way to state that a facet is required when another facet holds a named value. Two shapes are candidates. A `required_when` member on the facet, read by `facet.required.missing`, would put the condition where the facet is. The other shape is a kind for each expectation form. It costs five kinds that differ in one value. [Spec 2](../spec/taxonomy-model.md) refuses that shape: two documents that differ only in a value are one kind with a facet.
 
 ## Discharge
 
@@ -59,7 +59,7 @@ It is not free, and the price is what keeps this record open. A facet is what a 
 
 **The shape recurred a third time, and this one is harder than the two above.** [#809](https://github.com/headwater-ai/headwater/issues/809) asked for a facet that holds the shape of a derived artifact, closed to the rows of [*The shapes a record takes*](../evaluations/what-a-check-can-know.md#the-shapes-a-record-takes). No member of that population can carry one. Most members are generated documents, which carry no front matter at all. The rest are a lock, some site pages, some recorded fixtures and two append-only stores, and none of those is a document.
 
-**So the subject of the fact is a path that no shelf claims.** [Spec 2](../spec/02-taxonomy-model.md) states that `facets` declares what a document carries. The nearest root to a fact about a path is `anchors`, which declares a resolver and no facets. Spec 2 also rules that a new declaration root is a change to the meta-schema, so the cost of the alternative is real.
+**So the subject of the fact is a path that no shelf claims.** [Spec 2](../spec/taxonomy-model.md) states that `facets` declares what a document carries. The nearest root to a fact about a path is `anchors`, which declares a resolver and no facets. Spec 2 also rules that a new declaration root is a change to the meta-schema, so the cost of the alternative is real.
 
 **What #809 did instead was to compute the fact rather than declare it.** `headwater derived` reads the shape from the structure of the artifact and from the rule of the producer that writes it. That works here because a shape is observable. It answers nothing for a fact that only an author knows, which is the gap the rest of this record holds open.
 

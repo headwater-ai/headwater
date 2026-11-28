@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The walker's fixture tree, and the census of this repository.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! asks for the first by name: the census walker "ships with a fixture tree of
 //! the pathological cases". The tree under `fixtures/walk/` is that, and the
 //! recorded census beside it is what the walk must make of it.

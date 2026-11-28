@@ -39,7 +39,7 @@ PY
 
 # The sound change: both halves of the edge.
 reference() {
-    link docs/spec/12-check-layer.md cites_evidence HW-EVAL-owl-skos-worked-example && link docs/evaluations/owl-skos-worked-example.md cited_by HW-SPEC-check-layer
+    link docs/spec/check-layer.md cites_evidence HW-EVAL-owl-skos-worked-example && link docs/evaluations/owl-skos-worked-example.md cited_by HW-SPEC-check-layer
 }
 
 # The half on the evaluation, alone.
@@ -83,6 +83,6 @@ commented_edge() {
 
 # The first half, with the second half as a sentence of the body.
 body_only() {
-    link docs/spec/12-check-layer.md cites_evidence HW-EVAL-owl-skos-worked-example && printf '\nHW-SPEC-check-layer cites this evaluation as evidence.\n' >> docs/evaluations/owl-skos-worked-example.md
+    link docs/spec/check-layer.md cites_evidence HW-EVAL-owl-skos-worked-example && printf '\nHW-SPEC-check-layer cites this evaluation as evidence.\n' >> docs/evaluations/owl-skos-worked-example.md
 }
 more_wrong="commented_edge body_only"

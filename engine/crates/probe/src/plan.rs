@@ -3,7 +3,7 @@
 //!
 //! # The plan is the half of the run identity that exists before the run
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [Spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! fixes six members of a run identity before anything is called: the taxonomy
 //! lock hash, the corpus tree hash, the probe selection hash, the read-set
 //! hash, the rotation seed and the harness version. This is where they are
@@ -655,7 +655,7 @@ pub struct Plan {
     /// Targets an `examines` edge names that are not documents of this corpus,
     /// in the text the resolver normalized.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// rules that "an external anchor is in no read set", because a read set is
     /// a list of corpus paths and an anchor names a target that is not one.
     /// They are listed here so that the exclusion has a location rather than
@@ -1543,7 +1543,7 @@ pub fn read_set_over(selected: &[Selected], census: &Census) -> ReadSet {
     // A generated document is classified `generated` rather than `typed`,
     // and the census still carries the digest of the bytes it read. An
     // `examines` edge may name one, because such a document is a file a
-    // session can open: `docs/spec/09-open-questions.md` is a generated
+    // session can open: `docs/spec/open-questions.md` is a generated
     // shelf index that the decision register superseded, and a probe over
     // it asks whether a session opens the document that lost.
     //

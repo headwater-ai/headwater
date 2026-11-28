@@ -2,7 +2,7 @@
 //! Two rules over the provenance block: a warrant outside the closed set, and
 //! an acceptor the warrant does not pair with.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 //! states both in one paragraph. The warrant's "value set is closed", and
 //! "each value requires a different part of the block, and the engine checks
 //! the pairing". Before these rules no check read either half. A document at

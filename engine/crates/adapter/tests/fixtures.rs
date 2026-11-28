@@ -1965,7 +1965,7 @@ fn count(block: &Value, key: &str) -> usize {
 /// Every format states how many of the run's instances reached no verdict, and
 /// under which class.
 ///
-/// [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+/// [Spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 /// asks OB-COV-3 for the skips with their reasons, and three of the four formats
 /// carried the instance total and nothing else. A consumer read `266 instances`
 /// off a run where 66 of them decided nothing.

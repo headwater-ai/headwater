@@ -1,5 +1,5 @@
 #!/bin/sh
-# What holds the obligation register: [spec 13](../../docs/spec/13-open-obligations.md)
+# What holds the obligation register: [spec 13](../../docs/spec/open-obligations.md)
 # names, in one of its five lists, every obligation record on
 # `docs/obligations/` that has not been paid, and no others.
 #
@@ -10,7 +10,7 @@
 #
 # Measured on 2026-09-17 against `docs/obligations/*.md` (excluding
 # `README.md`, which carries no `id`) and the `- [HW-OBL-NNNN](...)` bullet
-# lines of `docs/spec/13-open-obligations.md`: the shelf held 198 records, 178
+# lines of `docs/spec/open-obligations.md`: the shelf held 198 records, 178
 # `current` and 20 `discharged`. The file carried 181 bullet lines. Eight of
 # them named a record that had already discharged — the rule the file states
 # for itself is that a discharged record "stays on the shelf and leaves the
@@ -35,7 +35,7 @@
 # document that discusses a status word in its body is never misread.
 #
 # THE BULLETED RECORDS are the identifier named by every line of
-# `docs/spec/13-open-obligations.md` that opens with `- [HW-OBL-` — the
+# `docs/spec/open-obligations.md` that opens with `- [HW-OBL-` — the
 # bullet-list form the file already uses under each of its five headings. A
 # bare mention in running prose, such as the file's own paragraph 2 naming a
 # discharged record by number, or a sentence in the sanctioned
@@ -80,7 +80,7 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 obligations="$root/docs/obligations"
 process_obligations="$root/docs/process/obligations"
-register="$root/docs/spec/13-open-obligations.md"
+register="$root/docs/spec/open-obligations.md"
 
 for required in "$obligations" "$register"; do
     if [ ! -e "$required" ]; then

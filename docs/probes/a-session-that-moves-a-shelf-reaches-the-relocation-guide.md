@@ -40,4 +40,4 @@ The session must open [the relocation guide](../how-to/relocate-a-shelf.md). It 
 
 **This repository's own overlay declares the shelf of verification records.** No package declares it, so the guide tells a session to edit the `path:` of that shelf in place and to add no `override` key. The rest of the procedure still applies. The key reads only whether the session opened the guide.
 
-**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
+**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.

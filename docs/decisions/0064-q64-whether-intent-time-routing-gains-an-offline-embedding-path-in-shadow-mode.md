@@ -20,13 +20,13 @@ relations:
 
 ## Context
 
-[Spec 5](../spec/05-ai-integration.md#what-we-do-not-do) rules against retrieval by similarity as the primary mechanism, and leaves one door open. Embeddings stay permitted as a fallback for a genuinely fuzzy lookup, and never as the authority. `engine/crates/query/src/route.rs` has no fallback tier today. A run returns a gated hit, or one of the four `Silence` reasons.
+[Spec 5](../spec/ai-integration.md#what-we-do-not-do) rules against retrieval by similarity as the primary mechanism, and leaves one door open. Embeddings stay permitted as a fallback for a genuinely fuzzy lookup, and never as the authority. `engine/crates/query/src/route.rs` has no fallback tier today. A run returns a gated hit, or one of the four `Silence` reasons.
 
 [#404](https://github.com/headwater-ai/headwater/issues/404) proposed a second, meaning-based lookup beside the deterministic router. It writes what it would have offered to a local log, and it shows that log to nobody. The issue put three shapes to the owner. They are the routing probe alone, the deterministic-side log alone, and the full shadow log with the embedding path.
 
 **Two facts the issue rests on have moved since it was written against `5fb9518`.** The issue says the routing probe reports nothing until a recorder exists. A recorder exists. `tools/probe/probe-record.sh` and `tools/probe/probe-transform.sh` produced the two transcripts under `docs/probe-runs/`, on 2026-09-09 and on 2026-09-11.
 
-The issue also says that abandonment cannot be graded, because a transcript records the calls a session made and never the pointers `route` offered it. That is half right, and the half that fails is the half that matters. The router is deterministic over the tree, the taxonomy lock and the engine version, and [spec 15](../spec/15-the-recorder-contract.md) pins all three in the identity block. So the offer is recomputable after the fact. Recomputation states what `route` would have offered, and it states nothing about what the hook injected.
+The issue also says that abandonment cannot be graded, because a transcript records the calls a session made and never the pointers `route` offered it. That is half right, and the half that fails is the half that matters. The router is deterministic over the tree, the taxonomy lock and the engine version, and [spec 15](../spec/the-recorder-contract.md) pins all three in the identity block. So the offer is recomputable after the fact. Recomputation states what `route` would have offered, and it states nothing about what the hook injected.
 
 **Those two values differ, and the committed transcripts are where they differ.** Every probe session of the 2026-09-09 run carries a route banner from `UserPromptSubmit`. No session of the 2026-09-11 run carries one. That workspace held no built engine, so `.claude/hooks/lib.sh` returned nothing and `.claude/hooks/intent.sh` exited in silence. Nothing in the identity block records which of the two happened. Abandonment on 2026-09-11 was not unmeasured. It was measured, and the measurement is that the instrument was off.
 

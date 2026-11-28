@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Shape-origin check, generated from the shelf declarations.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#placement-is-primary-metadata-fills-the-gap)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#placement-is-primary-metadata-fills-the-gap)
 //! states the rule and says it is the one with teeth: "**a homogeneous shelf
 //! forbids the discriminator facet.** If the directory already says what a
 //! document is, a restatement in front matter creates a second truth that will
@@ -26,7 +26,7 @@
 //! An instance that reports a foregone pass is worse than no instance, because
 //! coverage then counts a document as checked by a rule that could never have
 //! failed. So the instance exists and it is **skipped with a reason**, which is
-//! what [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! what [spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks for: visible, never silent.
 //!
 //! # Where the finding reports
@@ -39,7 +39,7 @@
 //!
 //! [`DocumentCheck`] is the whole declaration: one document, and the front
 //! matter without the body. The rule needs no more, and the type is now what
-//! says so ([spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)).
+//! says so ([spec 12](../../../../docs/spec/check-layer.md#the-declaration-is-a-type-not-a-returned-value)).
 //!
 //! The taxonomy is not in that view, so the discriminator set is read once
 //! when the check is built rather than per document. That is the right split

@@ -13,7 +13,7 @@
 //! 2. No finding names a document this run *edited*. The reciprocal half goes
 //!    into a file an author wrote, and a splice that broke the document at the
 //!    far end would be the wrong-edge-at-scale failure that
-//!    [spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//!    [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //!    names, arriving one document away from where anybody would look.
 //!
 //! **A green run proves nothing on its own**, so the test also records the

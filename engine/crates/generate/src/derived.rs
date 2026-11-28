@@ -5,7 +5,7 @@
 //!
 //! A generated document's kind requires what every other document of that kind
 //! requires. Over this repository's own lock that is seven facets on
-//! `docs/spec/09-open-questions.md` and five on a probe result, and the
+//! `docs/spec/open-questions.md` and five on a probe result, and the
 //! `identity` block answers three of them: the identifier, the discriminator of
 //! a heterogeneous shelf, and the facet in the `name` role. The rest went
 //! unwritten and nothing reported it
@@ -627,7 +627,7 @@ fn values_of<'d>(
 /// path written from one can be read back for that facet. The tokenizer is
 /// [`headwater_scaffold::segments`], which is the same one that writes a name
 /// from a layout: a second copy of that grammar here would be the drift that
-/// [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+/// [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 /// rules against, and the two would disagree about a path this engine wrote
 /// itself.
 ///

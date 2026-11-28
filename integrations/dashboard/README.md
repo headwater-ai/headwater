@@ -48,7 +48,7 @@ A code path is an exact file, a directory, or a glob, where `*` stays inside one
 
 ## It is read-only
 
-The tool reads the export file and, with `--tree`, lists the files of the checkout. It writes one file, the page that `--out` names. It runs no Headwater verb: no `new`, no `fix`, no `taxonomy migrate --apply`, and no equivalent. It commits nothing. This is the same query-class boundary that [spec 5](../../docs/spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) draws for the MCP server.
+The tool reads the export file and, with `--tree`, lists the files of the checkout. It writes one file, the page that `--out` names. It runs no Headwater verb: no `new`, no `fix`, no `taxonomy migrate --apply`, and no equivalent. It commits nothing. This is the same query-class boundary that [spec 5](../../docs/spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) draws for the MCP server.
 
 ## One corpus, keyed from the start
 

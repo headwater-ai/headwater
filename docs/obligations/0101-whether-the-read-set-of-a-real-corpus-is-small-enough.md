@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q21](../spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge) asks a run to publish the union of its in-scope inputs. Whether the read set of a real corpus is small enough that publishing it is free is open.
+[Q21](../spec/decisions.md#q21--terminological-succession-and-validity-under-merge) asks a run to publish the union of its in-scope inputs. Whether the read set of a real corpus is small enough that publishing it is free is open.
 
 ## Obligation
 

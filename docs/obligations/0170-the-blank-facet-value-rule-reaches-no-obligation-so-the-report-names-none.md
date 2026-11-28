@@ -33,7 +33,7 @@ Nothing refuses this. `Bound::Unnamed` is a legal state of a served rule. `contr
 
 The corpus owes an obligation and a control in `headwater/standard` that bind `facet.value.blank`, in the shape `CT-FACET-1` and `CT-FACET-2` already carry. The statement of the obligation is the state the rule reports: a facet a document declares carries a value.
 
-The order of the edit is fixed by [the package contract](../spec/07-distribution-and-federation.md): publish the source, move the pin, vendor the artifact, and resolve the lock. A run that resolves before it publishes leaves both sides agreeing on the old bytes, and the comparison that would report the gap passes.
+The order of the edit is fixed by [the package contract](../spec/distribution-and-federation.md): publish the source, move the pin, vendor the artifact, and resolve the lock. A run that resolves before it publishes leaves both sides agreeing on the old bytes, and the comparison that would report the gap passes.
 
 ## Discharge
 

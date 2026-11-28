@@ -22,7 +22,7 @@ relations:
 
 # The Headwater checks in SHACL — a worked example
 
-The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate).
+The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate).
 
 The two are not alternatives. LinkML is a **schema** language — it says what a document is. SHACL is a **constraint** language over **graphs** — it says what must hold across them. So SHACL maps onto Headwater's *checks*, not its taxonomy, and it lands exactly where the LinkML exercise found the boundary: whole-graph invariants.
 
@@ -202,7 +202,7 @@ A live satellite whose nucleus has gone terminal:
 Two things this exposes that no amount of SHACL fixes:
 
 1. **Date arithmetic is fiddly.** `?since` is an `xsd:date` and duration arithmetic wants `xsd:dateTime`, so a cast is required, and engines vary in what they accept.
-2. **`NOW()` would make the check non-deterministic**, which collides head-on with [spec 6](../spec/06-engine-architecture.md)'s requirement that the same corpus and the same lock produce byte-identical output. The evaluation time has to be *injected* as a bound variable — written as `$now` above — rather than read from the clock. That is a real design constraint on any temporal check, and it is not SHACL-specific: it applies to whatever engine we build.
+2. **`NOW()` would make the check non-deterministic**, which collides head-on with [spec 6](../spec/engine-architecture.md)'s requirement that the same corpus and the same lock produce byte-identical output. The evaluation time has to be *injected* as a bound variable — written as `$now` above — rather than read from the clock. That is a real design constraint on any temporal check, and it is not SHACL-specific: it applies to whatever engine we build.
 
 ## Does this help with the actual documents?
 
@@ -232,7 +232,7 @@ You *could* lift more in: project headings as triples and `sh:qualifiedValueShap
 
 The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and nothing in SHACL validates it. A projector that drops a document, mistypes it, or misparses front matter produces a graph that does not represent the corpus. And SHACL will happily report that graph as conformant.
 
-This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/09-open-questions.md#6--where-the-corpus-graph-lives-at-rest). If RDF is a derived view, the derivation is a component. If it is stored, it is a second copy that can drift from the Markdown.
+This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/open-questions.md#6--where-the-corpus-graph-lives-at-rest). If RDF is a derived view, the derivation is a component. If it is stored, it is a second copy that can drift from the Markdown.
 
 ### Problem two: silent passes
 
@@ -246,11 +246,11 @@ For an assurance system that is the worst available failure mode, because absenc
 
 The fix is not in SHACL. Headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check. It must also treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
 
-> **Applied:** every-document-accounted-for as an explicit obligation in [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
+> **Applied:** every-document-accounted-for as an explicit obligation in [spec 4](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for).
 
 ### Problem three: change-scoped validation cuts across graph constraints
 
-[Spec 6](../spec/06-engine-architecture.md) budgets under 200 ms for a change-scoped hook. SHACL targets are graph-wide, and the graph constraints need neighbours: checking only the touched document is not sound.
+[Spec 6](../spec/engine-architecture.md) budgets under 200 ms for a change-scoped hook. SHACL targets are graph-wide, and the graph constraints need neighbours: checking only the touched document is not sound.
 
 Worse, *which* node reports a violation depends on how the constraint was written. The reciprocity shape above is authored on the superseding decision, so editing **A** to add `supersedes B` surfaces the violation on A. Author it the other way — as a shape on the target requiring an inbound link. The same edit then surfaces it on B, which was not touched and would not be in a naive changed-files set.
 
@@ -279,7 +279,7 @@ The pattern is consistent with the LinkML finding. SHACL covers the **graph** la
 
 **The real objections are different, and sharper:**
 
-- **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/04-assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
+- **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
 - **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`. But that is a convention we would define, not something a stock SHACL consumer would understand.
 - **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities. But Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
 

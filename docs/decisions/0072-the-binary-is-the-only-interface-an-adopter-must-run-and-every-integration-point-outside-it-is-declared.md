@@ -30,7 +30,7 @@ An adopter installs this engine to govern a corpus that is not this one. What th
 
 **The front door instructs a script.** `README.md` and step 3 of [the tutorial](../tutorials/your-first-governed-corpus.md) both name `tools/headwater-bootstrap.sh`, and the tutorial states that the script is not a part of this engine. Here the binary already reaches the same result, because `headwater taxonomy vendor` takes the path of a fetched artifact and an expected digest.
 
-No document states the boundary. The eleven principles in [spec 0](../spec/00-vision-and-scope.md#design-principles) do not name it. Principle 8 says that the system governs itself, which is why this repository carries scripts at all, and it draws no line for an adopter. [The command surface](../interfaces/README.md) indexes the verbs and never claims that they are the whole surface. So the rule was a shared assumption, and an assumption that nothing holds is one that prose drifts past.
+No document states the boundary. The eleven principles in [spec 0](../spec/vision-and-scope.md#design-principles) do not name it. Principle 8 says that the system governs itself, which is why this repository carries scripts at all, and it draws no line for an adopter. [The command surface](../interfaces/README.md) indexes the verbs and never claims that they are the whole surface. So the rule was a shared assumption, and an assumption that nothing holds is one that prose drifts past.
 
 ## Decision
 

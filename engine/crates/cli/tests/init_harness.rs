@@ -756,7 +756,7 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
 ) {
     for path in [
         "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md",
-        "docs/spec/05-ai-integration.md",
+        "docs/spec/ai-integration.md",
     ] {
         let item = first_stop_rule(path).to_lowercase();
         for phrase in [
@@ -789,7 +789,7 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
             "1. **No decision record with no evidence.** A ruling that the person states in the conversation is evidence for the record. Record who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continue. Halt and ask only when neither the conversation nor a work item, commit, discussion or measurement supports the decision. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.",
         ),
         (
-            "docs/spec/05-ai-integration.md",
+            "docs/spec/ai-integration.md",
             "1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.",
         ),
     ] {

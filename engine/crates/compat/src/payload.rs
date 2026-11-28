@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A migration payload, accounted against what this corpus measured.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#upgrading)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#upgrading)
 //! asks the upgrade report for "which migration steps apply, split into
 //! mechanical and judgment-bearing". This module is that half of the report, and
 //! it is the half that turns a step's claim into a measurement.

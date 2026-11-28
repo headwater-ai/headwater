@@ -26,7 +26,7 @@ These ideas work, and we adopt them here on their merits:
 | Idea | Why it earns its place |
 |---|---|
 | Directory placement as the primary classification axis | It is the signal that a reader sees first, and the one that a glob can act on |
-| Present-state declarative voice on specifications and standards | The rule with the widest effect. Its precision is **unmeasured**, and [spec 13](13-open-obligations.md#unmeasured-claims) names the run |
+| Present-state declarative voice on specifications and standards | The rule with the widest effect. Its precision is **unmeasured**, and [spec 13](open-obligations.md#unmeasured-claims) names the run |
 | A `last_verified` assertion distinct from the edit date | Git knows when a file changed. Only a human knows when it was last true |
 | Decision records with retained lineage and reciprocal succession links | Institutional memory at the lowest possible cost |
 | Refusal to draft rationale without external evidence | Post-hoc justification is worse than an admitted gap |
@@ -44,13 +44,13 @@ These ideas work, and we adopt them here on their merits:
 
 The common shape is a set of constants inside each checker: shelf names, type vocabularies, scan roots, and status enumerations. The prose standards restate those values, and the instruction globs restate them again. That makes three copies, and one of them is executable. A team with a different documentation culture cannot express it without a fork of the tooling. A fork then loses every upstream fix.
 
-**Departure:** the taxonomy is a validated, versioned, composable schema and the sole source of structure. Checks are generated from it or configured by it. Customization is an overlay. See [taxonomy model](02-taxonomy-model.md).
+**Departure:** the taxonomy is a validated, versioned, composable schema and the sole source of structure. Checks are generated from it or configured by it. Customization is an overlay. See [taxonomy model](taxonomy-model.md).
 
 ### 2. A tool for each concern, a walk for each tool
 
 Governance needs arrive one at a time, so each concern becomes its own executable. Each tool walks the tree again, parses the front matter again, and derives the document types again. Each also brings its own runtime, which the installation must then carry. The result is slow, and two tools can disagree about what a document is.
 
-**Departure:** one engine, one parse, one graph, checks as predicates over it, one finding shape. See [engine architecture](06-engine-architecture.md).
+**Departure:** one engine, one parse, one graph, checks as predicates over it, one finding shape. See [engine architecture](engine-architecture.md).
 
 ### 3. Structural metadata encoded in filenames
 
@@ -62,13 +62,13 @@ A filename prefix, and a glob that matches it, is a cheap way to record a proper
 
 A vendoring model sends consumers verbatim file trees and gates them on byte-identity. This makes drift detectable, and it makes customization nearly impossible. Specialization then leaks into side-channel configuration files. Each new artifact forces a new argument about the boundary between the engine and the vocabulary of the consumer.
 
-**Departure:** versioned packages, explicit overlays, resolved lock files. Identity is a property of the *resolved* taxonomy, not of files on disk. See [distribution](07-distribution-and-federation.md).
+**Departure:** versioned packages, explicit overlays, resolved lock files. Identity is a property of the *resolved* taxonomy, not of files on disk. See [distribution](distribution-and-federation.md).
 
 ### 5. Assurance recorded twice
 
 Coverage lives as a hand-maintained table in a strategy document *and* as a machine-readable register. A checker then holds the two in agreement — a check that exists only to reconcile two copies of one fact. The design, not the domain, makes that check necessary.
 
-**Departure:** one register as data. The human-readable matrix and every coverage claim are generated from it. See [assurance model](04-assurance-model.md).
+**Departure:** one register as data. The human-readable matrix and every coverage claim are generated from it. See [assurance model](assurance-model.md).
 
 ### 6. Platform coupling
 

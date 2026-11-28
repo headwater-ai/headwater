@@ -2,7 +2,7 @@
 //! The first check that declares `needs_prior`: a warrant promoted in one
 //! change.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
 //! states the act and the failure mode in four sentences. "An `asserted`
 //! document becomes `accepted` when a person reads it, sets the warrant, and
 //! names themselves." Then: "The failure mode is bulk. A script that stamps
@@ -40,7 +40,7 @@
 //! identical to this one in a report over a corpus where every acceptance was a
 //! promotion. `tests/promotion.rs` is the corpus that separates them, and it is
 //! the failing fixture
-//! [spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! requires.
 //!
 //! # The severity is `info`, and no bar exists to raise it
@@ -76,7 +76,7 @@ pub const RULE: &str = "warrant.promoted";
 /// The warrant a promotion moves from, and the one it moves to.
 ///
 /// Both are values of the closed set that
-/// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
+/// [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 /// declares. They are written here rather than read from a declaration because
 /// the promotion act is spec 3's rather than a taxonomy's: no member of the
 /// language names a warrant, and `taxonomy audit` writes the same closed set out

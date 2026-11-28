@@ -36,7 +36,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the queries and explain stages of [spec 6](../spec/06-engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `query` and `embed`.
+This spec describes the inside of the queries and explain stages of [spec 6](../spec/engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `query` and `embed`.
 
 The stages have two inputs. The first is the census that [Parse and census](parse-and-census.md) takes. The second is the graph that [Graph build](graph-build.md) builds from that census. The stages give three outputs: pointers, explanations, and the answers of the MCP server. They add no phase to a run. Each answer is a projection of the census and the graph that the run already holds.
 
@@ -46,9 +46,9 @@ The bodies of the `route`, `neighbors`, `explain` and `show` verbs are in `engin
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#library) states the library promise, and its [MCP server](../spec/06-engine-architecture.md#mcp-server) section states the promise of the server.
-- [Spec 5](../spec/05-ai-integration.md#intent-time-routing) states how routing behaves, and its [agent surfaces](../spec/05-ai-integration.md#agent-surfaces) section lists the tools of each class.
-- [Spec 2](../spec/02-taxonomy-model.md#kind-resolution) states what `explain` prints.
+- [Spec 6](../spec/engine-architecture.md#library) states the library promise, and its [MCP server](../spec/engine-architecture.md#mcp-server) section states the promise of the server.
+- [Spec 5](../spec/ai-integration.md#intent-time-routing) states how routing behaves, and its [agent surfaces](../spec/ai-integration.md#agent-surfaces) section lists the tools of each class.
+- [Spec 2](../spec/taxonomy-model.md#kind-resolution) states what `explain` prints.
 - The contracts of [`headwater route`](../interfaces/headwater-route.md), [`headwater explain`](../interfaces/headwater-explain.md), [`headwater show`](../interfaces/headwater-show.md), [`headwater mcp`](../interfaces/headwater-mcp.md), [`headwater neighbors`](../interfaces/headwater-neighbors.md) and [`headwater query`](../interfaces/headwater-query.md) state the behavior of each verb.
 
 The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)). The doc comments of the crates state it.
@@ -67,7 +67,7 @@ A read gives a `Pointer` and never a body. A pointer carries a path, an identifi
 
 ### Determinism
 
-The crate holds three rules so that a read is byte-identical across runs. Every score is an integer. Every order is total, and the last key is the path. No read uses a clock, an environment variable or a network. [Spec 12](../spec/12-check-layer.md#determinism-concretely) states the bar that these rules satisfy.
+The crate holds three rules so that a read is byte-identical across runs. Every score is an integer. Every order is total, and the last key is the path. No read uses a clock, an environment variable or a network. [Spec 12](../spec/check-layer.md#determinism-concretely) states the bar that these rules satisfy.
 
 ### Route
 
@@ -101,13 +101,13 @@ The [`headwater show`](../interfaces/headwater-show.md) verb finds a document th
 - An absent value is an absent member, because the JSON writer has no `null`. A member that is ambiguous when absent is written on each run, and `pointers` is one of them.
 - Each function destructures its source completely. A field added to a source type and not to the document does not compile.
 
-`explain_bounded` cuts the `paths` list of each reach to a bound and never cuts a count. The edit hook passes that bound. [Spec 6](../spec/06-engine-architecture.md#performance-targets) states the performance target that the bound serves.
+`explain_bounded` cuts the `paths` list of each reach to a bound and never cuts a count. The edit hook passes that bound. [Spec 6](../spec/engine-architecture.md#performance-targets) states the performance target that the bound serves.
 
 ### MCP
 
-`mcp.rs` is the server of [spec 6](../spec/06-engine-architecture.md#mcp-server). Its tools call the reads beside them and render with the functions of the CLI. Thus a client and a terminal read the same text.
+`mcp.rs` is the server of [spec 6](../spec/engine-architecture.md#mcp-server). Its tools call the reads beside them and render with the functions of the CLI. Thus a client and a terminal read the same text.
 
-`QUERY_CLASS` holds the six read tools, and `WRITE_CLASS` holds `new` and `fix`. `registered` decides which tools exist. A server with no write switch registers the six reads only, and no table holds a landed write. [Spec 5](../spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) states why the registration carries the property and the `readOnlyHint` annotation does not. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that nobody has measured the effect of the write tools.
+`QUERY_CLASS` holds the six read tools, and `WRITE_CLASS` holds `new` and `fix`. `registered` decides which tools exist. A server with no write switch registers the six reads only, and no table holds a landed write. [Spec 5](../spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) states why the registration carries the property and the `readOnlyHint` annotation does not. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that nobody has measured the effect of the write tools.
 
 The server walks the corpus once, before it accepts a message, and each tool answers from that walk. `Server` does not change after it starts. `Session` holds the one bit that changes: whether a call moved a byte of the checkout. After such a call, `respond` refuses each later `tools/call` by name with the reason. A `fix` that wrote no patch, or a `new` that the scaffolder refused, is not a write, and the session stays open.
 

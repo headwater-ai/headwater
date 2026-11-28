@@ -103,7 +103,7 @@ const NO_LINKS: &str = "the view carries no bound prose links for this corpus";
 /// The check. It reads no declaration of its own, on [`crate::fragment`]'s
 /// terms: no member of the taxonomy language turns prose-link resolution on or
 /// off, because
-/// [spec 1](../../../../docs/spec/01-conceptual-model.md#prose-links-are-not-relations)
+/// [spec 1](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 /// makes it a property of a corpus rather than of a kind.
 pub struct Paths;
 
@@ -186,7 +186,7 @@ mod tests {
 
     fn link(destination: &str, binding: Binding) -> Link {
         Link {
-            source_path: "docs/spec/01-conceptual-model.md".to_string(),
+            source_path: "docs/spec/conceptual-model.md".to_string(),
             destination: destination.to_string(),
             fragment: None,
             text: String::new(),
@@ -211,7 +211,7 @@ mod tests {
         .expect("a finding");
         assert_eq!(found.rule, self::RULE);
         assert_eq!(found.severity, Severity::Error);
-        assert_eq!(found.path, "docs/spec/01-conceptual-model.md");
+        assert_eq!(found.path, "docs/spec/conceptual-model.md");
         assert_eq!(found.line, 30);
         assert_eq!(found.column, 5);
         assert!(found.message.contains("glossary-moved.md"), "{found:#?}");

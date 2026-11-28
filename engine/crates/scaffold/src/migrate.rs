@@ -2,7 +2,7 @@
 //! The half of a migration that writes: one front-matter value, replaced in
 //! place, in a document somebody authored.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 //! splits a migration payload into "what the engine can apply mechanically
 //! (`headwater taxonomy migrate --apply`) and what needs human or agent
 //! judgment". A mechanical step names one new value, and applying it means

@@ -506,7 +506,7 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
 /// A scalar an author has not filled in yet.
 ///
 /// The rule is stated in
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// [spec 7](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// and it is what keeps this reader off `status_since: "{{today}}"`, whose facet
 /// declares `type: date`.
 fn is_placeholder(text: &str) -> bool {

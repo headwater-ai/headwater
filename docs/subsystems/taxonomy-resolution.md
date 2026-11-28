@@ -33,15 +33,15 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the resolve stage of [spec 6](../spec/06-engine-architecture.md#pipeline). Six crates under `engine/crates/` build that stage: `yaml`, `ref`, `meta`, `resolve`, `lock` and `hash`.
+This spec describes the inside of the resolve stage of [spec 6](../spec/engine-architecture.md#pipeline). Six crates under `engine/crates/` build that stage: `yaml`, `ref`, `meta`, `resolve`, `lock` and `hash`.
 
 The stage has two inputs. The first is the base package under `.headwater/packages/`, with the bundles that the consumer selects. The second is the adopter overlay, `.headwater/overlay.yml`. The stage gives a `Resolution`, and it writes that result as the content-hashed `Lock` in `.headwater/taxonomy.lock`. Every later stage reads the lock and never the sources.
 
 Other documents state what the stage does, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#pipeline) states the promise of the stage.
-- [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) states the overlay operations, their preconditions, confluence, the `$`-reference sublanguage and the immutable core.
-- [Spec 7](../spec/07-distribution-and-federation.md#publishing) states how a package is published, pinned, vendored and migrated.
+- [Spec 6](../spec/engine-architecture.md#pipeline) states the promise of the stage.
+- [Spec 2](../spec/taxonomy-model.md#customization-by-composition) states the overlay operations, their preconditions, confluence, the `$`-reference sublanguage and the immutable core.
+- [Spec 7](../spec/distribution-and-federation.md#publishing) states how a package is published, pinned, vendored and migrated.
 - [Q2](../decisions/0002-schema-format.md) states the dialect of a taxonomy source, and [Q22](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) states the integrity posture of a published package.
 - The [`headwater taxonomy`](../interfaces/headwater-taxonomy.md) contract states what an author sees of each verb.
 
@@ -164,4 +164,4 @@ A change to these crates must keep each of these. Each item names the test that 
 - **A corpus range and a package range must have a version in common.** Two ranges overlap only when one version satisfies both (`two_ranges_overlap_when_one_version_is_in_both`). Each row of the range table is what `release::satisfies` answers (`every_row_of_the_range_table_is_what_the_engine_answers`).
 - **The SHA-256 is correct.** It matches the published vectors (`the_published_vectors`) and each length around a block boundary (`every_length_around_a_block_boundary`), and a second implementation agrees on every subject (`a_second_implementation_agrees_on_every_subject`). A digest that arrives in pieces is the digest of the whole at every split (`an_incremental_digest_agrees_with_one_call_at_every_split`).
 
-The overlay resolver and the lock are correctness roots ([spec 12](../spec/12-check-layer.md#the-correctness-roots)).
+The overlay resolver and the lock are correctness roots ([spec 12](../spec/check-layer.md#the-correctness-roots)).

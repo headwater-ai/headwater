@@ -27,7 +27,7 @@ relations:
 
 ## Context
 
-`created_by` names the actor that a taxonomy expects to pay for an edge, from the closed set that [spec 2](../spec/02-taxonomy-model.md#who-creates-each-edge) states. Until this change the base package gave `governs` and `traces_to` the value `hook`. [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that no verb writes either edge, and that every such edge in this corpus is hand entry.
+`created_by` names the actor that a taxonomy expects to pay for an edge, from the closed set that [spec 2](../spec/taxonomy-model.md#who-creates-each-edge) states. Until this change the base package gave `governs` and `traces_to` the value `hook`. [HW-OBL-0105](../obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that no verb writes either edge, and that every such edge in this corpus is hand entry.
 
 On 2026-09-26 no verb of the engine writes either edge. `headwater new --relates` refuses a relation whose `created_by` is not `scaffold`. `headwater check --fix` writes a reciprocal half and a `verified_revision`, and it proposes no edge. The write-time hook that [#953](https://github.com/headwater-ai/headwater/issues/953) builds prints the front-matter lines of a `governs` edge and writes nothing.
 
@@ -37,7 +37,7 @@ The owner filed [#955](https://github.com/headwater-ai/headwater/issues/955), an
 
 The base package declares `created_by: agent` on `governs` and on `traces_to`. A session proposes the edge and a person accepts it by typing the line.
 
-The value `hook` claimed a mechanical creator that does not exist. Which document governs which file is a judgment, and the [stop rules](../spec/05-ai-integration.md#the-stop-rules) forbid an agent that invents structure. So a hook that reads a change can show a candidate line, and the line reaches the file only through a person.
+The value `hook` claimed a mechanical creator that does not exist. Which document governs which file is a judgment, and the [stop rules](../spec/ai-integration.md#the-stop-rules) forbid an agent that invents structure. So a hook that reads a change can show a candidate line, and the line reaches the file only through a person.
 
 The change is a minor release of the package, 4.7.0. No check reads `hook` or `agent`, so no finding changes. `headwater taxonomy audit` moves both relations from the `hook` row to the `agent` row, so a consumer's audit report changes. That is why the release is not a patch.
 

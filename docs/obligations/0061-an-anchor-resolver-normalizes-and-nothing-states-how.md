@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) requires that anchor strings normalize before comparison, so that two spellings of one target are one node. It states no rule that does it. [Spec 12](../spec/12-check-layer.md#the-correctness-roots) then names the resolver a correctness root, because a resolver that mis-normalizes makes `governs` edges miss with no error anywhere.
+[Spec 2](../spec/taxonomy-model.md#behavior-at-the-limits) requires that anchor strings normalize before comparison, so that two spellings of one target are one node. It states no rule that does it. [Spec 12](../spec/check-layer.md#the-correctness-roots) then names the resolver a correctness root, because a resolver that mis-normalizes makes `governs` edges miss with no error anywhere.
 
 ## Obligation
 

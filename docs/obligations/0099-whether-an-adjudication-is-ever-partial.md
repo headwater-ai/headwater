@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) rules how an adjudicated disagreement is recorded.
+[Q18](../spec/decisions.md#q18--recording-adjudicated-disagreements) rules how an adjudicated disagreement is recorded.
 
 ## Obligation
 

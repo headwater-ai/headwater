@@ -8,7 +8,7 @@
 //! spec. The map is a table of prose, so a crate added next month drifts from
 //! it with nothing to say so. These cases are that review, read off the
 //! directory listing, the table under `### Subsystems` in
-//! `docs/spec/06-engine-architecture.md`, and the front matter of each file
+//! `docs/spec/engine-architecture.md`, and the front matter of each file
 //! under `docs/subsystems/`. The shape follows `verbs.rs`, which holds the
 //! same part's CLI grammar block against `VERBS`.
 
@@ -76,7 +76,7 @@ fn cells(line: &str) -> Vec<String> {
 /// columns are found by their header names `subsystem` and `crates`, so a
 /// column added later for the reason of a row moves nothing here.
 fn spec_six_rows() -> Vec<Row> {
-    let path = root().join("docs/spec/06-engine-architecture.md");
+    let path = root().join("docs/spec/engine-architecture.md");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let (_, after_heading) = text
         .split_once(&format!("\n{HEADING}\n"))

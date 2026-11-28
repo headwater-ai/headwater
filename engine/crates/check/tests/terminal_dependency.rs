@@ -2,7 +2,7 @@
 //! A live document resting on a terminal one, and the four ways a rule about it
 //! is easy to get wrong.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/terminal-dependency/` goes
 //! past the floor, because the pass has to be the *same edge* as the fail.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The template language an `identifier_scheme` writes its `pattern` in.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) writes three
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md) writes three
 //! placeholder forms and no others: `{namespace}`, `{slug}` and `{seq:04d}`.
 //! [`crate::pattern::Pattern`] is the glob language a *shelf path* is written
 //! in, where `*` and `**` mean runs of path segments, so it is the wrong matcher
@@ -27,11 +27,11 @@
 //! * `{namespace}` is the declared `namespace`, exactly. That is the one
 //!   lexical requirement of a pattern, and `identifier integrity` on the
 //!   resolved taxonomy is what makes it
-//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)).
+//!   ([spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)).
 //!   The invariant core cannot: its identifier form names a scheme rather
 //!   than a property of one. A namespace is cheap at minting and
 //!   unrecoverable once the identifier is in somebody else's ticket, and
-//!   [Q25](../../../../docs/spec/09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it)
+//!   [Q25](../../../../docs/spec/decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it)
 //!   puts it first in the rendered form.
 //! * `{seq:04d}` is exactly four decimal digits, and `{seq:0Nd}` is exactly N.
 //!   The width is in the declaration, so a reader takes it rather than
@@ -671,7 +671,7 @@ mod tests {
         assert!(!scheme.admits("HW-DR-004"), "one digit short of the width");
         assert!("HW-DR-004".starts_with(&scheme.prefix()));
         assert!("HW-DR-9999".starts_with(&scheme.prefix()));
-        assert!(!"docs/spec/09-decisions.md".starts_with(&scheme.prefix()));
+        assert!(!"docs/spec/decisions.md".starts_with(&scheme.prefix()));
 
         // A `{slug}` template with a literal segment before it still yields a
         // prefix, and a template that opens on a placeholder yields none.

@@ -3,7 +3,7 @@
 //! outside this engine has actually been seen to run, and at what commit, and
 //! which verification the corpus has seen a build settle.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition)
+//! [Spec 4](../../../../docs/spec/assurance-model.md#every-obligation-has-exactly-one-disposition)
 //! rules that such a control discharges nothing on its own: the register can
 //! read that a taxonomy *declared* the binding, and it cannot read that the
 //! pipeline *ran*. [`Observation::Control`] is that half, and #934 shipped it.
@@ -255,7 +255,7 @@ const READ_AS_CONTROL: &str = "it names no `kind: verification`, so it read as a
 /// cannot from here, tell a fabricated but hex-looking commit apart from one
 /// that is a real ancestor of the tree in front of this run: that fact needs
 /// `git merge-base --is-ancestor` or its equivalent, which is a command this
-/// crate does not run ([spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)'s
+/// crate does not run ([spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)'s
 /// boundary, restated in [`crate::change`]'s own module comment). Answering
 /// that question for real needs a fact carried in from outside this crate —
 /// a manifest, the way a change's prior version already is — and that is a

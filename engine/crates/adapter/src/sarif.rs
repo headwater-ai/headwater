@@ -2,18 +2,18 @@
 //! SARIF 2.1.0: the run as a forge ingests it.
 //!
 //! Static Analysis Results Interchange Format, OASIS Standard, version 2.1.0
-//! with errata 01. [Spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+//! with errata 01. [Spec 6](../../../../docs/spec/engine-architecture.md#cli)
 //! names it as a `check --format` target and
 //! [the glossary](../../../../docs/spec/glossary.md) lists it among the
 //! standards this project adopts rather than invents.
 //!
 //! # Three severity scales meet here, and only one of them reaches `level`
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#obligations-are-data):
+//! [Spec 4](../../../../docs/spec/assurance-model.md#obligations-are-data):
 //! "Two scales share one word." An **obligation** carries `high`, `medium` or
 //! `low`, and it says how much the invariant matters. A **check** carries
 //! `error`, `warn` or `info`, and a finding reports the one that the check that
-//! produced it carries ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
+//! produced it carries ([spec 12](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 //! A **control** carries a posture, `advisory` or `blocking`, and it says
 //! whether a finding stops a gate. SARIF adds a fourth: `level`, over `error`,
 //! `warning`, `note` and `none`.
@@ -49,7 +49,7 @@
 //! declares the level a rule fires at. This emitter writes no
 //! `defaultConfiguration` at all, because the engine has no such value to
 //! write. A generated check reads its severity out of the taxonomy
-//! ([spec 13](../../../../docs/spec/13-open-obligations.md)), so one rule
+//! ([spec 13](../../../../docs/spec/open-obligations.md)), so one rule
 //! spans as many severities as there are declarations that generate it, and an
 //! adopter moves a finding from `warn` to `error` by editing data. A single
 //! declared level per rule would be a claim about the next run rather than a
@@ -63,7 +63,7 @@
 //! This is the half a naive adapter drops. `headwater check` reports a live
 //! finding, holds a `migration-pending` one under a task of the adoption
 //! payload, and hides a suppressed one behind a directive
-//! ([spec 4](../../../../docs/spec/04-assurance-model.md#suppression), in the
+//! ([spec 4](../../../../docs/spec/assurance-model.md#suppression), in the
 //! precedence waiver, then migration-pending, then suppression). All three are
 //! in this artifact. The two escaped classes carry a SARIF `suppressions` array,
 //! which is the member a consumer reads to show a result as dismissed rather
@@ -544,7 +544,7 @@ fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run, grading: Grad
 /// keeps for one.
 ///
 /// `text` is the finding. `markdown` adds the remedy, because
-/// [spec 4](../../../../docs/spec/04-assurance-model.md#findings) asks for "one
+/// [spec 4](../../../../docs/spec/assurance-model.md#findings) asks for "one
 /// path from finding to fix" and a consumer that renders Markdown is the one
 /// place in this vocabulary where the path can be shown rather than stored.
 fn message(entry: &Reported<'_>) -> Json {

@@ -2,7 +2,7 @@
 //! `headwater conformance`: whether a consumer wired the method, rather than
 //! only copied it.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#conformance):
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#conformance):
 //! "Vendoring content is not adoption. A consumer can hold a perfect copy of the
 //! taxonomy and wire none of it." This crate is the evaluated question that
 //! follows.

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) and [Q12](../spec/09-decisions.md#q12--migration-path-for-an-existing-corpus) both put the adoption payload in the lock, and Q12 gives the reason: the lock is committed and reviewed. Every other line of that file is a function of the sources. An owner is not one, and a task that closes is a person who deletes lines. So one artifact has a generated part and an authored part, and no document says which is which.
+[Spec 7](../spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) and [Q12](../spec/decisions.md#q12--migration-path-for-an-existing-corpus) both put the adoption payload in the lock, and Q12 gives the reason: the lock is committed and reviewed. Every other line of that file is a function of the sources. An owner is not one, and a task that closes is a person who deletes lines. So one artifact has a generated part and an authored part, and no document says which is which.
 
 ## Obligation
 

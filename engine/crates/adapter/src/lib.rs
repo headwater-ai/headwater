@@ -2,7 +2,7 @@
 //! The CI adapters: one run of the check layer, in a vocabulary a platform
 //! reads.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters): "The
+//! [Spec 6](../../../../docs/spec/engine-architecture.md#ci-adapters): "The
 //! engine emits findings. Adapters translate them to the native vocabulary of a
 //! platform: annotations, check runs, job summaries, review comments. Adapters
 //! are thin and swappable so that no forge is privileged in the core."
@@ -23,7 +23,7 @@
 //! # Why this is a crate and not a module of `headwater-check`
 //!
 //! The dependency direction is the boundary spec 8 asks for.
-//! [Departure 6](../../../../docs/spec/08-design-departures.md): "a
+//! [Departure 6](../../../../docs/spec/design-departures.md): "a
 //! platform-neutral core with thin adapters. No forge, tracker, or cloud is
 //! privileged. More than one adapter exists from the start, and that enforces
 //! the adapter boundary." A module inside the runner could reach a check. A
@@ -41,14 +41,14 @@
 //! definition.
 //!
 //! [`Format::Json`] is not an adapter. It is the finding shape
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#findings) already
+//! [spec 4](../../../../docs/spec/assurance-model.md#findings) already
 //! declares, written out, for an adapter that this repository did not write.
 //! Being nobody else's vocabulary bought it an empty loss set for a year and it
 //! does not any more: see [`json::LOSS`].
 //!
 //! # Every format declares a loss set
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 //! requires an emitter to declare "the node classes, edge classes, and
 //! attributes that its target cannot carry, each with a reason". A finding is
 //! not a node, so [`Loss`] here is about a *field of a run* rather than about a
@@ -66,7 +66,7 @@
 //! No output here carries a verdict about a merge. `--strict` decides an exit
 //! status and the artifact says the same thing whether or not the flag was
 //! given, because the posture is the control's
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls))
+//! ([spec 12](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls))
 //! and the landing order is the forge's.
 
 pub mod json;
@@ -92,7 +92,7 @@ pub const TOOL_URI: &str = "https://github.com/headwater-ai/headwater";
 headwater_check::enumerated! {
     /// One output format of `headwater check`.
     ///
-    /// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+    /// The set is closed by [spec 6](../../../../docs/spec/engine-architecture.md#cli)
     /// and this enum is that list. It is deliberately not
     /// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
     /// *graph* and `check --format` names one for the *findings*, the two lists
@@ -311,7 +311,7 @@ impl Carrier {
 }
 
 /// Which escape mechanism holds a finding back, in the precedence
-/// [spec 4](../../../../docs/spec/04-assurance-model.md#suppression) fixes:
+/// [spec 4](../../../../docs/spec/assurance-model.md#suppression) fixes:
 /// waiver, then migration-pending, then suppression.
 ///
 /// Two variants rather than three, because this engine has no waiver mechanism
@@ -321,7 +321,7 @@ impl Carrier {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Escape {
     /// A task of the adoption payload holds it: declared debt with an owner and
-    /// an expiry ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
+    /// an expiry ([spec 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     MigrationPending,
     /// A directive in the source hides it: one author's local judgment.
     Suppression,
@@ -422,7 +422,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// What a format carried, and what its loss set accounted for.
 ///
 /// The audit of the claim a loss set makes, in the shape
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+/// [spec 7](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 /// fixes for the graph emitters: "Every node and every edge in the graph is
 /// either present in the output, or accounted for by a declared loss reason."
 /// Here the denominator is every finding of the run rather than every node of

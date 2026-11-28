@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! An instance: one check, applied to one target, with one outcome.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#instances-and-why-coverage-needs-them)
+//! [Spec 12](../../../../docs/spec/check-layer.md#instances-and-why-coverage-needs-them)
 //! says a check is a template and the engine instantiates it per target, and
 //! that coverage then follows with no added mechanism: "each run records, per
 //! document, which instances were created, which ran, which were served from
@@ -13,7 +13,7 @@
 //!
 //! # A read is a path and a content hash
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! fixes what the read set of a run is: "the content hash of every document
 //! and edge that an instance read". Coverage needs the path, because it counts
 //! per document. A cache key needs the hash, because a key that omits an input
@@ -93,7 +93,7 @@ pub enum Outcome {
     /// and [`Outcome::failed`] is the constructor that holds the two apart.
     Failed(Vec<Finding>),
     /// It did not run, and the reason is visible rather than silent
-    /// ([spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
+    /// ([spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
     ///
     /// The reason is owned rather than borrowed, because a generated check
     /// skips over a declaration it cannot read and the name of that declaration

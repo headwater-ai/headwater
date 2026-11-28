@@ -3,7 +3,7 @@
 //!
 //! # What this target is evidence of
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
+//! [Spec 12](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
 //! names four mechanisms that stop a sweep from gating, and one of them is the
 //! exit status: `sweep report` exits 0 with findings, exits 0 with every
 //! finding refused, and exits 0 when it refuses the whole file. That property

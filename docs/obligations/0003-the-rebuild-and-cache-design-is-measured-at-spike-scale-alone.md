@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that every run rebuilds the graph and that no derived artifact is canonical. The rebuild-and-cache design is measured at spike scale, on generated documents.
+[Q6](../spec/decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that every run rebuilds the graph and that no derived artifact is canonical. The rebuild-and-cache design is measured at spike scale, on generated documents.
 
 ## Obligation
 
@@ -32,4 +32,4 @@ A real corpus and a real harvesting tier are the instruments, and this corpus ow
 
 Neither instrument exists yet. No adopter has brought a corpus of the size the claim is about, and no harvesting tier has been built.
 
-One more reading is on record, and it is still generated. On 2026-09-29, `sh tools/measure/large-governs.sh` measured one document that governs a glob over 5,000 files. A warm `headwater check --strict` cost 24 ms of CPU time, and at 50,000 files it cost 187 ms ([#1260](https://github.com/headwater-ai/headwater/issues/1260), [spec 5](../spec/05-ai-integration.md#review-time-checks)). The tree is not a real corpus, so this reading does not discharge the record.
+One more reading is on record, and it is still generated. On 2026-09-29, `sh tools/measure/large-governs.sh` measured one document that governs a glob over 5,000 files. A warm `headwater check --strict` cost 24 ms of CPU time, and at 50,000 files it cost 187 ms ([#1260](https://github.com/headwater-ai/headwater/issues/1260), [spec 5](../spec/ai-integration.md#review-time-checks)). The tree is not a real corpus, so this reading does not discharge the record.

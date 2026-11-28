@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[Q27](../spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose) bound the house language regime to `decision` and left one arm open. `evaluation` was the arm. An evaluation binds the `narrative` voice regime, and every bound kind binds `declarative`. Q27 adopted that line and said what was wrong with it. It is a line about voice rather than about lexical rules, and nothing states that a narrative document is free of a word limit.
+[Q27](../spec/decisions.md#q27--whether-a-decision-record-is-governed-prose) bound the house language regime to `decision` and left one arm open. `evaluation` was the arm. An evaluation binds the `narrative` voice regime, and every bound kind binds `declarative`. Q27 adopted that line and said what was wrong with it. It is a line about voice rather than about lexical rules, and nothing states that a narrative document is free of a word limit.
 
 `docs/evaluations/` holds 15 records and 68,266 words of prose. No lexical rule read one word of it. [#247](https://github.com/headwater-ai/headwater/issues/247) measured what a binding would report and counted 432 findings. A count is not a characterization, which is the bar Q27 set for itself, and this record meets it for the shelf Q27 deferred.
 
@@ -50,7 +50,7 @@ The measurement that separates every group in this corpus is whether a lexical r
 
 This record is a seventh row and it reports zero, which is the same reading as the fourth. A denominator for it is omitted, because a word count of this document inside this document moves whenever the sentence stating it moves.
 
-The four clean groups differ by a factor of 40 from the two dirty ones. Every document in every row was drafted by the same model family. Acceptance does not separate them either. Records 0001 to 0021 are accepted and clean, and 14 of the 15 evaluations are accepted and are not. What separates them is the history of the file. Records 0001 to 0021 were carried out of `docs/spec/09-open-questions.md`, which the editorial pass of 2026-08-09 rewrote under the regime. The obligation records carried their prose off a bound register, and the overlay moved the binding with it. Record 0027 was written after Q27 bound the kind. The two dirty groups were written where no rule was looking.
+The four clean groups differ by a factor of 40 from the two dirty ones. Every document in every row was drafted by the same model family. Acceptance does not separate them either. Records 0001 to 0021 are accepted and clean, and 14 of the 15 evaluations are accepted and are not. What separates them is the history of the file. Records 0001 to 0021 were carried out of `docs/spec/open-questions.md`, which the editorial pass of 2026-08-09 rewrote under the regime. The obligation records carried their prose off a bound register, and the overlay moved the binding with it. Record 0027 was written after Q27 bound the kind. The two dirty groups were written where no rule was looking.
 
 **So a binding does not clean a shelf and it was never going to.** It stops the next document arriving dirty, and that is the whole of what this line buys.
 

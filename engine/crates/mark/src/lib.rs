@@ -11,7 +11,7 @@
 //! The two readers sit on opposite sides of the engine. `headwater-generate`
 //! depends on `headwater-census`, so the census cannot depend on the generator,
 //! and a copy of the rule in each crate is the drift that
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against: the writer and the reader would then disagree about which
 //! files this engine wrote, and the disagreement would show up as a generated
 //! file reported against contracts it was never held to. So the rule lives
@@ -374,7 +374,7 @@ mod tests {
         // specification is such a document.
         let quoting = format!("---\ntitle: Spec 6\n---\n\nA projection carries `{MARKER}`.\n");
         assert!(!carries_marker(
-            "docs/spec/06-engine-architecture.md",
+            "docs/spec/engine-architecture.md",
             &quoting
         ));
     }
@@ -622,8 +622,8 @@ mod tests {
         // A hand-written marker is usually the bare word. It still marks the
         // file, and it names no kind, and those are two different answers.
         let bare = format!("<!-- {MARKER} -->\n");
-        assert!(carries_marker("docs/spec/13-open-obligations.md", &bare));
-        assert_eq!(kind_named("docs/spec/13-open-obligations.md", &bare), None);
+        assert!(carries_marker("docs/spec/open-obligations.md", &bare));
+        assert_eq!(kind_named("docs/spec/open-obligations.md", &bare), None);
     }
 
     #[test]
@@ -632,9 +632,9 @@ mod tests {
             "---\nid: HW-REG-open-questions\n{}\n---\n\n## Q1\n",
             marker_member("shelf_sections")
         );
-        assert!(carries_marker("docs/spec/09-open-questions.md", &generated));
+        assert!(carries_marker("docs/spec/open-questions.md", &generated));
         assert_eq!(
-            kind_named("docs/spec/09-open-questions.md", &generated).as_deref(),
+            kind_named("docs/spec/open-questions.md", &generated).as_deref(),
             Some("shelf_sections")
         );
 
@@ -646,7 +646,7 @@ mod tests {
             marker_member("shelf_sections")
         );
         assert!(!carries_marker(
-            "docs/spec/06-engine-architecture.md",
+            "docs/spec/engine-architecture.md",
             &quoting
         ));
 
@@ -658,7 +658,7 @@ mod tests {
             marker_member("shelf_sections")
         );
         assert!(!carries_marker(
-            "docs/spec/06-engine-architecture.md",
+            "docs/spec/engine-architecture.md",
             &fenced
         ));
     }

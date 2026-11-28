@@ -29,7 +29,7 @@ relations:
 
 **Nothing here signs a release.** A signature would close the gap, and it needs three things that no decision of this repository has settled. It needs a key pair that a publisher holds. It needs a channel that distributes the public half to an adopter who has never met the publisher. And it needs a rule for what a consumer does when a key is revoked after a pin was written.
 
-[Spec 7](../spec/07-distribution-and-federation.md#publishing) names an integrity digest and names no signature, so the specification does not yet ask for one. The gap is recorded here rather than filled with a field. A manifest key named `signature` that held a digest would read as an answer to anybody who did not open the code.
+[Spec 7](../spec/distribution-and-federation.md#publishing) names an integrity digest and names no signature, so the specification does not yet ask for one. The gap is recorded here rather than filled with a field. A manifest key named `signature` that held a digest would read as an answer to anybody who did not open the code.
 
 ## Obligation
 

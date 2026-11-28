@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `headwater generate`, and `--check` over what it wrote last time.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) gives
+//! [Spec 6](../../../../docs/spec/engine-architecture.md#projections) gives
 //! the contract in four lines. A projection is a generated artifact, the
 //! taxonomy declares each one, `generate` writes it, and `generate --check`
 //! fails when a committed output differs from what this corpus and this lock
@@ -10,15 +10,15 @@
 //! # The kinds are two value sets, not one
 //!
 //! Spec 6 names the kinds the engine implements,
-//! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`, and
-//! [spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [Q19](../../../../docs/spec/decisions.md) adds `transcription`, and
+//! [spec 5](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! adds `probe_result`. Collecting them for the meta-schema showed that they do
 //! not form one set. Eleven are declarable: a taxonomy names the kind and the
 //! output path, and
-//! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 1](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
 //! register "engine-defined and non-optional", and
-//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes the
+//! [Q14](../../../../docs/spec/decisions.md#q14--discovery-surface) fixes the
 //! corpus descriptor at `.headwater/corpus.json`. Both for the same reason: a
 //! reader who must consult the taxonomy to find an artifact already knows what
 //! the artifact would tell them. A declaration of either would put a second copy
@@ -41,7 +41,7 @@
 //! needs the engine to remember what it wrote. It does not need to. The marker in the file *is*
 //! the record, and a manifest beside the file would be a second statement of one
 //! fact, which is the drift
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against. So this engine reads one permission from the bytes on disk:
 //!
 //! - the path holds nothing — write it,
@@ -85,7 +85,7 @@
 //!
 //! They hold for different artifacts, which is what settles it. **The time is
 //! injected and never read**, exactly as
-//! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
 //! none. An export that leaves the repository is the artifact spec 7 is talking
@@ -146,7 +146,7 @@ pub struct Identity {
 /// [`Identity`] is supplied: this module opens no file of its own.
 ///
 /// The two members are two of the three inputs
-/// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
+/// [spec 5](../../../../docs/spec/ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
 /// makes a result a function of. The third is the grader version, which is the
 /// version of the crate that evaluates them and is nothing a caller passes.
 ///
@@ -942,7 +942,7 @@ pub struct Output {
 ///
 /// Reported rather than dropped. A generator that silently emitted nothing for
 /// half its declarations is the silent pass that
-/// [spec 4](../../../../docs/spec/04-assurance-model.md) removes everywhere
+/// [spec 4](../../../../docs/spec/assurance-model.md) removes everywhere
 /// else, and the reason is the part a reader acts on.
 #[derive(Clone, Debug)]
 pub struct Unwritten {
@@ -2701,7 +2701,7 @@ pub(crate) fn label(pointer: &Pointer) -> String {
 /// shelf twice, as a navigation group key and as the label of the index entry
 /// under it; `shelf_index` prints it as the `# heading` of the shelf's own
 /// index page; and `shelf_sections` prints it as the heading of
-/// `docs/spec/09-open-questions.md`. Those are four writes across three
+/// `docs/spec/open-questions.md`. Those are four writes across three
 /// modules, and until this function existed each of them took the key
 /// separately. That is the defect [`label`] was extracted for, one level up:
 /// a shelf renamed for a reader in one emitter and not in another leaves one
@@ -2725,7 +2725,7 @@ mod label_tests {
 
     fn pointer(id: Option<&str>, name: Option<&str>) -> Pointer {
         Pointer {
-            path: "docs/spec/00-vision-and-scope.md".into(),
+            path: "docs/spec/vision-and-scope.md".into(),
             id: id.map(Into::into),
             kind: "design_spec".into(),
             name: name.map(Into::into),

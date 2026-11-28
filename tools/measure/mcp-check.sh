@@ -89,7 +89,7 @@ walk_ms=$(median "$scratch/walk.in" "$engine" mcp --root "$repo")
 call_ms=$(median "$scratch/call.in" "$engine" mcp --root "$repo")
 warm_ms=$(median /dev/null "$engine" check --strict --root "$repo")
 cold_ms=$(median /dev/null "$engine" check --strict --no-cache --root "$repo")
-phase_ms=$(median /dev/null "$engine" explain --json docs/spec/06-engine-architecture.md --root "$repo")
+phase_ms=$(median /dev/null "$engine" explain --json docs/spec/engine-architecture.md --root "$repo")
 
 printf 'engine            %s\n' "$engine"
 printf 'corpus            %s (%s typed documents)\n' "$repo" "$documents"

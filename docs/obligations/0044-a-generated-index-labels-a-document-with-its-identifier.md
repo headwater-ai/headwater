@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-A shelf index prints one row for each document, and it needs a word to put in the link. The [taxonomy](../spec/02-taxonomy-model.md#the-thirteen-declarations) declares `summary` and it declares no title. So the emitter prints the [identifier](../spec/03-authoring-and-lifecycle.md#identifiers), and [the index of this shelf](../spec/README.md) reads `HW-SPEC-vision-and-scope` where the table it replaced read "Vision and scope".
+A shelf index prints one row for each document, and it needs a word to put in the link. The [taxonomy](../spec/taxonomy-model.md#the-thirteen-declarations) declares `summary` and it declares no title. So the emitter prints the [identifier](../spec/authoring-and-lifecycle.md#identifiers), and [the index of this shelf](../spec/README.md) reads `HW-SPEC-vision-and-scope` where the table it replaced read "Vision and scope".
 
 The heading inside each file holds the name that a reader wants, and a body scan is the wrong place to take it from. A heading is prose. An author rewrites one without a thought for the index, and the index then moves under a `--check` gate for a reason nobody meant.
 
@@ -37,7 +37,7 @@ Either a kind declares a title facet, or every generated index of documents is a
 
 **A generated document had no name, which is the same defect one step further.** The identity block of a projection held two scalars, `id` and `kind`. A document that block wrote declared no facet in the `name` role, whatever its kind required, and [`label`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/generate/src/lib.rs) then fell through to the identifier. Three rows of this corpus were in that state: `docs/spec/README.md` named `HW-REG-open-questions`, `docs/probe-results/README.md` named `HW-RESULT-regression-probe-transcript-for-2026-09-09`, and `docs/probe-runs/README.md` named `HW-RUN-regression-probe-transcript-for-2026-09-09`. The same three strings reached the navigation sidebar and the browser tab, because MkDocs serves a navigation label as the page title.
 
-The general remedy landed at the meta-schema. `name` is the sixth entry of the closed facet-role registry of [spec 2](../spec/02-taxonomy-model.md#the-meta-schema), and `facets.title` claims it. A projection reads the facet by that role and never by its name.
+The general remedy landed at the meta-schema. `name` is the sixth entry of the closed facet-role registry of [spec 2](../spec/taxonomy-model.md#the-meta-schema), and `facets.title` claims it. A projection reads the facet by that role and never by its name.
 
 ## Discharge, 2026-09-11
 

@@ -8,7 +8,7 @@
 //! state facts that no reader and no rule ever asks for.
 //!
 //! A projection that takes over the path of a document is a different artifact.
-//! `docs/spec/09-open-questions.md` carries `HW-REG-open-questions`, and three
+//! `docs/spec/open-questions.md` carries `HW-REG-open-questions`, and three
 //! documents name that identifier. A file at that path with no front matter
 //! holds no identifier, so it is no node, so every one of those three edges
 //! resolves to nothing. The census admits a generated Markdown document that
@@ -21,7 +21,7 @@
 //! kind is a declaration. A name is a declaration too: it is what the document
 //! is called, and a taxonomy that requires the facet in the `name` role of a
 //! generated document's kind is already asking for one. `decision_register`
-//! requires `title`, and the tombstone at `docs/spec/09-open-questions.md` is a
+//! requires `title`, and the tombstone at `docs/spec/open-questions.md` is a
 //! `decision_register` that had no way to supply it, so
 //! [`crate::label`] fell through to the identifier and a reader met
 //! `HW-REG-open-questions` in the sidebar, the browser tab and the shelf's own
@@ -62,7 +62,7 @@
 //! - a **heterogeneous** shelf declares a discriminator, so the block writes
 //!   `{discriminator}: {kind}`, and the kind has to be one the shelf admits;
 //! - a **homogeneous** shelf states the kind itself, and
-//!   [spec 2](../../../../docs/spec/02-taxonomy-model.md) forbids restating it,
+//!   [spec 2](../../../../docs/spec/taxonomy-model.md) forbids restating it,
 //!   so the block writes no facet at all and the declared kind has to agree with
 //!   the shelf's.
 //!
@@ -72,7 +72,7 @@
 //!
 //! # The edges are derived, and none of them is declared here
 //!
-//! [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) rules that
+//! [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) rules that
 //! front matter is the one place an edge is authored. A taxonomy source is not
 //! front matter, so an `identity` block that listed relations would be the
 //! second authoring location that Q4 refused.

@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) settles the scope of the MCP surface and [Q17](../spec/09-decisions.md#q17--governed-access-and-the-solution-layer) settles governed access. Both decisions hold the question of who runs a hosted server and how it is deployed, and neither answers it.
+[Q7](../spec/decisions.md#q7--scope-of-the-mcp-surface) settles the scope of the MCP surface and [Q17](../spec/decisions.md#q17--governed-access-and-the-solution-layer) settles governed access. Both decisions hold the question of who runs a hosted server and how it is deployed, and neither answers it.
 
 ## Obligation
 
@@ -32,6 +32,6 @@ The corpus owes the operational shape: who runs the server, and how it reaches a
 
 ## Discharge
 
-[Q11](../spec/09-decisions.md#q11--license-and-distribution-posture) records that this surface and the probe harness are the only two places in the specification where a commercial tier could sit. Until somebody runs one, nothing supplies the shape.
+[Q11](../spec/decisions.md#q11--license-and-distribution-posture) records that this surface and the probe harness are the only two places in the specification where a commercial tier could sit. Until somebody runs one, nothing supplies the shape.
 
 This item is data or a deferred component, so the first real adopter is the evidence rather than a further argument.

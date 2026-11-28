@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The immutable core, checked on the result and never on an operation.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core):
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the-immutable-core):
 //! "Core satisfaction is checked **after** overlay resolution, against the
 //! resolved taxonomy. The check does not forbid particular operations. An
 //! overlay is rejected when the *result* fails to satisfy a core requirement.
@@ -44,7 +44,7 @@
 
 /// Whether a role on a state value names a terminal state.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)
+/// [Spec 2](../../../../docs/spec/taxonomy-model.md#the-immutable-core)
 /// writes the role as `terminal-retained`, and the hyphen carries what happens
 /// to the document rather than whether the state ends the machine. So the
 /// prefix is the reading and the suffix is a taxonomy's business.

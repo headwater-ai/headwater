@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The run as a job summary or a review comment.
 //!
-//! The second vocabulary [spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters)
+//! The second vocabulary [spec 6](../../../../docs/spec/engine-architecture.md#ci-adapters)
 //! names — "annotations, check runs, job summaries, review comments" — and the
-//! second adapter that [spec 8](../../../../docs/spec/08-design-departures.md)
+//! second adapter that [spec 8](../../../../docs/spec/design-departures.md)
 //! requires from the start. It exists beside SARIF rather than after it,
 //! because one adapter cannot show where the adapter boundary is.
 //!

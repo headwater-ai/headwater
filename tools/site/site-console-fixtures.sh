@@ -157,7 +157,7 @@ echo "#532 itself, over the real served bytes"
 # directories down, which is what their `../../js/base.js` resolves against.
 copy="$scratch/site"
 rm -rf "$copy"
-mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
+mkdir -p "$copy/spec/decisions" "$copy/tutorials/t"
 # Every directory the real pages *load* from, not merely link to. The checker
 # reports a subresource that fails to arrive, so a copy missing `search/` fails
 # these cases for a reason that is about this suite and not about the corpus.
@@ -165,7 +165,7 @@ mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
 for asset in js css search img; do
     [ -d "$deploy/$asset" ] && cp -R "$deploy/$asset" "$copy/$asset"
 done
-victim="$deploy/spec/09-decisions/index.html"
+victim="$deploy/spec/decisions/index.html"
 clean_page="$deploy/tutorials/your-first-governed-corpus/index.html"
 if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
     echo "  FAIL  the two fixture pages are not in the assembled site, so the" >&2
@@ -173,7 +173,7 @@ if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
     echo "        purpose: if the specification moves, this line is the notice." >&2
     exit 1
 fi
-cp "$victim" "$copy/spec/09-decisions/index.html"
+cp "$victim" "$copy/spec/decisions/index.html"
 cp "$clean_page" "$copy/tutorials/t/index.html"
 
 # 3. The corpus as it stands, on the page that carried the defect. This is the
@@ -212,7 +212,7 @@ report "  and the shadowed file is what holds them up" 0 "$status" \
 #    the fix in `mkdocs/overrides/` is what is holding the page up, rather than
 #    something else on the tree that happens to coincide with it.
 sed -i 's|<script src="../../js/leading-digit-anchor-shim.js"></script>||' \
-    "$copy/spec/09-decisions/index.html"
+    "$copy/spec/decisions/index.html"
 status=$(run "$copy")
 report "removing the shim brings #532 back" 1 "$status" \
     "is not a valid selector" "$scratch/out"

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the sections a kind's contract requires.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists the section contract beside voice among the Document-origin examples,
 //! and this one is generated the way a Shape check is. Nothing here names a
 //! kind or a heading: the set comes from
@@ -10,7 +10,7 @@
 //!
 //! # Why a mis-parsed heading is the failure this rule is measured by
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) uses
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) uses
 //! this rule as its example of a silent pass: "a mis-parsed heading lets a
 //! section contract hold with no finding anywhere". The headings come from the
 //! CommonMark parse rather than from a scan for `#`, so a `# Decision` inside a
@@ -31,7 +31,7 @@
 //! An error, on the terms [`crate::facet_required`] states: a required section
 //! is either there or it is not, and no judgment decides which. What judgment
 //! decides is the *content*, and that is why no patch comes with the finding.
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) names this case
+//! [Spec 12](../../../../docs/spec/check-layer.md#fixability) names this case
 //! among the ones a fix may never be offered for: "to rewrite a section to
 //! satisfy a contract" is not mechanical, and an empty heading inserted to
 //! silence a check is worse than the finding.

@@ -3,7 +3,7 @@
 //!
 //! # Why there are two indexes and not one
 //!
-//! [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) rules that
+//! [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) rules that
 //! an edge target is an identifier and never a path, so edge resolution reads
 //! the identifier index. Every prose link in this corpus is written as a
 //! relative path, so link binding reads the path index. Neither index can do
@@ -12,7 +12,7 @@
 //!
 //! # Why the identifier index holds untyped documents too
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [Spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! wants a defect reported to the person who can repair it. An edge whose
 //! target names a document that exists and carries no kind is a defect in *that
 //! document*. An edge whose target names nothing at all is a defect in *this
@@ -51,7 +51,7 @@
 //!
 //! # A former identifier names the document that carried it
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
 //! says an identifier resolves without its document and is never reused. A
 //! document whose identifier changed lists the old value in the facet the
 //! taxonomy declares in the `former_identifier` role (#2025), and
@@ -101,7 +101,7 @@ pub enum Defect {
     NotAScalar,
     /// Two documents claim one identifier. Both are in the index and neither is
     /// reachable: a target that names it resolves to two documents, and
-    /// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+    /// [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
     /// says an identifier is never reused.
     ///
     /// The report carries the **other** claimant whole: its path, and the span

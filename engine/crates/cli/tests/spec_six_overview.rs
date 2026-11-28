@@ -24,7 +24,7 @@ fn read(rel: &str) -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
 
-const SPEC_SIX: &str = "docs/spec/06-engine-architecture.md";
+const SPEC_SIX: &str = "docs/spec/engine-architecture.md";
 
 fn spec_six() -> String {
     read(SPEC_SIX)
@@ -212,11 +212,11 @@ const HOMES: [(&str, &str); 14] = [
         "**`audit` gates nothing.**",
     ),
     (
-        "docs/spec/12-check-layer.md",
+        "docs/spec/check-layer.md",
         "`facet.required.missing` and `facet.value.not_permitted`",
     ),
     (
-        "docs/spec/12-check-layer.md",
+        "docs/spec/check-layer.md",
         "The other three origins are why a native engine exists at all, because LinkML and SHACL cannot express a check of any of them.",
     ),
     (
@@ -240,7 +240,7 @@ const POINTED_HOMES: [&str; 7] = [
     "docs/subsystems/queries-and-explain.md",
     "docs/subsystems/projections-and-export.md",
     "docs/interfaces/headwater-generate.md",
-    "docs/spec/12-check-layer.md",
+    "docs/spec/check-layer.md",
     "docs/decisions/0006-where-the-corpus-graph-lives-at-rest.md",
 ];
 
@@ -710,12 +710,12 @@ fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
         ),
         (
             "a linked credit",
-            "//! [Spec 6](../../docs/spec/06-engine-architecture.md#mcp-server): \"The MCP \
+            "//! [Spec 6](../../docs/spec/engine-architecture.md#mcp-server): \"The MCP \
              server is the agent-facing surface.\"",
         ),
         (
             "a link with no name",
-            "//! [the engine](../../docs/spec/06-engine-architecture.md) says \"the census \
+            "//! [the engine](../../docs/spec/engine-architecture.md) says \"the census \
              fixes the denominator\".",
         ),
         (

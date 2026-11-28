@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The read set: the union of the in-scope inputs behind one run.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! fixes what it is and what it is for. "The **read set** of a run is the union
 //! of the in-scope inputs that produced its results. That is the content hash of
 //! every document and edge that an instance read. It also holds the taxonomy
@@ -15,7 +15,7 @@
 //!
 //! # What the union is for, and the one test it supports
 //!
-//! [Q21](../../../../docs/spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge)
+//! [Q21](../../../../docs/spec/decisions.md#q21--terminological-succession-and-validity-under-merge)
 //! rules that validity is not preserved under merge: "two changes that are each
 //! valid against the merge base can produce an invalid corpus, and no run
 //! against either branch tip reports it". That is write skew, and a read set is
@@ -65,7 +65,7 @@
 //!
 //! Q21's open half asks whether publishing this is free. The measurement is one
 //! subtraction and it is in
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md): the
+//! [13 — Open obligations](../../../../docs/spec/open-obligations.md): the
 //! artifact is one line per document, against a corpus whose documents average
 //! four orders of magnitude more than that. It is free at this corpus's scale
 //! and the number that would decide an adopter's is not this repository's.

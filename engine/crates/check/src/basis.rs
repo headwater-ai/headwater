@@ -4,10 +4,10 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
 //! already rules it, and has since the table of three honest states was
 //! written: "A pointer to a document with the `asserted`
-//! [warrant](../../../../docs/spec/01-conceptual-model.md#warrant) does not
+//! [warrant](../../../../docs/spec/conceptual-model.md#warrant) does not
 //! support `evidenced`, because such a document is neither external nor
 //! auditable. A fabricated *why* with a file name is the failure that this
 //! table exists to prevent."
@@ -19,7 +19,7 @@
 //! # What it reads, and why neither value comes from a declaration
 //!
 //! Both values live in the provenance block, which
-//! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
+//! [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
 //! makes the engine's rather than a taxonomy's: "The provenance block is the
 //! exception, and its shape belongs to the engine." So no taxonomy declares a
 //! warrant and none declares an evidence basis, and this rule reads both
@@ -131,14 +131,14 @@
 //! never groups such a half, so the protection is inherited rather than written
 //! here, and `tests/evidence_basis.rs` is the only thing that asserts it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [Spec 12](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes an edge-scoped read set at one relation instance and both endpoints,
 //! so the two values this rule reads are both in the read set that keys it. An
 //! edit to either end moves the key.
 //!
 //! # The severity is advisory, and the finding carries no patch
 //!
-//! The [fixability](../../../../docs/spec/12-check-layer.md#fixability) bar is
+//! The [fixability](../../../../docs/spec/check-layer.md#fixability) bar is
 //! whether the remediation is mechanical and total. It is neither here. The
 //! repair is a pointer at an artifact somebody can audit, a promotion of the
 //! target by a person who reads it, or a demotion of the source's own claim to

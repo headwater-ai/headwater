@@ -17,7 +17,7 @@ provenance:
 
 ## Context
 
-[#827](https://github.com/headwater-ai/headwater/issues/827) found that [9 — The decision register](../spec/09-decisions.md) had stopped tracking the decisions shelf. Measured on 2026-09-21, the shelf held 80 records. The generated register at [9 — Open questions](../spec/09-open-questions.md) named a heading for each of the 80. `headwater generate` writes that file, and `generate --check` holds it whole or not at all. The hand-authored register named 37. Its front matter still declared `supersedes: HW-REG-open-questions`, an edge that claims a completeness the hand register does not have.
+[#827](https://github.com/headwater-ai/headwater/issues/827) found that [9 — The decision register](../spec/decisions.md) had stopped tracking the decisions shelf. Measured on 2026-09-21, the shelf held 80 records. The generated register at [9 — Open questions](../spec/open-questions.md) named a heading for each of the 80. `headwater generate` writes that file, and `generate --check` holds it whole or not at all. The hand-authored register named 37. Its front matter still declared `supersedes: HW-REG-open-questions`, an edge that claims a completeness the hand register does not have.
 
 Two readers relied on the hand register's last heading to pick the next decision number on 2026-09-11. Both minted `HW-DR-0044`, a number the shelf had already used. The register's own gap caused the collision: a complete register would have shown the shelf already past that number.
 

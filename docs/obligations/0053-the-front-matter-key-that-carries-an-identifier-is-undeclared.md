@@ -24,7 +24,7 @@ relations:
 
 A kind declares `identifier: {scheme: …}`, and nothing states which key in front matter holds the minted value. The typing pass wrote `id`.
 
-This is the fourth surface that has a required declaration and no stated form. [Q2](../spec/09-decisions.md#q2--schema-format) owns the schema language that would state it.
+This is the fourth surface that has a required declaration and no stated form. [Q2](../spec/decisions.md#q2--schema-format) owns the schema language that would state it.
 
 ## Obligation
 

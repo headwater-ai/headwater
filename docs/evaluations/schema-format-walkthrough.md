@@ -20,7 +20,7 @@ relations:
 
 # Choosing the schema format — a cognitive-dimensions walkthrough
 
-Evidence for [Q2](../spec/09-open-questions.md#2--schema-format). Q2 specified the method and left the work undone: walk each candidate notation through five authoring scenarios, and score it on the cognitive dimensions. This is that walkthrough.
+Evidence for [Q2](../spec/open-questions.md#2--schema-format). Q2 specified the method and left the work undone: walk each candidate notation through five authoring scenarios, and score it on the cognitive dimensions. This is that walkthrough.
 
 It produced three kinds of result, and they are worth separating before the detail.
 
@@ -38,9 +38,9 @@ Before the walkthrough could start, the question had to be split. "Schema format
 2. **What concrete syntax do authors type?**
 3. **What can a partially-written taxonomy be checked against, and when?**
 
-[Q13](../spec/09-open-questions.md#13--linkml-and-shacl-as-substrate) already answered the first: Headwater owns the language, and standard formats are emitted from it. Q2 is really the second and the third.
+[Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate) already answered the first: Headwater owns the language, and standard formats are emitted from it. Q2 is really the second and the third.
 
-The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question. It is not one. [Spec 2](../spec/02-taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
+The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question. It is not one. [Spec 2](../spec/taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
 
 - `values: $vocabularies.lifecycle_state` — a reference into another declaration.
 - `add: {relations.forbids: $package.optional.forbids}` — a reference into a package's unenabled definitions.
@@ -71,7 +71,7 @@ Q2 listed seven. Green and Petre's framework has fourteen, and the seven were a 
 
 **Juxtaposability.** Can a reader see two things at once? Base beside overlay, and old beside new, are the two comparisons this system asks for constantly.
 
-**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it? That is a question about how much of the notation is in its training data. And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [Spec 5](../spec/05-ai-integration.md) makes agents readers of the corpus. [Q12](../spec/09-open-questions.md#12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
+**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it? That is a question about how much of the notation is in its training data. And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [Spec 5](../spec/ai-integration.md) makes agents readers of the corpus. [Q12](../spec/open-questions.md#12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
 
 Provisionality — can an author sketch something not yet valid — is folded into progressive evaluation below, because for this notation the two questions have one answer.
 
@@ -316,7 +316,7 @@ YAML's traps are the error-proneness cost of this choice, and a strict loader re
 
 ## The implementation cost, and why it is already retired
 
-Choosing YAML in a Rust engine has one obvious cost, and [Q1](../spec/09-open-questions.md#1--implementation-language) named it while closing: the YAML crate ecosystem is in poor repair. The reason it matters less than it looks is the same reason in both entries. [Spec 12](../spec/12-check-layer.md) requires findings to anchor to a line, and no convenient deserializer retains spans. The engine writes its own parse whatever format it reads.
+Choosing YAML in a Rust engine has one obvious cost, and [Q1](../spec/open-questions.md#1--implementation-language) named it while closing: the YAML crate ecosystem is in poor repair. The reason it matters less than it looks is the same reason in both entries. [Spec 12](../spec/check-layer.md) requires findings to anchor to a line, and no convenient deserializer retains spans. The engine writes its own parse whatever format it reads.
 
 The [language spike](language-spike-results.md) built that parse for document front matter, with ten assertions covering line and column for every key. A taxonomy file is the same problem at a different scale. So the format decision here adds no implementation risk that the engine had not already accepted.
 
@@ -342,11 +342,11 @@ Each of these is a design defect that the walkthrough surfaced. None of them is 
 
 | # | Finding | Landed in |
 |---|---|---|
-| 1 | Kind-to-relation permission is declared twice and nothing makes the two agree. Endpoints become authoritative and `may:` is derived. | [Endpoints are the only permission](../spec/02-taxonomy-model.md#endpoints-are-the-only-permission) |
-| 2 | `abstract` appears in the meta-schema with no semantics. Define abstract kinds and `is_a`. Scenarios 1 and 3 both need exactly it. | [Abstract kinds](../spec/02-taxonomy-model.md#abstract-kinds) |
-| 3 | Reading precedence has no clause for the governance family, and the derivation contradicts what the family means. On governance between two documents, the source governs. | [Reading precedence is derived](../spec/02-taxonomy-model.md#reading-precedence-is-derived) |
-| 4 | Compatibility has no dimension for the overlay address surface. Add `addressability`, measured against reference overlays. | [Versioning by measured compatibility](../spec/02-taxonomy-model.md#versioning-by-measured-compatibility) |
-| 5 | Migration migrates documents and not overlays. The payload drives an overlay rewrite, and an `add` collision is always a human task. | [Customization by composition](../spec/02-taxonomy-model.md#customization-by-composition) and versioning |
+| 1 | Kind-to-relation permission is declared twice and nothing makes the two agree. Endpoints become authoritative and `may:` is derived. | [Endpoints are the only permission](../spec/taxonomy-model.md#endpoints-are-the-only-permission) |
+| 2 | `abstract` appears in the meta-schema with no semantics. Define abstract kinds and `is_a`. Scenarios 1 and 3 both need exactly it. | [Abstract kinds](../spec/taxonomy-model.md#abstract-kinds) |
+| 3 | Reading precedence has no clause for the governance family, and the derivation contradicts what the family means. On governance between two documents, the source governs. | [Reading precedence is derived](../spec/taxonomy-model.md#reading-precedence-is-derived) |
+| 4 | Compatibility has no dimension for the overlay address surface. Add `addressability`, measured against reference overlays. | [Versioning by measured compatibility](../spec/taxonomy-model.md#versioning-by-measured-compatibility) |
+| 5 | Migration migrates documents and not overlays. The payload drives an overlay rewrite, and an `add` collision is always a human task. | [Customization by composition](../spec/taxonomy-model.md#customization-by-composition) and versioning |
 
 Two of them turned out to be half-present rather than absent, which is worth recording because it changes what the fix is. Spec 7 already reported invalidated overlay entries to a consumer, so defect 4 was a missing *consequence* rather than a missing report. And spec 2 already named the `override` precondition, so defect 5 was an incomplete symmetry rather than an unconsidered case. A walkthrough finds these where a reading does not, because it forces the whole sequence rather than one paragraph.
 

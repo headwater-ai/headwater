@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Shape-origin check, generated from the facet and kind declarations.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! puts "required facet" first among the Shape-origin examples and rules that
 //! Shape checks are "generated, not written": a new facet in the taxonomy
 //! produces its checks with no code. Nothing below names a facet or a kind. The
@@ -11,7 +11,7 @@
 //!
 //! # One instance per document, and a list of findings inside it
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#instances-and-why-coverage-needs-them)
+//! [Spec 12](../../../../docs/spec/check-layer.md#instances-and-why-coverage-needs-them)
 //! sets the grain in its own example: "`facet_required` is not one check but
 //! 412 instances", against a corpus of 412 documents. So the instance is the
 //! document and not the pair of a document and a facet.
@@ -28,7 +28,7 @@
 //! key is absent, and the front matter block it is absent from is the whole
 //! file's worth of context an author needs.
 //!
-//! No fix is offered, and that is [spec 12](../../../../docs/spec/12-check-layer.md#fixability)'s
+//! No fix is offered, and that is [spec 12](../../../../docs/spec/check-layer.md#fixability)'s
 //! bar rather than a gap. A fix is mechanical only when there is "one correct
 //! outcome, derivable without judgment". The value of a missing `summary` is a
 //! sentence somebody has to write, and a `status` this engine picked would be a

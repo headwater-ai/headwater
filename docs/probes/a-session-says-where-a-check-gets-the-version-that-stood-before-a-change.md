@@ -35,7 +35,7 @@ Your whole final message is that one word.
 
 ## Target
 
-[Spec 12, *Temporal inputs: the clock and the prior version*](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
+[Spec 12, *Temporal inputs: the clock and the prior version*](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
 
 ## Key
 
@@ -46,7 +46,7 @@ expected: [manifest]
 
 **Where plain code carries it.** `engine/crates/check/src/change.rs:1-10`: "It walks no history, it runs no version control tool, and it opens no file that the caller did not name." `engine/crates/vcs/src/lib.rs:1-20`: "The one crate of this workspace that runs a version control command", and the check-evaluation path "runs no version control command". `engine/crates/cli/src/lib.rs` carries `--change <manifest>` on `check`. The distractor is real and in plain code: `headwater change` and the `vcs` crate run version control commands. A session that finds the `vcs` crate first and stops gives the wrong answer.
 
-**Which documents help, and why.** [Spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) states the rule and its boundary in one section, with the reason. [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules which verb may run version control plumbing and why. [The `headwater change` contract](../interfaces/headwater-change.md) says that the verb is a producer outside the check loop.
+**Which documents help, and why.** [Spec 12](../spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version) states the rule and its boundary in one section, with the reason. [HW-DR-0072](../decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md) rules which verb may run version control plumbing and why. [The `headwater change` contract](../interfaces/headwater-change.md) says that the verb is a producer outside the check loop.
 
 **Expected rates, from proposal 2 of #1835.** The guess floor is 33 percent. Scenario 0: 45 to 60 percent. The right answer is in the rustdoc of two modules, and the wrong one is in the rustdoc of a third, so the rate is the share that reads `change.rs` or the `vcs` header rather than stopping at the first place that runs a command. Scenario 1: 80 to 90 percent.
 

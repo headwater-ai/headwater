@@ -2,7 +2,7 @@
 #
 # The taxonomy the scaffolder's fixture corpus is written against.
 #
-# [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) names
+# [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) names
 # the scaffolder a correctness root, and it says what a correctness root owes:
 # "Each component therefore owes its own conformance fixtures, in the same
 # spirit as 'a check without a failing fixture does not ship'." This file is

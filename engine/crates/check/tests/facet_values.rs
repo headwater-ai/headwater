@@ -3,7 +3,7 @@
 //! and the corpus that separates a document at one from a document outside
 //! them.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [Spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/facet-values/` is written
 //! to be wrong under the three mistakes this reading is easiest to make.

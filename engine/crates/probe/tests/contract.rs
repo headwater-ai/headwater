@@ -3,7 +3,7 @@
 //!
 //! # Why a document of the corpus is tested from a crate
 //!
-//! [Spec 15](../../../../docs/spec/15-the-recorder-contract.md) is the contract
+//! [Spec 15](../../../../docs/spec/the-recorder-contract.md) is the contract
 //! a person reads before they write a recorder, and this repository holds no
 //! recorder. So every reader of that document is somewhere else, and a key that
 //! this engine started to refuse would reach them as a transcript that fails for
@@ -27,7 +27,7 @@ use headwater_probe::intake::{CALL_KEYS, CONFIRMATIONS, EVENT_KEYS, IDENTITY_KEY
 use std::path::{Path, PathBuf};
 
 /// The document this test holds to the engine.
-const CONTRACT: &str = "docs/spec/15-the-recorder-contract.md";
+const CONTRACT: &str = "docs/spec/the-recorder-contract.md";
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))

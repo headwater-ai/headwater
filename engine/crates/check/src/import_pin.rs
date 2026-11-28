@@ -2,7 +2,7 @@
 //! `import.pin.unread`: a committed imports snapshot that binds nothing, as an
 //! error that names the pin.
 //!
-//! [Q19](../../../../docs/spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) says a
+//! [Q19](../../../../docs/spec/decisions.md#q19--inbound-integration-an-external-system-of-record) says a
 //! committed snapshot "is a pin". Before this rule, a snapshot that did not
 //! read reached a reader only through an anchor: `relation.target.unresolved`
 //! carries the reason when an edge into it did not bind. A pin that no anchor

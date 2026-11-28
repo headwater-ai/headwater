@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) reserves identifiers for decisions, requirements, acceptance criteria, controls and obligations. A document is none of those, so neither the base package nor the design-spec entry gives one to a document. [Q4](../spec/09-decisions.md#q4--relation-storage) rules that a relation target is an identifier and never a path.
+[Spec 3](../spec/authoring-and-lifecycle.md#identifiers) reserves identifiers for decisions, requirements, acceptance criteria, controls and obligations. A document is none of those, so neither the base package nor the design-spec entry gives one to a document. [Q4](../spec/decisions.md#q4--relation-storage) rules that a relation target is an identifier and never a path.
 
 ## Obligation
 

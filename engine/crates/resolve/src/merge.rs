@@ -2,7 +2,7 @@
 //! The merge itself: five operations over one tree, each asserting what it
 //! believes about the tree it is applied to.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
 //! "Every operation asserts a precondition about the base, and a failed
 //! precondition is always an error. `override` needs the path to exist. `add`
 //! needs the key to be absent. `remove` needs the key to be present." The

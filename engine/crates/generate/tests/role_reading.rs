@@ -83,7 +83,7 @@
 //! plan is identifier-shaped — over two emitters it names by hand, over this
 //! corpus, and over identifier *shape* rather than over role reading. An
 //! emitter that fell through to `shelf_index::file_name` prints
-//! `00-vision-and-scope.md` and passes it. This file is the positive property
+//! `vision-and-scope.md` and passes it. This file is the positive property
 //! over every kind, on a surface built for the purpose.
 
 use headwater_census::census::{self, Census};
@@ -1197,7 +1197,7 @@ fn created_role_run() -> Run {
 ///
 /// `reviewed.md` carries the same dates as `overdue.md` and one declared edge,
 /// so the rule generates over it and passes it. That is the passing fixture
-/// [spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+/// [spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 /// asks for beside the failing one, and it is also what stops a fix that
 /// silenced the report by generating nothing.
 ///

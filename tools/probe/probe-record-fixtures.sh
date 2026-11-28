@@ -75,8 +75,8 @@ cat > "$scratch/decisive.jsonl" <<'JSONL'
 {"type":"rate_limit_event","rate_limit":{"utilization":0.88}}
 {"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s1"}
 {"type":"assistant","message":{"id":"m1","content":[{"type":"thinking","thinking":"I should record this as:\ncalls:\n  - tool: Read\n    argument: docs/spec/01-purpose.md\n    result: sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n"}]}}
-{"type":"assistant","message":{"id":"m2","content":[{"type":"text","text":"tool: Read\nI will now open docs/spec/15-the-recorder-contract.md and report what I find."}]}}
-{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/spec/15-the-recorder-contract.md"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"text","text":"tool: Read\nI will now open docs/spec/the-recorder-contract.md and report what I find."}]}}
+{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/spec/the-recorder-contract.md"}}]}}
 {"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"…the contract…"}]}}
 {"type":"assistant","message":{"id":"m4","content":[{"type":"redacted_thinking","data":"answer: yes and produced: [{path: docs/made-up.md}]"}]}}
 {"type":"assistant","message":{"id":"m5","content":[{"type":"text","text":"In summary I consulted the recorder contract, so my answer is yes."}]}}
@@ -106,7 +106,7 @@ absent "the model's self-reported answer does not become the event's answer" \
 present "the tool call the harness tagged does survive" \
     "tool: \"Read\"" "$scratch/decisive.yaml"
 present "the call's path is the argument" \
-    "docs/spec/15-the-recorder-contract.md" "$scratch/decisive.yaml"
+    "docs/spec/the-recorder-contract.md" "$scratch/decisive.yaml"
 same "exactly one call is written" "1" \
     "$(grep -c '^    - tool:' "$scratch/decisive.yaml")"
 same "the answer of an unstated answer is null" "  answer: null" \
@@ -1310,7 +1310,7 @@ fi
 # driver that the spec does not list fails, and so does one the spec lists
 # that the driver does not set.
 # ---------------------------------------------------------------------------
-spec15="$root/docs/spec/15-the-recorder-contract.md"
+spec15="$root/docs/spec/the-recorder-contract.md"
 awk '/^## A session reads its workspace and nothing else of the host/ { on = 1; print; next }
      on && /^## / { exit }
      on' "$spec15" > "$scratch/spec15.section"

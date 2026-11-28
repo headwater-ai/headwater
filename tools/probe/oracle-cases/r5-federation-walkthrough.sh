@@ -39,12 +39,12 @@ PY
 
 # The sound change: both halves of the edge.
 reference() {
-    link docs/spec/07-distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough && link docs/evaluations/schema-format-walkthrough.md cited_by HW-SPEC-distribution-and-federation
+    link docs/spec/distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough && link docs/evaluations/schema-format-walkthrough.md cited_by HW-SPEC-distribution-and-federation
 }
 
 # The half on the spec part that the task names, alone.
 wrong() {
-    link docs/spec/07-distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough
+    link docs/spec/distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough
 }
 
 # The mutants of #1874.3b. Each one writes the first half of the edge and
@@ -83,6 +83,6 @@ commented_edge() {
 
 # The first half, with the second half as a sentence of the body.
 body_only() {
-    link docs/spec/07-distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough && printf '\nHW-SPEC-distribution-and-federation cites this evaluation as evidence.\n' >> docs/evaluations/schema-format-walkthrough.md
+    link docs/spec/distribution-and-federation.md cites_evidence HW-EVAL-schema-format-walkthrough && printf '\nHW-SPEC-distribution-and-federation cites this evaluation as evidence.\n' >> docs/evaluations/schema-format-walkthrough.md
 }
 more_wrong="commented_edge body_only"

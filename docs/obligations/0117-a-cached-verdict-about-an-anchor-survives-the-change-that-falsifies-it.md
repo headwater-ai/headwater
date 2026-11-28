@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states the rule this record is about. "The key is a hash of exactly those inputs, and a key that omits one is a correctness bug." The same section names the shape of the failure. "A cache that serves a verdict across that edit is the correctness bug a complete key exists to prevent."
+[Spec 12](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states the rule this record is about. "The key is a hash of exactly those inputs, and a key that omits one is a correctness bug." The same section names the shape of the failure. "A cache that serves a verdict across that edit is the correctness bug a complete key exists to prevent."
 
 `relation.target.unresolved` is edge-scoped, and the read set of one instance is the document that declared the edge. The target document joins it where the target is a document. A target that is not a document contributes no input at all. A read set is a list of corpus paths, and an anchor names something outside the corpus. So the key over an instance about an anchor names no byte of the thing the anchor points at.
 
@@ -45,7 +45,7 @@ Both resolvers are reached, so this is a property of the read set rather than of
 
 **What the engine already does for the same problem, one input over.** `Cache::key` returns nothing for an instance whose input carries no digest. The comment on that branch states the reason. "The result cannot be keyed on a hash that does not exist, and inventing one is the correctness bug spec 12 names." An anchor target is the same case, and it never reaches that branch, because the read set of the instance never held the target.
 
-**What this costs a reader.** A green run over a corpus whose edges point at nothing is the exact outcome [`relation.target.unresolved`](../spec/12-check-layer.md#two-phases-and-why-the-order-matters) exists to prevent. The commit gate runs `headwater check --strict` with the cache on, so a deletion that breaks an anchor passes the gate on the commit that makes it.
+**What this costs a reader.** A green run over a corpus whose edges point at nothing is the exact outcome [`relation.target.unresolved`](../spec/check-layer.md#two-phases-and-why-the-order-matters) exists to prevent. The commit gate runs `headwater check --strict` with the cache on, so a deletion that breaks an anchor passes the gate on the commit that makes it.
 
 ## Discharge
 

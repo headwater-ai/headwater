@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //! External-anchor resolution: normalize a target string, then bind it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names this a correctness root and says exactly how it fails: "a resolver
 //! that mis-normalizes makes `governs` edges silently miss". Nothing raises an
 //! error when it happens. Write-time impact detection fires on anchor identity
-//! ([spec 5](../../../../docs/spec/05-ai-integration.md)), so an anchor that
+//! ([spec 5](../../../../docs/spec/ai-integration.md)), so an anchor that
 //! normalizes to a second spelling of one target is a second node, and every
 //! document that governs the first one stops reaching the code that changed.
 //!
 //! # Three outcomes, and the third is never reported as the second
 //!
-//! [Spec 1](../../../../docs/spec/01-conceptual-model.md#external-anchor) fixes
+//! [Spec 1](../../../../docs/spec/conceptual-model.md#external-anchor) fixes
 //! the set: an anchor resolves, or it fails to resolve, or its target sits
 //! behind a declared withholding. The third is [`Binding::Withheld`]. Its one
 //! producer is the resolver over a pinned export, `headwater_import::harvest`,
@@ -19,7 +19,7 @@
 //! lists ([HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
 //! The variant is a member of a closed set, so the compiler lists every site
 //! that has to tell the two apart, which is
-//! [Q1](../../../../docs/spec/09-decisions.md#q1--implementation-language)'s
+//! [Q1](../../../../docs/spec/decisions.md#q1--implementation-language)'s
 //! argument for a closed set.
 //!
 //! # A resolver never reaches the network
@@ -96,7 +96,7 @@ pub enum Binding {
         ///
         /// Two components read it. `headwater_check::suspect` compares it
         /// against the `verified_revision` recorded on the edge, which is the
-        /// drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+        /// drift report [spec 7](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
         /// asks for per edge, and which a `governs` edge now receives as
         /// well. And `Target::resolution` renders it into the
         /// cache key of every edge instance, so a verdict about an edge cannot

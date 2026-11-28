@@ -29,11 +29,11 @@ relations:
 
 Add a rule to this engine that reports a document whose summary is empty. Say where the rule is declared, where it is implemented, and what its severity is.
 
-The session opens with `.headwater/corpus.json` and with no other pointer into the corpus. That is the state [Q14](../spec/09-decisions.md#q14--discovery-surface) claims the descriptor serves: a cold agent that has read one generated file and nothing else.
+The session opens with `.headwater/corpus.json` and with no other pointer into the corpus. That is the state [Q14](../spec/decisions.md#q14--discovery-surface) claims the descriptor serves: a cold agent that has read one generated file and nothing else.
 
 ## Target
 
-The session must open [the check layer](../spec/12-check-layer.md), which states what a rule is, where it is declared and what makes it an error.
+The session must open [the check layer](../spec/check-layer.md), which states what a rule is, where it is declared and what makes it an error.
 
 ## Key
 

@@ -19,7 +19,7 @@ waiting_on: measurement
 
 ## Context
 
-Pull request #262, commit 7772252, fixed three sentences of one defect class. A specification sentence closes a set with a count, with "both", or with "either", and the source it describes has one more member. The three sentences were in `docs/spec/12-check-layer.md`, `docs/spec/01-conceptual-model.md`, and `docs/spec/02-taxonomy-model.md`. The find came from writing an interface_contract, because a contract forces an exhaustive enumeration where a specification wrote a summary. A grep of `docs/spec/` for a sentence closing a set with a number word, "both", or "either" returns 1109 candidates. Restricting to a definite determiner or a pronoun subject gives 497. Restricting to a noun a source can enumerate — exits, verbs, crates, rules, kinds, facets, relations, shelves, formats, streams, severities, scopes, emitters, arms — gives 127.
+Pull request #262, commit 7772252, fixed three sentences of one defect class. A specification sentence closes a set with a count, with "both", or with "either", and the source it describes has one more member. The three sentences were in `docs/spec/check-layer.md`, `docs/spec/conceptual-model.md`, and `docs/spec/taxonomy-model.md`. The find came from writing an interface_contract, because a contract forces an exhaustive enumeration where a specification wrote a summary. A grep of `docs/spec/` for a sentence closing a set with a number word, "both", or "either" returns 1109 candidates. Restricting to a definite determiner or a pronoun subject gives 497. Restricting to a noun a source can enumerate — exits, verbs, crates, rules, kinds, facets, relations, shelves, formats, streams, severities, scopes, emitters, arms — gives 127.
 
 ## Obligation
 

@@ -27,7 +27,7 @@ Without `--format`, it writes every declared profile to its taxonomy-declared pa
 
 The command refuses an ambiguous profile selection or an uncovered emitter loss.
 
-**`export` is its own verb because a consumer outside the repository asks for one format at a time.** The engine ships `json` and `jsonschema`, and each later format waits for a consumer who asks for it ([spec 13](../spec/13-open-obligations.md#what-waits-on-a-first-adopter)). With no `--profile`, the command writes every declared profile, so a filtered audience is never left out by accident.
+**`export` is its own verb because a consumer outside the repository asks for one format at a time.** The engine ships `json` and `jsonschema`, and each later format waits for a consumer who asks for it ([spec 13](../spec/open-obligations.md#what-waits-on-a-first-adopter)). With no `--profile`, the command writes every declared profile, so a filtered audience is never left out by accident.
 
 **`--format` serves a reader who holds no clone.** That reader wants one vocabulary and reads bytes on a pipe. No declared output path is involved, so a target that no taxonomy declared is still reachable. Without the flag, the command writes what the taxonomy declared, to the paths that the taxonomy names, and `--check` has those files to compare against.
 
@@ -176,4 +176,4 @@ The history: `1.0` to `1.1` added `version` ([#343](https://github.com/headwater
 
 ## See also
 
-[`headwater generate`](headwater-generate.md) writes native projections. [`headwater taxonomy publish`](headwater-taxonomy.md) creates a package artifact. [Spec 7](../spec/07-distribution-and-federation.md#what-leaves-a-corpus) states the export rules that this command implements.
+[`headwater generate`](headwater-generate.md) writes native projections. [`headwater taxonomy publish`](headwater-taxonomy.md) creates a package artifact. [Spec 7](../spec/distribution-and-federation.md#what-leaves-a-corpus) states the export rules that this command implements.

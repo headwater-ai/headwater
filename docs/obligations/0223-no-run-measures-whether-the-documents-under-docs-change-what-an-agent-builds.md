@@ -25,7 +25,7 @@ relations:
 
 ## Context
 
-This repository claims that its documents change what an agent builds. [Spec 5](../spec/05-ai-integration.md#probe-categories) measures a claim with two arms of one probe set, and the absent arm names a declared ablation.
+This repository claims that its documents change what an agent builds. [Spec 5](../spec/ai-integration.md#probe-categories) measures a claim with two arms of one probe set, and the absent arm names a declared ablation.
 
 Until [#1010](https://github.com/headwater-ai/headwater/issues/1010), one ablation existed. It removes `CLAUDE.md`, `.claude/`, `.githooks/` and `.headwater/`, and it keeps `docs/`. So the `campaign` tier measures whether the governance changes what an agent builds. The documents are present in both of its arms, and no rate of it can say what they do.
 

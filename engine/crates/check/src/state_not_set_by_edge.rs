@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) states what a relation
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md) states what a relation
 //! that declares `on_target: {set_state: superseded}` does: it "sets the
 //! target's state-entry date in the same operation. A state change with no
 //! stamp is a defect regardless of what caused the change." The engine wrote

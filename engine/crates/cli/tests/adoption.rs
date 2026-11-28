@@ -77,7 +77,7 @@ const PAYLOAD: &str = concat!(
     "      owner: \"a person\"\n",
     "      until: 2027-06-30\n",
     "      pairs:\n",
-    "        - path: docs/spec/02-taxonomy-model.md\n",
+    "        - path: docs/spec/taxonomy-model.md\n",
     "          rule: language.retired_term.used\n",
 );
 
@@ -213,7 +213,7 @@ impl Root {
     /// The same block whose one pair names a `(path, rule)` the case chooses.
     ///
     /// Every helper above writes `PAYLOAD`'s own pair, which names
-    /// `docs/spec/02-taxonomy-model.md` — a path the scratch corpus does not
+    /// `docs/spec/taxonomy-model.md` — a path the scratch corpus does not
     /// hold. Such a pair matches no finding, so it reads as *closed* and every
     /// case above runs at `0 open`. A case that needs an open pair therefore
     /// builds the corpus first and names the document the scaffolder actually
@@ -227,7 +227,7 @@ impl Root {
         let payload = PAYLOAD
             .replace("AD-9", id)
             .replace("2027-06-30", until)
-            .replace("docs/spec/02-taxonomy-model.md", path)
+            .replace("docs/spec/taxonomy-model.md", path)
             .replace("language.retired_term.used", rule);
         self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
     }
@@ -1330,7 +1330,7 @@ const UNRAISED: &str = "language.retired_term.used";
 ///
 /// The corpus is built **before** the block is authored, because the pair has
 /// to name the document the scaffolder actually wrote. `PAYLOAD` names
-/// `docs/spec/02-taxonomy-model.md`, which this corpus does not hold, so every
+/// `docs/spec/taxonomy-model.md`, which this corpus does not hold, so every
 /// other case in this file runs at `0 open` and none of them could have caught
 /// a reading that reported zero whatever the corpus did.
 #[test]

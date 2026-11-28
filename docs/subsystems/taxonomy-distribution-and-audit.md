@@ -33,7 +33,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of three crates under `engine/crates/`: `fetch`, `compat` and `audit`. They are one row of the subsystem table in [spec 6](../spec/06-engine-architecture.md#subsystems).
+This spec describes the inside of three crates under `engine/crates/`: `fetch`, `compat` and `audit`. They are one row of the subsystem table in [spec 6](../spec/engine-architecture.md#subsystems).
 
 None of the three builds the lock. The [Taxonomy resolution](taxonomy-resolution.md) subsystem builds it. These crates move a taxonomy between repositories, or they measure a taxonomy against a corpus:
 
@@ -41,13 +41,13 @@ None of the three builds the lock. The [Taxonomy resolution](taxonomy-resolution
 - `compat` compares two taxonomies over one corpus for `headwater taxonomy diff` and `headwater taxonomy migrate`.
 - `audit` measures the taxonomy of the lock against the corpus for `headwater taxonomy audit`.
 
-`headwater-cli` is the only crate that depends on any of the three. No crate of the checking loop links them, and no stage of [the pipeline](../spec/06-engine-architecture.md#pipeline) waits for them.
+`headwater-cli` is the only crate that depends on any of the three. No crate of the checking loop links them, and no stage of [the pipeline](../spec/engine-architecture.md#pipeline) waits for them.
 
 Other documents state what these verbs do, and this spec does not repeat them:
 
 - [The `headwater taxonomy` contract](../interfaces/headwater-taxonomy.md#description) states what `taxonomy audit` reads and why it gates nothing. The `taxonomy vendor` paragraph of the same part states why one crate holds the network.
-- [Spec 2](../spec/02-taxonomy-model.md#versioning-by-measured-compatibility) states the six dimensions of compatibility and the version bump that each result requires.
-- [Spec 7](../spec/07-distribution-and-federation.md#consuming) states how a consumer vendors and fetches a package. Its [Upgrading](../spec/07-distribution-and-federation.md#upgrading) section states what `diff` and `migrate` report. Its [adoption store](../spec/07-distribution-and-federation.md#what-the-adoption-store-records-and-what-it-refuses-to) section states what one reading holds.
+- [Spec 2](../spec/taxonomy-model.md#versioning-by-measured-compatibility) states the six dimensions of compatibility and the version bump that each result requires.
+- [Spec 7](../spec/distribution-and-federation.md#consuming) states how a consumer vendors and fetches a package. Its [Upgrading](../spec/distribution-and-federation.md#upgrading) section states what `diff` and `migrate` report. Its [adoption store](../spec/distribution-and-federation.md#what-the-adoption-store-records-and-what-it-refuses-to) section states what one reading holds.
 - The [`headwater taxonomy`](../interfaces/headwater-taxonomy.md) contract states the commands, their flags and their exit codes.
 - [HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) rules that the fetch lives in a crate that the checking loop never links. [HW-AC-0001](../acceptance-criteria/0001-no-engine-source-outside-the-fetch-crate-names-a-network-api-and-no-crate-of-the-checking-loop-reaches-a-network-package.md) is the criterion that holds it.
 
@@ -134,7 +134,7 @@ The layout reading renders each file name again through `headwater_scaffold::ren
 
 `reading.rs` keeps the series of adoption readings in `STORE`, which is `.headwater/adoption.jsonl`. The store is outside the corpus root, so no census row covers it and no rule reads it. Only `taxonomy audit --record` writes it.
 
-A store is necessary because no crate of this engine walks git history. [Spec 12](../spec/12-check-layer.md) gives a change to the engine as a named set of inputs, and never as a second tree. So a past day's tree is not an input of any run, and the series grows one reading for each invocation that records one. [HW-OBL-0008](../obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md) names this series as the instrument it needs.
+A store is necessary because no crate of this engine walks git history. [Spec 12](../spec/check-layer.md) gives a change to the engine as a named set of inputs, and never as a second tree. So a past day's tree is not an input of any run, and the series grows one reading for each invocation that records one. [HW-OBL-0008](../obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md) names this series as the instrument it needs.
 
 One line holds one reading of one invocation, and never one task. A corpus that declares no payload records `tasks: []`, and that line is different from no line. A task entry holds the `state` that the check layer decided, and this crate does not compare `until` against the date a second time.
 

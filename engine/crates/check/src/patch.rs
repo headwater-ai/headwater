@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The patch a check offers beside its finding.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability): "A check may
+//! [Spec 12](../../../../docs/spec/check-layer.md#fixability): "A check may
 //! return a patch alongside a finding… A fix is offered only when it is
 //! **mechanical and total** — one correct outcome, derivable without judgment."
 //! This module is that patch, and [`crate::Finding::fixable`] reads it rather
@@ -181,7 +181,7 @@ impl Patch {
 /// against the bytes before it moves one.
 ///
 /// A code span and a quoted run are skipped for the reason
-/// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+/// [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 /// gives: neither is this author's prose, and a patch into one would rewrite
 /// somebody else's words or a file name.
 ///

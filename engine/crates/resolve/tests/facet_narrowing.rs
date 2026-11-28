@@ -14,7 +14,7 @@
 //! read it as an intersection and reported an answer, and the resolver would
 //! have refused the taxonomy that produced it. Two enforcement paths that
 //! disagree about one file is the defect a rule with no fixture always has, and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [spec 12](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! names it for the check layer.
 //!
 //! Every case below asserts the refusal's **text** and not only its count. A

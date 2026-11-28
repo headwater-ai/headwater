@@ -28,7 +28,7 @@ relations:
 
 > the vision's exclusion of grammar (spec 00, line 70) was made because no tool like Harper existed, not as a principle. It is not a constraint on this decision.
 
-So this record weighs Harper on what it measured, and not on what [spec 00](../spec/00-vision-and-scope.md#what-we-do-not-build) excludes.
+So this record weighs Harper on what it measured, and not on what [spec 00](../spec/vision-and-scope.md#what-we-do-not-build) excludes.
 
 ## Decision
 

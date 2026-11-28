@@ -4,7 +4,7 @@
 //! The claim [#71](https://github.com/headwater-ai/headwater/issues/71) is
 //! about: a patch over prose anchors at an offset, the offsets come from
 //! [`headwater_doc::sentences`], and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) holds
+//! [spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
 //! that splitter as a correctness root. A rewrite at a wrong offset **corrupts
 //! a document** rather than reporting a wrong line, so a green run over the
 //! result is not enough on its own and this file records four things.
@@ -18,7 +18,7 @@
 //!    `07-prose-defects.md` writes one contraction inside a code span, one
 //!    inside a block quotation and one inside a link's text. The first two
 //!    reach no rule at all, which is
-//!    [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)'s
+//!    [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)'s
 //!    construction rather than an exemption. The third is this author's prose,
 //!    so it is reported, fixed, and the link survives the fix.
 //! 4. The whole finding set of both runs, recorded. A rule that stopped

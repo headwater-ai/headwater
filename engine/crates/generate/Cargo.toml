@@ -58,7 +58,7 @@ headwater-resolve = { workspace = true }
 # `segments` tokenizes a shelf `layout`, which is how a path written from one is
 # read back for the facet that the file name carries. A second copy of that
 # grammar here would let this engine disagree with itself about a path it wrote
-# ([principle 2](../../../docs/spec/00-vision-and-scope.md#design-principles)).
+# ([principle 2](../../../docs/spec/vision-and-scope.md#design-principles)).
 headwater-scaffold = { workspace = true }
 
 # A `counted` tombstone lists the digest of each withheld identifier, in the

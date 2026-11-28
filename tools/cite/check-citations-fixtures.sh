@@ -301,7 +301,7 @@ echo "what this repository itself carries"
 # fixtures instead of over this tree, and the reason is a measurement that can
 # go stale. So it is a case.
 #
-# `docs/spec/05-ai-integration.md` is copied into the scratch corpus unedited.
+# `docs/spec/ai-integration.md` is copied into the scratch corpus unedited.
 # It carries one line of the shape, and that line is spec 5
 # illustrating the convention with an identifier and a path from an imagined
 # corpus. The checker reports it as unresolved, which is right about what it
@@ -309,12 +309,12 @@ echo "what this repository itself carries"
 # population of citation comments this repository carries outside this
 # directory, and HW-DR-0092 rules that it stays so: the convention is for an
 # adopter's corpus, and this repository does not practice it on its own code.
-status=$(run sarif docs/spec/05-ai-integration.md)
+status=$(run sarif docs/spec/ai-integration.md)
 same "spec 5 carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
 # The line is read from the page rather than pinned, because a paragraph
 # added above it moved the pin three times (285, 293, 295).
-example_line=$(grep -n '^# per REQ-INGEST-014 ' docs/spec/05-ai-integration.md | cut -d: -f1)
+example_line=$(grep -n '^# per REQ-INGEST-014 ' docs/spec/ai-integration.md | cut -d: -f1)
 same "  at the line the page writes its worked example on" "$example_line" \
     "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
 same "  and it does not resolve, because its corpus is imagined" \
@@ -329,7 +329,7 @@ same "  so a run over this repository's own prose fails" 1 "$status"
 # name the decision.
 awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
      on && /^##/ { exit }
-     on { print }' "$root/docs/spec/05-ai-integration.md" >"$scratch/spec5-cite"
+     on { print }' "$root/docs/spec/ai-integration.md" >"$scratch/spec5-cite"
 holds "spec 5 says whose corpus the convention is for" \
     "The convention is for an adopter's corpus." "$scratch/spec5-cite"
 holds "  and that this repository does not practice it on its own code" \

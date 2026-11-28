@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Intent-time routing: a task description to a ranked set of pointers.
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#intent-time-routing):
+//! [Spec 5](../../../../docs/spec/ai-integration.md#intent-time-routing):
 //! "Routing matches the **declared purpose** of each kind against the intent of
 //! the task before it matches any text… Lexical ranking then orders results
 //! *within* the matched purpose, and derived reading precedence breaks ties."

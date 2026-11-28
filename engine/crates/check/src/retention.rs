@@ -2,10 +2,10 @@
 //! The third check that reads a lifecycle regime, and the first that is about
 //! a document the corpus no longer holds.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+//! [Spec 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! rules that "terminal states marked `retain_terminal: true` may never be
 //! deleted. Lineage is the point."
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#shape)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#shape)
 //! declares the member on a lifecycle regime, the meta-schema types it
 //! `boolean`, `taxonomy validate` refuses a value that is not one, and both
 //! regimes of the base package have written `true` since 1.0.0. Nothing read
@@ -74,7 +74,7 @@
 //! soundness` refuses a regime that reaches a state with no exit and no such
 //! role, and it refuses a regime that reaches a role-terminal state and gives
 //! it an exit. [Spec
-//! 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle) states the
+//! 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) states the
 //! pair, and `regimes.lifecycle` declares no `terminal` member for a third way
 //! to say it.
 //!
@@ -85,7 +85,7 @@
 //! # The severity is an error, and the finding carries no patch
 //!
 //! The remedy is mechanical and total: put the file back. That is the
-//! [fixability](../../../../docs/spec/12-check-layer.md#fixability) bar, so the
+//! [fixability](../../../../docs/spec/check-layer.md#fixability) bar, so the
 //! rule is an error and the commit gate refuses the change. Nothing is written,
 //! because this engine holds the prior front matter and not the prior body: a
 //! patch that restored the file from what a check received would restore half

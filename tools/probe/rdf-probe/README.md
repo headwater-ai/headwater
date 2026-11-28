@@ -2,7 +2,7 @@
 
 A throwaway emitter, kept because an evaluation cites its numbers.
 
-[The OWL and SKOS worked example](../../../docs/evaluations/owl-skos-worked-example.md) asks what the taxonomy loses when it is emitted as an ontology and the corpus as instance triples. `emit.py` is what produced that document's figures. It is not emitter 4 of the [Q13](../../../docs/spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) staging order, and it is not a draft of one — that emitter ships when a named external consumer asks, and this exists to say what it will owe when it does.
+[The OWL and SKOS worked example](../../../docs/evaluations/owl-skos-worked-example.md) asks what the taxonomy loses when it is emitted as an ontology and the corpus as instance triples. `emit.py` is what produced that document's figures. It is not emitter 4 of the [Q13](../../../docs/spec/decisions.md#q13--linkml-and-shacl-as-substrate) staging order, and it is not a draft of one — that emitter ships when a named external consumer asks, and this exists to say what it will owe when it does.
 
 It reads the base package out of the fenced YAML in [the first-run walkthrough](../../../docs/evaluations/default-taxonomy-first-run.md#the-base-derived-rather-than-chosen), because that is the only committed copy, applies the [design-spec bundle](../../../docs/taxonomies/design-spec/bundle.yml) as add-only operations, and writes four files.
 

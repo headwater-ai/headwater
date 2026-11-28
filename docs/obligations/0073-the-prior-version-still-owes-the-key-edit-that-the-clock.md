@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-A [key](../spec/12-check-layer.md#determinism-concretely) covers the in-scope input hashes, the taxonomy lock hash, the check version and the injected values. The fourth component had no instance until a windowed participation expectation read `ctx.now`, and it has one now. The key writes the clock where the scope declares it, so one declaration decides what a view carries and what the key covers.
+A [key](../spec/check-layer.md#determinism-concretely) covers the in-scope input hashes, the taxonomy lock hash, the check version and the injected values. The fourth component had no instance until a windowed participation expectation read `ctx.now`, and it has one now. The key writes the clock where the scope declares it, so one declaration decides what a view carries and what the key covers.
 
 ## Obligation
 

@@ -21,11 +21,11 @@ relations:
 
 ## Context
 
-[Issue #910](https://github.com/headwater-ai/headwater/issues/910) asks for a judgment on one live miss. The session `regression-20260917b-pointer` in [the recording after the probe corrections](../probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md) ran `headwater route` over the corrected task text. The router ranked `HW-OBL-0107` first. The session then read `docs/spec/02-taxonomy-model.md` and `docs/spec/03-authoring-and-lifecycle.md`, and it never opened `HW-OBL-0107`.
+[Issue #910](https://github.com/headwater-ai/headwater/issues/910) asks for a judgment on one live miss. The session `regression-20260917b-pointer` in [the recording after the probe corrections](../probe-runs/regression-probe-transcript-for-2026-09-17-after-the-probe-corrections.md) ran `headwater route` over the corrected task text. The router ranked `HW-OBL-0107` first. The session then read `docs/spec/taxonomy-model.md` and `docs/spec/authoring-and-lifecycle.md`, and it never opened `HW-OBL-0107`.
 
 The issue offers two judgments. The first is a model-behavior gap outside the reach of the corpus, as [the evaluation of #896](the-three-discovery-misses-of-2026-09-16-have-three-different-mechanisms-and-only-one-is-routing-precision.md) said for an earlier case. The second is a navigability gap that a corpus change can close. The evidence below supports neither. The session was right, the pointer was wrong, and the probe cannot tell the two apart.
 
-The evidence has two sources. The first is the raw harness log of the session, which holds every tool result and the final message. The committed transcript holds neither, because [spec 15](../spec/15-the-recorder-contract.md) keeps a digest or an empty string in place of a result. The second is a replay of the router over this tree, quoted below so that a later reader can repeat it.
+The evidence has two sources. The first is the raw harness log of the session, which holds every tool result and the final message. The committed transcript holds neither, because [spec 15](../spec/the-recorder-contract.md) keeps a digest or an empty string in place of a result. The second is a replay of the router over this tree, quoted below so that a later reader can repeat it.
 
 ## What the session saw, and what it answered
 
@@ -39,11 +39,11 @@ The final message answers both halves of the task, and each half is correct. For
 
     headwater route --root . --budget 500 --json "Decide which shelf a new document belongs on, and where its identifier comes from."
 
-The route offers 220 pointers on this tree. The first twelve are all obligation records. `docs/spec/03-authoring-and-lifecycle.md` ranks 120th, `docs/spec/02-taxonomy-model.md` ranks 126th, and `docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md` ranks 172nd. A rank is a fact about this tree on this day, and a later reader runs the command again rather than trusting the number.
+The route offers 220 pointers on this tree. The first twelve are all obligation records. `docs/spec/authoring-and-lifecycle.md` ranks 120th, `docs/spec/taxonomy-model.md` ranks 126th, and `docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md` ranks 172nd. A rank is a fact about this tree on this day, and a later reader runs the command again rather than trusting the number.
 
 The mechanism is in `engine/crates/query/src/route.rs`. Spec 5 has the router match the purpose of each kind before it compares any text. Lexical rank orders documents only inside a matched purpose. The task scores `obligation` 7 and `behavior` 3, so every obligation record that shares a term with the task outranks every design spec. Many obligation summaries name a shelf, a scheme or an identifier, because this corpus records its gaps in those areas.
 
-The #896 evaluation found the cold-agent probe's target at 119th, and a replay on this tree shows the same mechanism. That task scores `behavior` fifth of six purposes, so `docs/spec/12-check-layer.md` ranks 127th. It is still the first design spec in that route.
+The #896 evaluation found the cold-agent probe's target at 119th, and a replay on this tree shows the same mechanism. That task scores `behavior` fifth of six purposes, so `docs/spec/check-layer.md` ranks 127th. It is still the first design spec in that route.
 
 ## Why the two earlier evaluations called the router right
 
@@ -86,4 +86,4 @@ A reader who meets a failed `opened` verdict on any probe whose target came from
 
 **The session that this evaluation reads predates the sealed workspace (#1229).** It ran in a workspace that kept every probe file, so it could read its own expectation. The judgment about the router stands, because it reads the router and not the rate.
 
-**A sealed session read the probe again on 2026-10-03, and this judgment stands.** The session `L1-regression-present-p3-r1` of [the discovery line of the sealed re-recording](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-discovery.md) ran in a workspace without the probe shelves. It made no call that named a path on them. It ran `headwater route` over the task text, and the router again ranked `HW-OBL-0107` first, with the purpose scores `obligation` 7, `behavior` 3 and `evidence` 2. The session did not open `HW-OBL-0107`. It read `docs/spec/02-taxonomy-model.md` and `docs/spec/03-authoring-and-lifecycle.md`, and its final message answered both halves of the task correctly from them. The verdict is `not satisfied` again. So the miss repeats without the leak, and the mechanism above did not change.
+**A sealed session read the probe again on 2026-10-03, and this judgment stands.** The session `L1-regression-present-p3-r1` of [the discovery line of the sealed re-recording](../probe-runs/regression-of-2026-10-03-regression-tier-present-arm-discovery.md) ran in a workspace without the probe shelves. It made no call that named a path on them. It ran `headwater route` over the task text, and the router again ranked `HW-OBL-0107` first, with the purpose scores `obligation` 7, `behavior` 3 and `evidence` 2. The session did not open `HW-OBL-0107`. It read `docs/spec/taxonomy-model.md` and `docs/spec/authoring-and-lifecycle.md`, and its final message answered both halves of the task correctly from them. The verdict is `not satisfied` again. So the miss repeats without the leak, and the mechanism above did not change.

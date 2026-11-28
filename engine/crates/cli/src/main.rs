@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `headwater` — three verbs of it.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#cli) lists ten.
+//! [Spec 6](../../../../docs/spec/engine-architecture.md#cli) lists ten.
 //! This binary carries `check`, `taxonomy validate` and `taxonomy resolve`.
 //!
 //! # Why there is a binary at all
@@ -41,7 +41,7 @@
 //!
 //! `check` keeps a cache at `.headwater/cache/checks`, keyed on the lock
 //! digest among the components
-//! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [spec 12](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! names. It holds no corpus content: every entry is recomputable from the
 //! tree it was written over. The directory carries its own `.gitignore`,
 //! written beside the cache file, so a repository never needs one of its own
@@ -568,7 +568,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         // above.
         Verb::Query { .. } => refuse(
             "`query <expression>` is listed in spec 6 and no document states what an expression \
-             is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
+             is, so this engine implements none. See `docs/spec/open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
         ),
         Verb::Json { word } => match word {
@@ -1010,7 +1010,7 @@ fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
 ///
 /// It prints what it ran as well as what it found. A verdict with no statement
 /// of what was checked is the silent pass that
-/// [spec 4](../../../../docs/spec/04-assurance-model.md) exists to remove, and
+/// [spec 4](../../../../docs/spec/assurance-model.md) exists to remove, and
 /// eight of the rules on spec 2's list decide only part of what that list says.
 fn validate(root: &Path) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
@@ -1744,7 +1744,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
 ///
 /// Whether this repository wired the method, rather than only copied it. The
 /// rules come from the package and the readings come from this engine, and
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#conformance)
+/// [spec 7](../../../../docs/spec/distribution-and-federation.md#conformance)
 /// argues both halves.
 ///
 /// **Three refusals, and each one keeps a report from claiming more than it
@@ -2755,7 +2755,7 @@ fn artifact(
 
 /// `taxonomy migrate`: the half of a migration that writes.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// [Spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 /// splits a payload into "what the engine can apply mechanically
 /// (`headwater taxonomy migrate --apply`) and what needs human or agent judgment
 /// (emitted as a task list with the affected documents attached)". Both halves
@@ -2774,9 +2774,9 @@ fn artifact(
 ///
 /// # `--apply` writes `adoption.from` and `adoption.to`, and that is a decision
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+/// [Spec 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 /// records the migration state in the lock. [#61 left the seam under
-/// `adoption:` unstated](../../../../docs/spec/13-open-obligations.md): no
+/// `adoption:` unstated](../../../../docs/spec/open-obligations.md): no
 /// document said whether `taxonomy resolve --check` may pass while the
 /// authored half of the lock is stale, or whether a part of it that no digest
 /// covers may sit in a reviewed artifact.
@@ -3642,7 +3642,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
 
     // A broken dimension is a report and never a failure. The verb measures a
     // version that nobody has taken yet, and an upgrade that needs a migration
-    // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
+    // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     // What does fail is a run that could not measure, which is above.
     ExitCode::SUCCESS
 }
@@ -3665,7 +3665,7 @@ struct Sides<'a> {
 /// **It reports and it never gates.** The verb measures a version that nobody
 /// has taken yet, and the payload is the publisher's account of what the
 /// upgrade costs. A missing payload for a major upgrade is a finding a consumer
-/// acts on, and [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// acts on, and [spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 /// makes it a hard failure of `migrate` rather than of the measurement that
 /// precedes it.
 ///
@@ -4331,7 +4331,7 @@ fn find_document(root: &Path, target: &str, code: bool) -> Result<Answer, ExitCo
 
 /// `headwater new <kind>`: the scaffolder.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 /// makes this a correctness root, and `headwater_scaffold` carries the argument
 /// for the three properties that follow from it. This function is the shell:
 /// it loads, it proposes, it prints, and it writes.
@@ -5051,7 +5051,7 @@ fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
 /// # It exits 0 on every report it can produce, and that is the constraint
 ///
 /// A sweep never gates
-/// ([spec 12](../../../../docs/spec/12-check-layer.md#where-the-llm-coherence-sweep-fits)).
+/// ([spec 12](../../../../docs/spec/check-layer.md#where-the-llm-coherence-sweep-fits)).
 /// The strongest form of that promise is an exit status that no output of a
 /// model can move, so this verb exits 0 with findings, exits 0 with every
 /// finding refused, and exits 0 when it refuses the whole file. There is no
@@ -5199,7 +5199,7 @@ fn probe_plan_read(
 /// # It exits 0 on a refusal, and that is the point rather than a leniency
 ///
 /// A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so no exit status of this binary may carry a fact about a probe run. A plan
 /// that refuses its own run prints the refusal and exits 0, exactly as `sweep
 /// report` does with a refused file. A caller that wants the refusal reads the
@@ -5411,7 +5411,7 @@ fn probe_scenario_delta(budgets: &headwater_probe::Budgets, number: u32) -> Exit
 ///
 /// It returns a verdict for each expectation, and the exit status still
 /// carries none. A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// so a run where every expectation was refuted exits 0 exactly as a run where
 /// every one was satisfied does. A caller that wants the rate reads the text,
 /// which is what a person does. The first line of that text tells a grade from
@@ -5620,7 +5620,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
 /// The two non-zero exits are a caller's and both are true before a read set is
 /// composed: a corpus this binary cannot load, and a budget declaration it
 /// cannot read. A probe never gates
-/// ([spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
+/// ([spec 5](../../../../docs/spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)),
 /// and a result going stale is the fact a gate over this verb would carry.
 fn probe_stale(root: &Path) -> ExitCode {
     let declaration = root.join(headwater_probe::budget::PATH);
@@ -5727,7 +5727,7 @@ fn probe_stale(root: &Path) -> ExitCode {
 /// print and the write is a loop over what the plan composed.
 ///
 /// It exits non-zero on any refusal, and there is no advisory posture to fall
-/// back on. [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// back on. [Spec 12](../../../../docs/spec/check-layer.md#the-correctness-roots)
 /// says why: a wrong imported edge produces a correct check result over a wrong
 /// graph, so a finding is what a later run cannot make. Either an import is
 /// refused here or nothing downstream is going to notice.
@@ -6047,7 +6047,7 @@ fn export(
 /// # `--write` is an argument somebody typed, and that is the whole of the
 /// reason it is a flag
 ///
-/// [Spec 5](../../../../docs/spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
+/// [Spec 5](../../../../docs/spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
 /// puts the working-tree write class off by default and makes the opt-in per
 /// server, "because a client may connect to a checkout that the user did not
 /// intend to change". Two other shapes were available and both are worse.
@@ -6099,7 +6099,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             // kind that requires a facet no declaration determines, or whose
             // shelf fixes the file name under a glob, is refused over the
             // protocol and written from a terminal. Widening the tool is a
-            // change to the write class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+            // change to the write class that [Q7](../../../../docs/spec/decisions.md#q7--scope-of-the-mcp-surface)
             // fixed, and not a change to this call.
             None,
             relates,
@@ -6202,7 +6202,7 @@ fn observe(root: &Path, ids: &[String], commit: &str) -> ExitCode {
 
 /// `headwater gate`: the read set of an earlier run, held against this tree.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+/// [Spec 12](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 /// rules what a gate reads, and [`headwater_check::gate`] is that ruling. This
 /// function is the shell around it: it opens the artifact, asks the filesystem
 /// for the bytes at each listed path, and prints what the decision was.
@@ -6349,7 +6349,7 @@ fn site(root: &Path, dir: &Path) -> ExitCode {
 
 /// `headwater check --fix`: write the patches, then run the checks again.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) fixes what may
+/// [Spec 12](../../../../docs/spec/check-layer.md#fixability) fixes what may
 /// be written and [`headwater_scaffold::fix`] carries the guards. This function
 /// is the shell: it takes the patches of one run, composes them, writes what
 /// composed, and hands back what refused.
@@ -6874,7 +6874,7 @@ const DEFAULT_WINDOW: i64 = 90;
 /// `headwater infer`: the payload, computed from the diff between nothing and
 /// one.
 ///
-/// [Q12](../../../../docs/spec/09-decisions.md#q12--migration-path-for-an-existing-corpus):
+/// [Q12](../../../../docs/spec/decisions.md#q12--migration-path-for-an-existing-corpus):
 /// before the first taxonomy a corpus is governed by nothing, so every document
 /// in it is trivially valid, and the findings the first taxonomy raises are that
 /// taxonomy's migration payload.
@@ -7447,7 +7447,7 @@ fn merged(
 /// declared shape to add to. Every other entry — `tasks` above all — is
 /// carried exactly as it was loaded, so a key this engine does not know about
 /// survives. `from` and `to` are placed first, which is the order [spec
-/// 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+/// 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 /// states them in.
 ///
 /// # The one entry this adds rather than carries

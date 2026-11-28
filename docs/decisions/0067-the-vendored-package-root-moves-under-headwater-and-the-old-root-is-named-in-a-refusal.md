@@ -21,7 +21,7 @@ provenance:
 
 ## Context
 
-`headwater taxonomy vendor` installed a package at `packages/<name>` in the adopter's tree. Every other piece of consumer state this engine writes lands under `.headwater/`. [HW-OBL-0184](../obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md) held that exception open and refused to choose, because [spec 7](../spec/07-distribution-and-federation.md) names an outside adopter as the evidence that settles it.
+`headwater taxonomy vendor` installed a package at `packages/<name>` in the adopter's tree. Every other piece of consumer state this engine writes lands under `.headwater/`. [HW-OBL-0184](../obligations/0184-nothing-states-why-the-vendored-package-root-is-visible-in-an-adopter-tree.md) held that exception open and refused to choose, because [spec 7](../spec/distribution-and-federation.md) names an outside adopter as the evidence that settles it.
 
 [#792](https://github.com/headwater-ai/headwater/issues/792) asked the question. Its body argued that [#381](https://github.com/headwater-ai/headwater/issues/381) had already settled a case for visibility. It had not. Spec 7's ruling paragraph, at *"That path is the only destination"*, gives three reasons. No reason of the three is about whether a person sees the directory.
 
@@ -45,7 +45,7 @@ provenance:
 
 **HW-OBL-0184 is discharged by this record, and discharged by a ruling rather than by a measurement.** Its own Discharge section says that a ruling of *move* discharges it as fully as a ruling of *stay*. That is because what it held open was the silence and not the path.
 
-**One gap that record names is not discharged, and this record does not close it.** No dimension of the compatibility measurement reads an adopter-facing path. `headwater taxonomy diff` runs the six dimensions [spec 2](../spec/02-taxonomy-model.md#versioning-by-measured-compatibility) fixes, and each of the six asks about a corpus or about the surface an overlay addresses. This move breaks a promise three interface contracts state row by row, and no dimension of the six reports it. [#821](https://github.com/headwater-ai/headwater/issues/821) carries that question.
+**One gap that record names is not discharged, and this record does not close it.** No dimension of the compatibility measurement reads an adopter-facing path. `headwater taxonomy diff` runs the six dimensions [spec 2](../spec/taxonomy-model.md#versioning-by-measured-compatibility) fixes, and each of the six asks about a corpus or about the surface an overlay addresses. This move breaks a promise three interface contracts state row by row, and no dimension of the six reports it. [#821](https://github.com/headwater-ai/headwater/issues/821) carries that question.
 
 **The engine version moves one minor step, by hand.** Nothing derives the engine version from a measurement, and `headwater taxonomy diff` measures a published package artifact rather than the engine crate. So this is a judgment: the move breaks a stated contract for a consumer and breaks no data format, and the workspace goes to `0.2.0`.
 

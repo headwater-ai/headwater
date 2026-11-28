@@ -26,7 +26,7 @@ The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md#findings) therefore decl
 
 An adopter who takes the bare base has no voice regime under which a requirements document can say what a product must do. A corpus of requirements on the base reports its own tradition as a finding, four times in seven documents by the one measurement there is.
 
-Two entries have now added a voice regime that the base does not carry. So the base carries one regime and the language needs at least two, and nothing states which ones belong in a minimal base. [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is the ruling that made the base minimal, and it did not measure this case.
+Two entries have now added a voice regime that the base does not carry. So the base carries one regime and the language needs at least two, and nothing states which ones belong in a minimal base. [Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is the ruling that made the base minimal, and it did not measure this case.
 
 ## Discharge
 

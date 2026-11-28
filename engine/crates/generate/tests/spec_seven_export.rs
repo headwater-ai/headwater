@@ -5,7 +5,7 @@
 //! # Why this file exists
 //!
 //! The export rules used to live in spec 6, and #1572 moved them to spec 7
-//! (`docs/spec/07-distribution-and-federation.md#what-leaves-a-corpus`).
+//! (`docs/spec/distribution-and-federation.md#what-leaves-a-corpus`).
 //! A rule that two specification parts state drifts in one of them, which is
 //! the defect the move removed. So this file holds these things:
 //!
@@ -46,7 +46,7 @@ const FILTER_RULES_LEAD: &str = "rules make the filter honest";
 /// same edit is made in this file.
 const FILTER_RULES: [&str; 6] = [
     "- **Carried and withheld partition the corpus, and the engine generates both.** This is \
-     the [partition rule](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that \
+     the [partition rule](check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that \
      `exportable_as` obeys, applied to documents instead of to checks. Neither list is \
      authored, so neither can drift from the other.",
     "- **A withholding is a loss reason.** The projection census already accounts for every \
@@ -100,11 +100,11 @@ fn spec(name: &str) -> PathBuf {
 }
 
 fn spec_six() -> String {
-    std::fs::read_to_string(spec("06-engine-architecture.md")).expect("read spec 6")
+    std::fs::read_to_string(spec("engine-architecture.md")).expect("read spec 6")
 }
 
 fn spec_seven() -> String {
-    std::fs::read_to_string(spec("07-distribution-and-federation.md")).expect("read spec 7")
+    std::fs::read_to_string(spec("distribution-and-federation.md")).expect("read spec 7")
 }
 
 /// The backticked first-column values of the `| Grain |` table.
@@ -431,7 +431,7 @@ const EMITTERS_NEVER_CHAIN: Rule = Rule {
                 directly. A pipeline that routes one standard format through another inherits \
                 every loss of every hop, and declares none of them. LinkML's own SHACL \
                 generator is the observed case, because it drops constructs that LinkML itself \
-                expresses ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)).",
+                expresses ([Q13](decisions.md#q13--linkml-and-shacl-as-substrate)).",
     subsection: "### An export is a projection, and it declares what it dropped",
     forms: &[
         Form::Phrase("never chain"),
@@ -446,7 +446,7 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
                 `sealed` a reader still knows to stop drawing conclusions from absence, which \
                 is the harm that the rule exists to prevent. An agent that traverses a \
                 filtered graph, finds nothing, and reports absence is the failure that \
-                [spec 5](05-ai-integration.md) names at its start. Here our own filter causes \
+                [spec 5](ai-integration.md) names at its start. Here our own filter causes \
                 it.",
     subsection: "### An export profile carries a filter",
     forms: &[
@@ -460,7 +460,7 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
 const NO_WARRANT_NO_CONTENT: Rule = Rule {
     rule: "**An emitter that cannot carry the warrant does not carry the content.**",
     paragraph: "**An emitter that cannot carry the warrant does not carry the content.** Every \
-                node carries a [warrant](01-conceptual-model.md#warrant), and the native export \
+                node carries a [warrant](conceptual-model.md#warrant), and the native export \
                 carries it with no loss. A target vocabulary that has no place for it produces \
                 an artifact in which unwarranted content is indistinguishable from accepted \
                 content. A loss-set entry reaches the consumer who reads the loss set and \
@@ -469,10 +469,10 @@ const NO_WARRANT_NO_CONTENT: Rule = Rule {
                 §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). \
                 So such an emitter **withholds** every `asserted` and `transcribed` node, at \
                 the profile's declared tombstone grain, with its own inability to mark as the \
-                reason. That is [principle 7](00-vision-and-scope.md#design-principles) read \
+                reason. That is [principle 7](vision-and-scope.md#design-principles) read \
                 the way that a filtered exporter reads it. An unmarked assertion is \
                 unrecoverable, and a withholding is visible and cheap \
-                ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).",
+                ([Q15](decisions.md#q15--a-synthesized-content-tier)).",
     subsection: "### An export is a projection, and it declares what it dropped",
     forms: &[
         Form::Phrase("cannot carry the warrant"),
@@ -498,9 +498,9 @@ const A_TRANSCRIPTION_CARRIES_ITS_PIN: Rule = Rule {
 /// G3 of #1572: an exporter fails closed.
 const AN_EXPORTER_FAILS_CLOSED: Rule = Rule {
     rule: "**An exporter fails closed, and that is [principle \
-           7](00-vision-and-scope.md#design-principles) read correctly.**",
+           7](vision-and-scope.md#design-principles) read correctly.**",
     paragraph: "**An exporter fails closed, and that is [principle \
-                7](00-vision-and-scope.md#design-principles) read correctly.** An exporter \
+                7](vision-and-scope.md#design-principles) read correctly.** An exporter \
                 that cannot evaluate its filter emits nothing and fails the run. It never \
                 emits an unfiltered artifact, and it never emits a partly filtered one. The \
                 principle says \"fail open at the edges\", and its own gloss gives the rule \
@@ -520,7 +520,7 @@ const A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY: Rule = Rule {
     rule: "**A withholding rule never ships advisory.**",
     paragraph: "**A withholding rule never ships advisory.** Its two error classes are not \
                 both recoverable, so the promotion machinery measures the wrong one \
-                ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). It is not \
+                ([spec 4](assurance-model.md#promotion-advisory-to-blocking)). It is not \
                 suppressible and [it is not waivable](#waivers).",
     subsection: "### An export profile carries a filter",
     forms: &[
@@ -674,7 +674,7 @@ fn each_mutation_of_a_moved_export_rule_turns_a_one_home_test_red() {
     }
     // A rule in the shape of a pointer is rule text: copied into spec 6, it
     // turns the fragment test and the run test red.
-    let rule_as_pointer = "[Spec 4](04-assurance-model.md) states that an emitter reads \
+    let rule_as_pointer = "[Spec 4](assurance-model.md) states that an emitter reads \
                            the resolved lock and the graph of the corpus directly.";
     let anchor = paragraph_line(&A_TRANSCRIPTION_CARRIES_ITS_PIN);
     let seven = seven.replacen(&anchor, &format!("{anchor}\n{rule_as_pointer}\n"), 1);
@@ -709,9 +709,9 @@ fn a_pointer_drops_and_a_rule_in_pointer_shape_does_not() {
         assert!(is_pointer(p), "a pointer of spec 7 does not drop: {p:?}");
     }
     for rule in [
-        "[Spec 4](04-assurance-model.md) states that every emitter reads the lock directly",
-        "[Spec 4](04-assurance-model.md) states the rule: every emitter reads the lock",
-        "[Spec 4](04-assurance-model.md) states the rule that every emitter reads the \
+        "[Spec 4](assurance-model.md) states that every emitter reads the lock directly",
+        "[Spec 4](assurance-model.md) states the rule: every emitter reads the lock",
+        "[Spec 4](assurance-model.md) states the rule that every emitter reads the \
          resolved lock and the graph directly, because a pipeline that routes one format \
          through another inherits every loss of every hop and declares none of them",
     ] {

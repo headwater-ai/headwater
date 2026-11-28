@@ -36,7 +36,7 @@ The gate itself is sound and the reason it exists is measured. `f615fb86` landed
 
 Everything else holds the refusal. Four readings land there. A row parsed no document, or a document declares no state. A value sits outside the vocabulary, or a role sits outside what this engine folds. Each one says that nothing has stated where the recording stands. A recording that escaped the gate by declaring nothing is the shape `f615fb86` landed.
 
-**The reading is the one that [HW-DR-0026](0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) already placed in the check layer.** `StateFacet::standing` folds a state value into the terms that [spec 3](../spec/03-authoring-and-lifecycle.md#lifecycle) states its dependency rule in. The fold is now public, and `headwater-generate` calls it. One reader of the role serves every rule that asks, so a taxonomy cannot be sound under one reading and gated under another.
+**The reading is the one that [HW-DR-0026](0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) already placed in the check layer.** `StateFacet::standing` folds a state value into the terms that [spec 3](../spec/authoring-and-lifecycle.md#lifecycle) states its dependency rule in. The fold is now public, and `headwater-generate` calls it. One reader of the role serves every rule that asks, so a taxonomy cannot be sound under one reading and gated under another.
 
 That fold carries four answers, and the fourth is here for this decision. Spec 3's own rule reads an initial state and an unreadable role alike, because neither of them is live. This decision needs the two apart. One of them releases the refusal and the other holds it.
 
@@ -46,6 +46,6 @@ That fold carries four answers, and the fourth is here for this decision. Spec 3
 
 **A stale recording now has a state to stand in.** The retirement is `current` to `deprecated`, which the standard lifecycle already permits, with `status_since` moved to the day of the retirement. The document says in its own prose that the lock moved and that nobody recorded fresh sessions. `docs/probe-runs/regression-probe-transcript-for-2026-09-11.md` is the first such recording.
 
-**A sixth state classifies itself.** No literal state value in `engine/crates/generate/` decides whether a refusal is held. A taxonomy that adds a state, or renames every state it has, is read here through the role each value declares. That is [spec 2](../spec/02-taxonomy-model.md#the-immutable-core)'s worked overlay, reaching one more component.
+**A sixth state classifies itself.** No literal state value in `engine/crates/generate/` decides whether a refusal is held. A taxonomy that adds a state, or renames every state it has, is read here through the role each value declares. That is [spec 2](../spec/taxonomy-model.md#the-immutable-core)'s worked overlay, reaching one more component.
 
 **What this does not do is the measurement.** The efficacy figure of this corpus stays absent until somebody records four fresh sessions. The owner ruled on 2026-09-11 to let the recording go stale until it is worth bringing up to date. This decision makes stale a state the system can hold. It changes no confirmation, no digest a transcript pins, and nothing about what a refusal means.

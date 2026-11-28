@@ -3,13 +3,13 @@
 //!
 //! # This rule is a closed decision, implemented
 //!
-//! [Q21](../../../../docs/spec/09-decisions.md) settled where a retirement
+//! [Q21](../../../../docs/spec/decisions.md) settled where a retirement
 //! lives: "It belongs to the language regime and never to a voice regime, and
 //! the reason is scope. A voice regime binds per kind, and its `narrative`
 //! value exempts a kind entirely. A retired term is retired in a proposal as
 //! much as in a specification."
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired)
 //! states the shape and the reason for it: "A judgment that a corpus no longer
 //! uses a term is a promise about the text, on the same terms as a spelling
 //! lexicon. Today that judgment exists only as prose and a diff, so no
@@ -18,7 +18,7 @@
 //! # The replacement decides the posture, and spec 2 decides that
 //!
 //! "With one, the fix is a substitution, which meets the mechanical-and-total
-//! bar of [spec 12](../../../../docs/spec/12-check-layer.md#fixability), and the
+//! bar of [spec 12](../../../../docs/spec/check-layer.md#fixability), and the
 //! check offers a patch. Without one, the finding carries remediation prose and
 //! no patch. A retired term is the usual case for the first shape. A retired
 //! *framing* is the usual case for the second, and no lexicon repairs it for
@@ -41,7 +41,7 @@
 //! [`headwater_doc::Sentence::authored`] and nothing else, which is the text
 //! the parser says this author wrote as prose. A term inside a code span or a
 //! block quote is somebody else's word, and
-//! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+//! [spec 3](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 //! puts both outside a lexical rule by construction.
 
 use crate::finding::{Finding, Severity};
@@ -83,7 +83,7 @@ impl Retired {
     /// A regime that retires nothing generates no instance. That is the same
     /// absence [`crate::voice`] reports for a regime that forbids nothing: an
     /// instance over one would count a document as checked by a rule with
-    /// nothing to check, and [spec 12](../../../../docs/spec/12-check-layer.md)
+    /// nothing to check, and [spec 12](../../../../docs/spec/check-layer.md)
     /// makes coverage mean the opposite of that.
     ///
     /// A regime that lists paths outside the corpus root binds those paths on

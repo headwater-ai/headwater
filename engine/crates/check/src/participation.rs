@@ -2,9 +2,9 @@
 //! A Graph-origin check, generated from the participation expectations a kind
 //! declares. This is the rule that reads the clock.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [Spec 12](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists "windowed participation expectations" among the Graph-origin examples,
-//! and [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
+//! and [spec 12](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
 //! says how one is evaluated: it "reads a declared origin date from the
 //! document and compares it against `ctx.now`. There is no history walk and no
 //! search of the repository history."
@@ -15,7 +15,7 @@
 //!
 //! # Why the grain is a neighbourhood and not an edge
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#what-this-leaves-open)
+//! [Spec 12](../../../../docs/spec/check-layer.md#what-this-leaves-open)
 //! suspects the `Neighbourhood(depth)` scope is unnecessary: "if no real check
 //! needs depth > 1, the correct move is to cut it and to keep `Edge` as the
 //! only relational scope." This rule is the case that sentence does not cover,
@@ -27,7 +27,7 @@
 //! at the far end of every relation it does have — depth exactly 1. So depth 1
 //! is needed and `Edge` does not reach it, which is a sharpening of that open
 //! question rather than an answer to it, and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries it.
 //!
 //! # Either half may be the one that is written
@@ -48,7 +48,7 @@
 //! unknown severity, a window that is not a number of days, an origin no facet
 //! carries, or a document whose origin date will not parse. Every one of those
 //! is a fact about the taxonomy or the document rather than a verdict, and
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [spec 4](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! wants it visible rather than counted as a pass.
 
 use crate::context::Date;

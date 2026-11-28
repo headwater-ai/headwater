@@ -1001,7 +1001,7 @@ jobs:
         # The step runs over the fixtures rather than over this tree, and
         # the reason is a measurement this suite pins rather than a claim this
         # comment makes. Outside `tools/cite/`, one line of this repository
-        # carries the shape: `docs/spec/05-ai-integration.md` line 285, where
+        # carries the shape: `docs/spec/ai-integration.md` line 285, where
         # spec 5 illustrates the convention with an identifier and a path from
         # an imagined corpus. A case reads that real document and holds the
         # count and the line. What this repository carries nowhere is a
@@ -1089,7 +1089,7 @@ jobs:
         # Set equality, in both directions, between `docs/obligations/*.md`
         # (excluding `README.md`) whose `status` is not `discharged`, and the
         # `- [HW-OBL-NNNN](...)` bullet lines of
-        # `docs/spec/13-open-obligations.md`. Measured on 2026-09-17: the
+        # `docs/spec/open-obligations.md`. Measured on 2026-09-17: the
         # shelf held 178 current and 20 discharged records, the file bulleted
         # 181 lines, eight of them named a record that had already
         # discharged, and five current records had no bullet line anywhere in
@@ -1112,7 +1112,7 @@ jobs:
         # socket, and writes only under a temporary directory.
         run: sh tools/repo/obligation-register-fixtures.sh
       - name: The decision register names no record the shelf lacks, and claims no completeness it does not have
-        # `docs/spec/09-decisions.md` named 37 of the 80 records on
+        # `docs/spec/decisions.md` named 37 of the 80 records on
         # `docs/decisions/*.md` on 2026-09-21 and still declared
         # `supersedes: HW-REG-open-questions`, an edge that claims a
         # completeness it did not have against the generated register, which

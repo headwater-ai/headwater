@@ -429,7 +429,7 @@ add:
   # states in prose, moved to where a check reads it. Each entry states why the
   # term is retired. None of them names a replacement, and that is the whole of
   # the judgment: a stock metaphor is repaired by naming the thing it stands in
-  # for, and no substitution does that ([spec 2](../docs/spec/02-taxonomy-model.md)).
+  # for, and no substitution does that ([spec 2](../docs/spec/taxonomy-model.md)).
 
   regimes.language.ste_house:
     tag: en-US
@@ -498,9 +498,9 @@ add:
   kinds.obligation_record.language:   ste_house
 
   # A decision record is a normative statement that this repository makes about
-  # itself. It stands to `docs/spec/09-decisions.md` as an obligation record
+  # itself. It stands to `docs/spec/decisions.md` as an obligation record
   # stands to its own register, and the register was bound where the record was
-  # not. No document stated why. [Q27](../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+  # not. No document stated why. [Q27](../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
   # rules that a decision record is governed prose, and it states what this line
   # costs: 64 findings on the shelf when it was taken, every one of them
   # advisory, and one of them caused by an inline quotation. The kinds that stay
@@ -512,7 +512,7 @@ add:
   # it as evidence. 16 of the 17 records under `docs/evaluations/` declare
   # `cited_by` and no review record and no probe declares one, which is the line
   # between prose this repository wrote and text it recorded.
-  # [Q28](../docs/spec/09-decisions.md#q28--whether-an-evaluation-is-governed-prose)
+  # [Q28](../docs/spec/decisions.md#q28--whether-an-evaluation-is-governed-prose)
   # rules that an evaluation is governed prose, and it states what this line
   # costs: 432 findings on the shelf when it was taken, every one of them
   # advisory, 422 over the word limit and 10 on a semicolon. No adoption pair
@@ -1404,7 +1404,7 @@ add_to:
       for: [spec_series, obligations, evaluations, verified_requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, process_how_to, subsystems]
       output: "{shelf}/README.md"
 
-    # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
+    # The redirect map. `docs/spec/open-questions.md` is a tombstone: the
     # twenty-one original questions all closed, each one is a document on the
     # decisions shelf now, and citations in this corpus name an anchor in this
     # file. An anchor exists because a heading does, so the file has to keep
@@ -1441,7 +1441,7 @@ add_to:
     # guard it a second time.
     - kind: shelf_sections
       for: [decisions]
-      output: docs/spec/09-open-questions.md
+      output: docs/spec/open-questions.md
       identity:
         id: HW-REG-open-questions
         kind: decision_register

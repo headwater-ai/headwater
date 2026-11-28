@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The `check-rule` anchor resolver: a rule identifier this engine ships.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 //! rules that exactly one resolver owns each anchor kind, and that "a resolver
 //! reads repository content or a committed snapshot, and never a live service".
 //! This one reads neither. It reads [`crate::RULES`], the list of rule

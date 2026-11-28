@@ -50,7 +50,7 @@ fn read(relative: &str) -> String {
 
 /// The text of the section, from its heading to the next heading of any level.
 fn section() -> String {
-    let text = read("docs/spec/07-distribution-and-federation.md");
+    let text = read("docs/spec/distribution-and-federation.md");
     let (_, after) = text
         .split_once(SECTION)
         .unwrap_or_else(|| panic!("spec 7: no `{SECTION}` heading"));

@@ -2,7 +2,7 @@
 //! The other half of a migration that writes: one overlay address, re-addressed
 //! in place, in the file this repository owns.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility):
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility):
 //! "The payload migrates overlays, not only documents… `headwater taxonomy
 //! migrate --apply` rewrites overlay addresses from that map." An address is
 //! the key of an operation, so the rewrite is a splice at one key and nothing

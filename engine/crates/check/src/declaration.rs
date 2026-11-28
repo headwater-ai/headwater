@@ -26,7 +26,7 @@
 //! What a document-scoped view carries is front matter, and a second reading of
 //! that front matter here would be a second definition of each defect. Three of
 //! the four would agree with the build. `RepeatedTriple` would not:
-//! [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) identifies
+//! [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) identifies
 //! an edge by its **normalized** target, and two spellings of one anchor are one
 //! target only after a resolver has said so. This corpus writes exactly that
 //! case. So the rule reads what the build decided, through
@@ -35,7 +35,7 @@
 //! The report arrives on the **view** rather than on the check. A check that
 //! held the whole report and looked its own path up in it could look a
 //! sibling's path up as easily, and scope enforcement is a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots).
+//! [correctness root](../../../../docs/spec/check-layer.md#the-correctness-roots).
 //! The view carries the report for one document and holds none other.
 //!
 //! # The generation step

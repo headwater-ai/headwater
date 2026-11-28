@@ -32,7 +32,7 @@ Git writes no conflict marker for a custom driver. So the file stays readable, a
 
 **The verb does not rebuild the file, although the driver name says "regenerate".** Git runs a driver during the merge, one path at a time. At that moment the other paths of the tree are not all merged. A fold that is rebuilt then describes a tree that never existed, and it looks correct. So the verb names the producer and does not run it.
 
-**The verb does not break the rule of [spec 5](../spec/05-ai-integration.md) that no hook introduces a verb.** [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) gives the reason. That rule forbids a second entry point to `route` or to `check`. This verb answers a question that no other verb answers, which is what a merge does with a derived fold.
+**The verb does not break the rule of [spec 5](../spec/ai-integration.md) that no hook introduces a verb.** [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) gives the reason. That rule forbids a second entry point to `route` or to `check`. This verb answers a question that no other verb answers, which is what a merge does with a derived fold.
 
 ### What the driver cannot reach
 
@@ -92,4 +92,4 @@ The verb writes no file, and nothing on standard output, because standard output
 
 [HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a fold is derived and never stored. [HW-DR-0077](../decisions/0077-the-consumer-surface-is-what-an-adopter-receives-runs-and-must-have-installed-and-it-is-a-closed-and-declared-list.md) rules that merge safety ships as this verb.
 
-[Spec 6](../spec/06-engine-architecture.md#cli) lists the command line.
+[Spec 6](../spec/engine-architecture.md#cli) lists the command line.

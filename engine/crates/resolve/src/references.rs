@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `$`-references, resolved over the merged tree and never before it.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage):
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage):
 //! "A reference resolves last, over the merged tree… The order is thus: apply
 //! every overlay, resolve every reference, validate the result." The reason is
 //! spec 2's own worked overlay. It overrides `vocabularies.lifecycle_state`,
@@ -32,10 +32,10 @@ use headwater_yaml::{Mapping, Scalar, Span, Spanned, Value};
 
 /// What `$package` would read, and why nothing can supply it yet.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
+/// [Spec 2](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage)
 /// says outright that what `optional` means under the `package` root "is not
 /// fixed here", that spec 7 declares no such block in the package manifest, and
-/// that [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+/// that [13 — Open obligations](../../../../docs/spec/open-obligations.md)
 /// carries the gap. So the root parses, the resolver knows the name, and there
 /// is nothing for it to read. A refusal that says that is better than a
 /// dangling-reference message that sends an author to look for a typing
@@ -79,7 +79,7 @@ pub fn resolve(tree: &Mapping, schema: &MetaSchema) -> Result<Mapping, Vec<Resol
 ///
 /// A `remove` "deletes a key and everything that depends on it — and the
 /// resolver **fails** if a declaration that survives still references the
-/// removed key" ([spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)).
+/// removed key" ([spec 2](../../../../docs/spec/taxonomy-model.md#customization-by-composition)).
 /// This is the half of that rule the language can decide: a `$`-reference names
 /// the node it reads, so a reader knows what it lost. The other half is a
 /// declaration that names another by a bare string, and [`crate::WAITING`]

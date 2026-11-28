@@ -29,7 +29,7 @@ The corpus owes a meta-schema that declares the prefix, the namespace and the lo
 
 The rewrite must not move a single rendered identifier. `engine/crates/check/fixtures/identifiers.mint`, taken before issue #215, records all nine schemes and stays byte-identical once the members are declared. All nine schemes, across `.headwater/packages/headwater-standard/taxonomy.yml`, `docs/taxonomies/decision-record/bundle.yml` and `.headwater/overlay.yml`, owe the new members, and `.headwater/taxonomy.lock` regenerates from them.
 
-The change costs a major version on two artifacts that have already shipped. The meta-schema moves past 0.2.0, to 0.3.0 or 1.0.0, and the package that reads it moves past 2.0.0, to 3.0.0. Nine schemes across three sources rewrite to pay that cost. `docs/spec/03-authoring-and-lifecycle.md` and the identifier passages of `docs/spec/02-taxonomy-model.md` owe a description of the members the taxonomy then declares.
+The change costs a major version on two artifacts that have already shipped. The meta-schema moves past 0.2.0, to 0.3.0 or 1.0.0, and the package that reads it moves past 2.0.0, to 3.0.0. Nine schemes across three sources rewrite to pay that cost. `docs/spec/authoring-and-lifecycle.md` and the identifier passages of `docs/spec/taxonomy-model.md` owe a description of the members the taxonomy then declares.
 
 ## Discharge
 

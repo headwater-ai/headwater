@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-**Spec 5 states a convention for generated code.** The section [Generated artifacts cite what licensed them](../spec/05-ai-integration.md#generated-artifacts-cite-what-licensed-them) asks an agent to write a comment of the shape `# per <IDENTIFIER> (<path>)`. The comment goes above the line that the document licensed. The section did not say whose corpus the convention is for. So a reader could take it as a rule for every corpus, this repository included.
+**Spec 5 states a convention for generated code.** The section [Generated artifacts cite what licensed them](../spec/ai-integration.md#generated-artifacts-cite-what-licensed-them) asks an agent to write a comment of the shape `# per <IDENTIFIER> (<path>)`. The comment goes above the line that the document licensed. The section did not say whose corpus the convention is for. So a reader could take it as a rule for every corpus, this repository included.
 
 **This repository has a checker for the convention and no population for it.** `tools/cite/check-citations.py` reads each comment of that shape and asks the engine whether the identifier resolves and whether the document governs the file. Its CI step runs a fixture suite, `tools/cite/check-citations-fixtures.sh`, over a scratch copy of this corpus with planted citations. [#844](https://github.com/headwater-ai/headwater/issues/844) found that no code in this repository writes the comment, and that no file that an agent reads tells an agent to write one.
 
@@ -36,7 +36,7 @@ relations:
 | what was counted | result | how |
 |---|---|---|
 | lines of the citation shape outside `tools/cite/` | 1, in the whole tree | `grep -rEn "(//\|#) per [A-Z][A-Z-]*-?[0-9]+ \("`, with `target`, `.git` and worktrees excluded |
-| where that one line is | `docs/spec/05-ai-integration.md` line 285 when this was counted, and line 295 on 2026-11-25 | the worked example of spec 5, which names an imagined corpus |
+| where that one line is | `docs/spec/ai-integration.md` line 285 when this was counted, and line 295 on 2026-11-25 | the worked example of spec 5, which names an imagined corpus |
 | citations in this repository's own code | 0 citations in 365 files, exit status 0 | the checker over `engine/crates/*/src`, `engine/crates/*/tests`, `.claude/hooks`, `.claude/agents`, `.claude/skills`, `.claude/commands`, `.githooks` and `.github` |
 | comment lines that name an `HW-` identifier in any shape | 459 lines in 183 files | `grep -rEn` for a comment marker and `HW-[A-Z]+-[0-9]{4}` on one line, over `engine/crates`, `.claude/hooks`, `tools` and `.githooks`, with each `fixtures` and `target` directory excluded |
 | instruction files for an agent that mention the convention | 0 | `CLAUDE.md` and each file under `.claude/agents`, `.claude/skills` and `.claude/commands` |

@@ -31,7 +31,7 @@ The task names no verb, no file and no kind. It states an intent and a place in 
 
 ## Target
 
-The session writes its entry where [the obligation register](../spec/13-open-obligations.md) lists what this repository still owes, and the oracle reads the section contract of that kind.
+The session writes its entry where [the obligation register](../spec/open-obligations.md) lists what this repository still owes, and the oracle reads the section contract of that kind.
 
 ## Key
 

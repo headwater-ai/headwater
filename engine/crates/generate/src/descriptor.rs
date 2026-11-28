@@ -2,10 +2,10 @@
 //! The corpus descriptor: what a machine reads when it arrives with a location
 //! and nothing else.
 //!
-//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes it at
+//! [Q14](../../../../docs/spec/decisions.md#q14--discovery-surface) fixes it at
 //! `.headwater/corpus.json` and makes it engine-defined, for the reason that a
 //! reader who must consult the taxonomy to find it already knows what it says.
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
+//! [Spec 7](../../../../docs/spec/distribution-and-federation.md#arriving-at-a-corpus-cold)
 //! names what it carries: the root path, the taxonomy identity and version, the
 //! lock hash, the entry points, and each declared export profile.
 //!
@@ -20,9 +20,9 @@
 //! **An entry point is derived, because nothing declares one.** No declaration
 //! in the language holds an entry point, and the specification names the field
 //! without stating its form. Two rules already settled supply it between them.
-//! [Spec 1](../../../../docs/spec/01-conceptual-model.md#projections) says a
+//! [Spec 1](../../../../docs/spec/conceptual-model.md#projections) says a
 //! machine reads the descriptor to learn "where to start", and
-//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived)
+//! [spec 2](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived)
 //! derives reading precedence from the relation family and the nucleus, naming
 //! "reading order in generated indexes" as one of its three consumers. So a
 //! shelf's entry point is the document its derived reading order puts first,
@@ -47,7 +47,7 @@
 //! so `[]` states the first of those two and the block is gone.
 //!
 //! **A profile states its name, its target, its output and its grain, and never
-//! its filter.** [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
+//! its filter.** [Spec 7](../../../../docs/spec/distribution-and-federation.md#arriving-at-a-corpus-cold)
 //! asks for "each declared export profile, with its output location and its
 //! tombstone grain", and it also rules that the descriptor is served and that a
 //! filter reaches it. A filter clause names facet values, which is one step
@@ -88,7 +88,7 @@
 //! *absent* rather than *malformed*. That requires a self-identifying member
 //! whatever the marker rule decides. One member answers both, and two would be
 //! two copies of one fact
-//! ([principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)).
+//! ([principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)).
 
 use crate::profile::Grain;
 use crate::{Identity, Kind, Output, Plan, Projections};

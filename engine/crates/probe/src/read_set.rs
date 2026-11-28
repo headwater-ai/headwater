@@ -12,7 +12,7 @@
 //! The blunt answer is the `tree` digest, which covers every classified
 //! document. It moves on every commit, so every result is stale on every
 //! commit and the report says nothing a reader acts on.
-//! [Spec 15](../../../../docs/spec/15-the-recorder-contract.md) records that
+//! [Spec 15](../../../../docs/spec/the-recorder-contract.md) records that
 //! reasoning and defers the sharp answer to here.
 //!
 //! The sharp answer is this module. A read set is the documents a session was
@@ -61,7 +61,7 @@
 //!
 //! # An absent `calls` key does not widen the set
 //!
-//! [Spec 15](../../../../docs/spec/15-the-recorder-contract.md) fixes three
+//! [Spec 15](../../../../docs/spec/the-recorder-contract.md) fixes three
 //! states for `calls`, and the middle one is the trap. `calls: []` says the
 //! recorder watched and saw no call. No `calls` key says that nothing watched.
 //! A read set that read the second as the first would report that such a
@@ -80,7 +80,7 @@
 //!
 //! [`Staleness::render`] returns a string. There is no `Result`, no status and
 //! no error arm, so no caller of this module can branch a build on a result
-//! going stale. That is the shape [spec 5](../../../../docs/spec/05-ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)
+//! going stale. That is the shape [spec 5](../../../../docs/spec/ai-integration.md#three-tiers-and-the-cadence-follows-the-purpose)
 //! asks for: a probe result going stale is a fact about a measurement, and an
 //! exit status that carried it would put a model's behavior on a build.
 

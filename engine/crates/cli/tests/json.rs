@@ -224,7 +224,7 @@ fn documents() -> Vec<(&'static str, Ran)> {
         ),
         (
             "explain --json",
-            ran(&["explain", "--json", "docs/spec/12-check-layer.md"]),
+            ran(&["explain", "--json", "docs/spec/check-layer.md"]),
         ),
         (
             "gate --json",
@@ -797,7 +797,7 @@ fn the_json_form_moves_no_exit_status() {
         ("route, silent", vec!["route", UNANSWERED]),
         (
             "explain, a document",
-            vec!["explain", "docs/spec/12-check-layer.md"],
+            vec!["explain", "docs/spec/check-layer.md"],
         ),
         (
             "explain, nothing of that name",

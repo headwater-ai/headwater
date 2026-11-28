@@ -19,7 +19,7 @@
 //!
 //! A heading is prose, and this module writes none of it. The text is the value
 //! of the facet in the `name` role, which
-//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
+//! [spec 2](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
 //! carries in the closed role registry. Three candidates were argued and two
 //! are refused.
 //!
@@ -31,7 +31,7 @@
 //!   the corpus root, so no census row covers it, no language regime binds it,
 //!   and no rule reads its links. Prose that a corpus governs would move to the
 //!   one file that the corpus cannot see.
-//!   [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) refused a
+//!   [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) refused a
 //!   second authoring location for an edge. This is the same refusal for prose,
 //!   and prose is the thing the system exists to govern.
 //! - **A facet, read by role.** What ships. A role is the taxonomy's own
@@ -50,7 +50,7 @@
 //! the absence, and a citation into the missing section fails with no statement
 //! anywhere about why. So a shelf whose documents cannot all be named produces
 //! no file at all, and the plan reports the document that stopped it. That is
-//! [spec 4](../../../../docs/spec/04-assurance-model.md)'s rule against a silent
+//! [spec 4](../../../../docs/spec/assurance-model.md)'s rule against a silent
 //! pass, applied to a write.
 //!
 //! # Two documents may not carry one name
@@ -349,7 +349,7 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
         // The two emitters therefore differ in what they show and never in
         // what they claim. `docs/decisions/README.md` renders a decision as
         // `[Q1 — Implementation language](…)`, and
-        // `docs/spec/09-open-questions.md` renders the same decision as a
+        // `docs/spec/open-questions.md` renders the same decision as a
         // heading `## Q1 — Implementation language` over `[HW-DR-0001](…)`.
         // A reader of the second learns one more thing about the same row.
         // The file name stays the fall-through for a document with no
@@ -480,13 +480,13 @@ mod tests {
         let block = "---\n\"headwater:generated\": \"shelf_sections. x\"\nid: HW-REG-x\n---\n\n";
         let out = render(
             "decisions",
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             &sections,
             Some(block),
         );
         assert!(out.starts_with("---\n"), "{out}");
         assert!(
-            headwater_mark::carries_marker("docs/spec/09-open-questions.md", &out),
+            headwater_mark::carries_marker("docs/spec/open-questions.md", &out),
             "{out}"
         );
         assert!(out.contains("\n---\n\n# decisions\n"), "{out}");

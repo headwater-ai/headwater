@@ -6,7 +6,7 @@
 //! The inputs a check may declare are stated twice: once as the fields of
 //! `Scope`, which is what the runner hands an instance and keys its cache on,
 //! and once as the fenced block under *Scope — the declaration everything else
-//! rests on* in `docs/spec/12-check-layer.md`, which is what a rule author reads
+//! rests on* in `docs/spec/check-layer.md`, which is what a rule author reads
 //! before choosing one. Nothing held the two together, and by
 //! [#1407](https://github.com/headwater-ai/headwater/issues/1407) the block
 //! named five of the seven: `needs_claims` and `needs_observations` had landed
@@ -47,7 +47,7 @@ use std::path::{Path, PathBuf};
 const SECTION: &str = "## Scope — the declaration everything else rests on";
 
 fn spec_twelve() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/12-check-layer.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/check-layer.md")
 }
 
 /// Every flag name on a `+ needs_…:` line of the first fenced block after
@@ -105,7 +105,7 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
     let missing: Vec<&&str> = declared.difference(&named).collect();
     assert!(
         extra.is_empty() && missing.is_empty(),
-        "docs/spec/12-check-layer.md's `Scope` block and `Scope` in \
+        "docs/spec/check-layer.md's `Scope` block and `Scope` in \
          engine/crates/check/src/scope.rs disagree. `Scope` declares {missing:?} and the block \
          does not name them. The block names {extra:?} and `Scope` declares no such flag. The \
          block names {named:?}"
@@ -114,7 +114,7 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
     assert_eq!(
         rows.len(),
         named.len(),
-        "docs/spec/12-check-layer.md's `Scope` block names a flag twice: {rows:?}"
+        "docs/spec/check-layer.md's `Scope` block names a flag twice: {rows:?}"
     );
 }
 
@@ -198,7 +198,7 @@ fn the_scope_block_of_spec_12_names_every_grain_the_engine_has() {
     let missing: Vec<&&str> = declared.difference(&named).collect();
     assert!(
         extra.is_empty() && missing.is_empty(),
-        "docs/spec/12-check-layer.md's `Scope` block and `enum Grain` in \
+        "docs/spec/check-layer.md's `Scope` block and `enum Grain` in \
          engine/crates/check/src/scope.rs disagree. `Grain` has {missing:?} and the block does \
          not name them. The block names {extra:?} and `Grain` has no such variant. The block \
          names {named:?}"
@@ -206,7 +206,7 @@ fn the_scope_block_of_spec_12_names_every_grain_the_engine_has() {
     assert_eq!(
         rows.len(),
         named.len(),
-        "docs/spec/12-check-layer.md's `Scope` block names a grain twice: {rows:?}"
+        "docs/spec/check-layer.md's `Scope` block names a grain twice: {rows:?}"
     );
 }
 

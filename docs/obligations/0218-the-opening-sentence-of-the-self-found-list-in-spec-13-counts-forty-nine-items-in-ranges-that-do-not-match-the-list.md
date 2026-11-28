@@ -16,7 +16,7 @@ Run `20260926-0718` found this sentence while it read the section. The product o
 
 ## Obligation
 
-The section "What the engine found about itself" in [13 — Open obligations](../spec/13-open-obligations.md) opens with "Forty-nine items". It names five ranges: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0168, HW-OBL-0172 through HW-OBL-0181, HW-OBL-0183, and HW-OBL-0196. These ranges hold 49 identifiers.
+The section "What the engine found about itself" in [13 — Open obligations](../spec/open-obligations.md) opens with "Forty-nine items". It names five ranges: HW-OBL-0131 through HW-OBL-0159, HW-OBL-0161 through HW-OBL-0168, HW-OBL-0172 through HW-OBL-0181, HW-OBL-0183, and HW-OBL-0196. These ranges hold 49 identifiers.
 
 On 2026-09-26, the list under the sentence held 66 lines. Two differences cause the gap:
 

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 7](../spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) refuses the document grain in one sentence: "the pair grain keeps yesterday's regression loud while the declared debt stays patient". Writing the payload found the limit of that claim. It holds across documents and across rules, and it does not hold inside one cell.
+[Spec 7](../spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) refuses the document grain in one sentence: "the pair grain keeps yesterday's regression loud while the declared debt stays patient". Writing the payload found the limit of that claim. It holds across documents and across rules, and it does not hold inside one cell.
 
 ## Obligation
 
@@ -30,7 +30,7 @@ A pair is a `(document, rule)` cell, so it holds every finding of that rule on t
 
 **The cell absorbs a change of severity, and that is a larger price than a second violation.** A rule is one name and a finding of it carries a severity. `language.controlled.not_met` reports the word limit and the semicolon at warning, and the contraction and the British spelling at error. A pair declared for the advisory half therefore holds the error half as well.
 
-[Q28](../spec/09-decisions.md#q28--whether-an-evaluation-is-governed-prose) measured it on a scratch copy of this corpus, and this paragraph is why it declared no pair. A British spelling was appended to an evaluation under the binding. With no pair, `headwater check --strict` exits 1. With one pair on that document and `language.controlled.not_met`, the same tree exits 0 and the error is reported as migration-pending. So a task taken out to be patient about a backlog also makes the gate patient about a defect the gate was refusing.
+[Q28](../spec/decisions.md#q28--whether-an-evaluation-is-governed-prose) measured it on a scratch copy of this corpus, and this paragraph is why it declared no pair. A British spelling was appended to an evaluation under the binding. With no pair, `headwater check --strict` exits 1. With one pair on that document and `language.controlled.not_met`, the same tree exits 0 and the error is reported as migration-pending. So a task taken out to be patient about a backlog also makes the gate patient about a defect the gate was refusing.
 
 ## Discharge
 

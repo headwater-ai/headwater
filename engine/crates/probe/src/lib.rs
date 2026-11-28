@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The probe harness: the parts of it that are deterministic.
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#measuring-whether-any-of-this-works)
+//! [Spec 5](../../../../docs/spec/ai-integration.md#measuring-whether-any-of-this-works)
 //! declares the probe suite and
 //! [its contract](../../../../docs/interfaces/headwater-probe.md) says where it
 //! sits: outside `check`. The session between `plan` and `record` reaches a
@@ -27,7 +27,7 @@
 //! capture-cost store is not: nothing recomputes a fact about a run that ended,
 //! and a probe result is recomputed from the row above on every run of
 //! `generate --check`. A result whose transcript is not committed carries the
-//! `asserted` [warrant](../../../../docs/spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two),
+//! `asserted` [warrant](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two),
 //! and an asserted document discharges no evidence obligation, so a measurement
 //! layer that skipped the transcript would produce content this corpus refuses
 //! as evidence.
@@ -66,7 +66,7 @@
 //!
 //! # Four things keep this out of every gate, and none of them is a promise
 //!
-//! The list is the one [spec 12](../../../../docs/spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
+//! The list is the one [spec 12](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
 //! fixes for the sampler path, applied here:
 //!
 //! 1. **A crate boundary the compiler holds.** This crate names
@@ -134,7 +134,7 @@ pub use plan::Plan;
 
 headwater_check::enumerated! {
     /// What a probe asks, from the closed set
-    /// [spec 5](../../../../docs/spec/05-ai-integration.md#probe-categories)
+    /// [spec 5](../../../../docs/spec/ai-integration.md#probe-categories)
     /// declares.
     ///
     /// Four, and two earlier ones are deliberately absent. Fidelity is not a probe,
@@ -172,7 +172,7 @@ impl Category {
 
 headwater_check::enumerated! {
     /// The predicate a probe declares, from the closed set
-    /// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+    /// [spec 5](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
     /// fixes.
     ///
     /// Closed because a grader evaluates it. A question whose answer needs a rubric

@@ -186,7 +186,7 @@ Cells: the `absent` arm, which held the documents and none of the harness. Passi
 
 ### R3. What a failing cold agent loaded when it held the skills
 
-Cells: the `cold agent` probe in batch `b`. The `present` arm passed 17 of 118, the `no-skills` arm 33 of 118 and the `absent` arm 36 of 118. The probe passes when a session opens `docs/spec/12-check-layer.md`, and its task is to add a rule to the engine.
+Cells: the `cold agent` probe in batch `b`. The `present` arm passed 17 of 118, the `no-skills` arm 33 of 118 and the `absent` arm 36 of 118. The probe passes when a session opens `docs/spec/check-layer.md`, and its task is to add a rule to the engine.
 
 **Raw recording.** 86 of the 101 failing `present` sessions called the `Skill` tool, and 72 of them called `headwater-taxonomy`. The first skill was `headwater-taxonomy` in 45 sessions, `headwater-orient` in 32, `headwater-engine` in 7 and `hw-run-policy` in 2. In 61 of the 86, one of the next 3 calls named `.headwater/` or `taxonomy-source`. In 48 of the 86, one of the next 3 calls was another skill. In 3 of the 86, one of the next 3 calls named a path under `docs/`. Only 1 of the 101 failing sessions named spec 12 in a call, and all 17 passing sessions did.
 

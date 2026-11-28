@@ -23,11 +23,11 @@ relations:
 
 ## Context
 
-[Q8](../spec/09-decisions.md#q8--probe-cost-and-cadence) rules that a probe is a document with a declared expectation. Nothing states whether the probe kind ships in the base package or in a bundle.
+[Q8](../spec/decisions.md#q8--probe-cost-and-cadence) rules that a probe is a document with a declared expectation. Nothing states whether the probe kind ships in the base package or in a bundle.
 
 ## Obligation
 
-The corpus owes that placement, which is a [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question.
+The corpus owes that placement, which is a [Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question.
 
 ## Discharge
 

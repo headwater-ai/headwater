@@ -298,7 +298,7 @@ expect 'an absolute path inside the repository is refused the same way' \
 # documents declare an edge onto it. "Passes" is the absence of a refusal.
 refute 'an edit to a document that already exists passes' \
     write.sh 'permissionDecision' \
-    '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/spec/05-ai-integration.md"}}'
+    '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/spec/ai-integration.md"}}'
 # #953: a path inside the governed scope now carries the ungoverned-path
 # advisory, so this case names one outside it. "Passes" is still the absence
 # of any output.
@@ -374,7 +374,7 @@ expect 'a Copilot-shaped write of a new document under the corpus root is refuse
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"path":"docs/obligations/9999-a-record-nobody-scaffolded.md","file_text":"placeholder"}}'
 refute 'a Copilot-shaped edit of a document that already exists passes' \
     write.sh 'permissionDecision' \
-    '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"path":"docs/spec/05-ai-integration.md","old_str":"a","new_str":"b"}}'
+    '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"path":"docs/spec/ai-integration.md","old_str":"a","new_str":"b"}}'
 
 printf '\n# write.sh, on PreToolUse: an apply_patch command in place of a file_path\n'
 # Codex names its edit tool `apply_patch` and passes the patch text under
@@ -386,7 +386,7 @@ expect 'an apply_patch add of a new document under the corpus root is refused th
     '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Add File: docs/obligations/9999-a-record-nobody-scaffolded.md\n+placeholder\n*** End Patch"}}'
 refute 'an apply_patch update of a document that already exists passes' \
     write.sh 'permissionDecision' \
-    '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: docs/spec/05-ai-integration.md\n@@\n-old\n+new\n*** End Patch"}}'
+    '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: docs/spec/ai-integration.md\n@@\n-old\n+new\n*** End Patch"}}'
 expect 'a tool_input with neither a file_path nor an apply_patch command is silent' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"some_other_tool","tool_input":{"argument":"nothing this hook reads"}}'
@@ -394,7 +394,7 @@ expect 'a tool_input with neither a file_path nor an apply_patch command is sile
 printf '\n# write.sh, on PreToolUse: impact detection, before the edit\n'
 if [ -x "$engine" ]; then
     expect 'an edit to a path a document governs names that document' \
-        write.sh 0 'docs/spec/05-ai-integration.md' \
+        write.sh 0 'docs/spec/ai-integration.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/write.sh"}}'
     expect 'the advisory says it blocks nothing' \
         write.sh 0 'Nothing here blocks the edit' \
@@ -427,7 +427,7 @@ if [ -x "$engine" ]; then
     # spec 5 now governs `.claude/hooks/**` rather than five files by name, so
     # a new file under that directory is named too.
     expect 'a path under a governed pattern names the document, per HW-DR-0074' \
-        write.sh 0 'docs/spec/05-ai-integration.md' \
+        write.sh 0 'docs/spec/ai-integration.md' \
         '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
 
     # An `interface_contract` over a crate. This is the same position reaching a
@@ -730,7 +730,7 @@ if [ -x "$engine" ]; then
         read.sh 0 '' \
         '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"engine/crates/no-such-crate/src/unrelated.rs"}}'
     expect 'a read of an absolute path inside the root names what governs it' \
-        read.sh 0 'docs/spec/05-ai-integration.md' \
+        read.sh 0 'docs/spec/ai-integration.md' \
         "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$root/.claude/hooks/write.sh\"}}"
     expect 'a read of a path outside the root is silent' \
         read.sh 0 '' \

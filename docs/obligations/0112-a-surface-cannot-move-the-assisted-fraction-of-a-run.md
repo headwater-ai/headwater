@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) claims that a working-tree write tool raises the assisted fraction. [HW-OBL-0004](0004-working-tree-write-tools-have-no-measured-effect.md) makes that claim a comparison of a baseline arm and a treatment arm. The capture-cost store now names the arm of every reading, and `headwater capture` groups by it.
+[Q7](../spec/decisions.md#q7--scope-of-the-mcp-surface) claims that a working-tree write tool raises the assisted fraction. [HW-OBL-0004](0004-working-tree-write-tools-have-no-measured-effect.md) makes that claim a comparison of a baseline arm and a treatment arm. The capture-cost store now names the arm of every reading, and `headwater capture` groups by it.
 
 ## Obligation
 

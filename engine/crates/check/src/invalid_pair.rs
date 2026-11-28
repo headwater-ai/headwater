@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) declares
+//! [Spec 2](../../../../docs/spec/taxonomy-model.md) declares
 //! `invalid_when: {both: {status: current}}` on `conflicts_with`, and lists
 //! "two `current` decisions joined by `conflicts_with`" as an incoherent corpus
 //! state that a check reports. The declaration existed and no rule read it:
@@ -53,7 +53,7 @@
 //! # The severity is advisory, and the finding carries no patch
 //!
 //! The remedy is a judgment.
-//! [Q18](../../../../docs/spec/09-decisions.md#q18--recording-adjudicated-disagreements)
+//! [Q18](../../../../docs/spec/decisions.md#q18--recording-adjudicated-disagreements)
 //! rules that a human settles a live disagreement by writing a decision that
 //! `overrides` or `supersedes` one side, and which side loses is not a thing
 //! this engine can derive. A finding whose remedy is a rewrite is advisory in

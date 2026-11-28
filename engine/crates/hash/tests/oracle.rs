@@ -10,7 +10,7 @@
 //! integrity mark inside a repository that already holds the bytes.
 //!
 //! That digest exists now, in `headwater_resolve::release`, and it reuses this
-//! function. [Q22](../../../../docs/spec/09-decisions.md#q22--the-integrity-posture-of-a-published-package)
+//! function. [Q22](../../../../docs/spec/decisions.md#q22--the-integrity-posture-of-a-published-package)
 //! is where the reuse was decided, and the argument turns on what a dependency
 //! would have bought. It would buy a correct implementation, and it would buy no
 //! authentication at all, because the check gets its strength from a pin that a

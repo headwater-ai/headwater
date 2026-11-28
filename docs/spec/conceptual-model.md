@@ -40,7 +40,7 @@ The split that this model rests on is the one that description logic already nam
 | `taxonomy validate` | TBox-internal consistency |
 | `check`, `taxonomy audit` | ABox against TBox |
 
-The use of the standard names is not decoration. It is why the validation of a taxonomy and the check of a corpus are two different operations, not two halves of one operation ([spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)).
+The use of the standard names is not decoration. It is why the validation of a taxonomy and the check of a corpus are two different operations, not two halves of one operation ([spec 6](engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)).
 
 **Where the ABox stops.** Headwater's assertions are about *documents* — this document exists, is of this kind, governs that code path, supersedes that other document. They are not about the claims *inside* the prose. "The service returns 404 on a missing key" is a sentence. The system knows the document that contains it and what that document governs, but not what it asserts about the world. Reasoning stops at the document boundary. A promise of semantic consistency checking beyond that boundary is a promise that we cannot keep.
 
@@ -50,11 +50,11 @@ A **corpus** is the set of documents that one taxonomy governs, rooted at one di
 
 **One taxonomy and one root make a corpus, and a repository holds one or more.** An earlier draft said that a repository has exactly one corpus, which named the wrong container. A monorepo with several independent documentation sets is not one corpus under strain. It is several corpora that share a working tree, and each one carries its own lock.
 
-Two rules keep the corpora of one tree apart, and neither is complete. A path resolves to exactly one corpus. The rule is the one that shelf patterns already obey: the most specific root wins, and a tie is a schema-validation error. No code implements this rule, because every verb reads one root and one lock. Identifiers carry a namespace from the moment of minting ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and the namespace makes a collision between two corpora unlikely ([Q9](09-decisions.md#q9--multi-repository-corpora)). It does not prevent one. One namespace plus a literal can spell another, and no rule compares the identifier schemes of two locks ([HW-DR-0099](../decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md)).
+Two rules keep the corpora of one tree apart, and neither is complete. A path resolves to exactly one corpus. The rule is the one that shelf patterns already obey: the most specific root wins, and a tie is a schema-validation error. No code implements this rule, because every verb reads one root and one lock. Identifiers carry a namespace from the moment of minting ([spec 3](authoring-and-lifecycle.md#identifiers)), and the namespace makes a collision between two corpora unlikely ([Q9](decisions.md#q9--multi-repository-corpora)). It does not prevent one. One namespace plus a literal can spell another, and no rule compares the identifier schemes of two locks ([HW-DR-0099](../decisions/0099-a-namespace-does-not-keep-two-corpora-apart-and-no-rule-compares-identifier-schemes-across-two-locks.md)).
 
 The engine loads the corpus into a **corpus graph**: typed nodes with typed edges. The engine builds the graph in one pass and caches it. Every downstream operation reuses it. The graph — not the file tree — is the engine's working representation.
 
-**The graph is rebuilt, and nothing stores it.** Every run derives the graph from the Markdown, and the cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and the engine tests the difference ([spec 12](12-check-layer.md#the-correctness-roots)). Every artifact that leaves the graph is a projection, and each one declares what it could not carry ([Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
+**The graph is rebuilt, and nothing stores it.** Every run derives the graph from the Markdown, and the cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and the engine tests the difference ([spec 12](check-layer.md#the-correctness-roots)). Every artifact that leaves the graph is a projection, and each one declares what it could not carry ([Q6](decisions.md#q6--where-the-corpus-graph-lives-at-rest)).
 
 ## Nodes
 
@@ -66,7 +66,7 @@ A file in the corpus. Markdown body, YAML front matter. Every document resolves 
 
 A named region of the corpus — in practice a directory or glob — that carries a purpose. `specifications/`, `decisions/`, `standards/` are shelves. A shelf is the **primary classification axis**. Placement is the loudest signal that a document sends. Thus the schema treats placement as authoritative, and metadata never contradicts it.
 
-A shelf is **homogeneous** when every document on it is of one kind, and **heterogeneous** when it legitimately holds several. This distinction controls if documents on the shelf must carry a kind discriminator (see [taxonomy model](02-taxonomy-model.md)).
+A shelf is **homogeneous** when every document on it is of one kind, and **heterogeneous** when it legitimately holds several. This distinction controls if documents on the shelf must carry a kind discriminator (see [taxonomy model](taxonomy-model.md)).
 
 ### Kind
 
@@ -86,9 +86,9 @@ The engine resolves a kind from a document's position (shelf + path pattern) and
 
 A node that represents something outside the corpus that documents point at. Examples: a source path, a component, a work item, a service, a released artifact, a URL. Anchors turn otherwise-dangling references into typed nodes. The engine can then check them, traverse them, and answer "what governs this code path?" without a special case for every kind of pointer.
 
-An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle. Every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it. Thus a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed. Anchor strings normalize before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)).
+An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle. Every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it. Thus a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed. Anchor strings normalize before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding ([spec 2](taxonomy-model.md#behavior-at-the-limits)).
 
-Resolution has three outcomes and not two. An anchor resolves, or it fails to resolve, or its target sits behind a declared withholding. The third outcome is **withheld**, and it is never reported as the second. A withheld target is a fact about a filter that somebody declared. An unresolved target is a defect. To report them as one class teaches a reader to ignore the class that carries the defects ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+Resolution has three outcomes and not two. An anchor resolves, or it fails to resolve, or its target sits behind a declared withholding. The third outcome is **withheld**, and it is never reported as the second. A withheld target is a fact about a filter that somebody declared. An unresolved target is a defect. To report them as one class teaches a reader to ignore the class that carries the defects ([Q17](decisions.md#q17--governed-access-and-the-solution-layer)).
 
 ## Edges
 
@@ -109,7 +109,7 @@ Because relation semantics live in the schema, the checks over them are generic.
 
 #### The authored form
 
-Every relation instance is declared under one `relations:` key in front matter ([Q4](09-decisions.md#q4--relation-storage)). A relation name and a facet name come from separate declarations. Under a flat front matter, a taxonomy that declares both a facet and a relation called `owns` is unresolvable. One block also gives `check --fix` one region to rewrite.
+Every relation instance is declared under one `relations:` key in front matter ([Q4](decisions.md#q4--relation-storage)). A relation name and a facet name come from separate declarations. Under a flat front matter, a taxonomy that declares both a facet and a relation called `owns` is unresolvable. One block also gives `check --fix` one region to rewrite.
 
 An entry is a target reference, or a mapping with `to:` and instance attributes. The scalar is sugar for a mapping whose only key is `to`, and both forms produce the same edge.
 
@@ -123,23 +123,23 @@ relations:
       cue: the retry budget, not the error taxonomy
 ```
 
-A target is an identifier and never a path. Document identifiers are namespaced, globally resolvable, and never reused ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and a path is a location that moves. An anchor target is the anchor string, which its resolver normalizes.
+A target is an identifier and never a path. Document identifiers are namespaced, globally resolvable, and never reused ([spec 3](authoring-and-lifecycle.md#identifiers)), and a path is a location that moves. An anchor target is the anchor string, which its resolver normalizes.
 
-An edge is identified by the source identifier, the relation name, and the normalized target. List order therefore carries no meaning, and a repeated triple in one document is an error. That identity is what the `Edge` scope of [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) keys on.
+An edge is identified by the source identifier, the relation name, and the normalized target. List order therefore carries no meaning, and a repeated triple in one document is an error. That identity is what the `Edge` scope of [spec 12](check-layer.md#scope--the-declaration-everything-else-rests-on) keys on.
 
-An instance attribute takes a facet's value space, and it is never a reference. A connection is a relation, and the rule that removed reference-valued facets reaches edges before anyone finds the loophole ([spec 2](02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)).
+An instance attribute takes a facet's value space, and it is never a reference. A connection is a relation, and the rule that removed reference-valued facets reaches edges before anyone finds the loophole ([spec 2](taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)).
 
 #### Prose links are not relations
 
 A prose link is evidence that an author found a reference worth making at one point in a text. A relation asserts something about two documents that holds wherever a reader meets them. The engine extracts every prose link and checks that it resolves. No syntax promotes one into a relation. Two authoring locations for one edge leave three questions unanswered: which location wins, which span a finding anchors to, and what a fix writes.
 
-The cost of that ruling is a reference written twice. [Spec 4](04-assurance-model.md#declaration-moves-the-boundary) absorbs most of it: an extracted link with no declared relation is an advisory finding, and the fix writes the declaration.
+The cost of that ruling is a reference written twice. [Spec 4](assurance-model.md#declaration-moves-the-boundary) absorbs most of it: an extracted link with no declared relation is an advisory finding, and the fix writes the declaration.
 
-Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal set. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
+Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal set. The rest are complete declarations that an overlay pulls in by reference ([spec 2](taxonomy-model.md#the-decision-relation-vocabulary)).
 
-A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artifacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
+A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artifacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
 
-The end that governs the *reading* of two linked documents is derived, never declared. On a nucleus–satellite relation the nucleus governs: a document that cannot stand alone cannot govern the reading of the one that it depends on. On succession the successor governs — that is what succession means. Other multinuclear relations carry no reading order, and none needed one to date. A routing or projection outcome that requires one is the evidence that reopens this ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)).
+The end that governs the *reading* of two linked documents is derived, never declared. On a nucleus–satellite relation the nucleus governs: a document that cannot stand alone cannot govern the reading of the one that it depends on. On succession the successor governs — that is what succession means. Other multinuclear relations carry no reading order, and none needed one to date. A routing or projection outcome that requires one is the evidence that reopens this ([spec 2](taxonomy-model.md#reading-precedence-is-derived)).
 
 ### Facet
 
@@ -151,7 +151,7 @@ A connection is a relation. An opaque external identifier (a ticket number, a fr
 
 Facets are how a taxonomy expresses everything that the directory cannot: lifecycle state, freshness, ownership, scope, audience, provenance, confidentiality, kind discriminators on heterogeneous shelves. The vocabulary of an enum facet is part of the schema, so an extension to it is a deliberate, reviewable, versioned change.
 
-Seven facet roles are engine-significant, and the registry is closed ([spec 2](02-taxonomy-model.md#the-meta-schema) owns it):
+Seven facet roles are engine-significant, and the registry is closed ([spec 2](taxonomy-model.md#the-meta-schema) owns it):
 
 - **`state`** — the lifecycle regime interprets it.
 - **`state_entered`** — each transition stamps it. It is the origin for state-conditional participation windows.
@@ -159,7 +159,7 @@ Seven facet roles are engine-significant, and the registry is closed ([spec 2](0
 - **`freshness`** — staleness detection interprets it.
 - **`scent`** — what routing, indexes, and agent-facing pointers show (the `summary` facet in the default taxonomy).
 - **`name`** — the text that a projection writes as a heading or as a row (the `title` facet in the default taxonomy). A projection may not read a facet by the name of the facet ([the `headwater generate` contract](../interfaces/headwater-generate.md#what-a-projection-writes-and-why)).
-- **`former_identifier`** — the identifiers that a document held before its current one (the `former_ids` facet in the default taxonomy). The identifier index resolves each one to that document ([spec 3](03-authoring-and-lifecycle.md#identifiers)).
+- **`former_identifier`** — the identifiers that a document held before its current one (the `former_ids` facet in the default taxonomy). The identifier index resolves each one to that document ([spec 3](authoring-and-lifecycle.md#identifiers)).
 
 The facet that plays each role is declared, not assumed. A corpus may call its state facet `status`, `stage`, or `état`. But the roles themselves come only from the registry.
 
@@ -169,7 +169,7 @@ A **regime** is a reusable, named bundle of rules that a kind opts into. Regimes
 
 - **Voice regime** — the voice in which a document is written, with the machine-checkable part of it: e.g. *declarative present-state* (no future intent, no narration of change, no phased-rollout language), *narrative* (time-boxed exploration, changelogs), or *unconstrained*.
 - **Lifecycle regime** — a state machine over the state facet: states, legal transitions, terminal states, and what each state implies (e.g. superseded documents are retained and delinked from live dependency paths).
-- **Language regime** — the language, the variant, and the controlled profile that a kind writes in. The lexical checks read the spelling lexicon, the sentence limits, and the retired terms from it ([spec 2](02-taxonomy-model.md#language-is-declared-not-assumed)).
+- **Language regime** — the language, the variant, and the controlled profile that a kind writes in. The lexical checks read the spelling lexicon, the sentence limits, and the retired terms from it ([spec 2](taxonomy-model.md#language-is-declared-not-assumed)).
 
 An earlier draft had two more regimes, and each was one parameter in a wrapper. **Freshness policy** — the staleness threshold, drift weighting, and posture — lives on the freshness facet itself, and it is mandatory. A facet that carries the freshness role without applicable policy is invalid. **Size budgets** live on the agent-facing kinds and projections that they meter, and they are mandatory there. An agent-facing projection without an applicable budget is invalid. The protections moved to their enforcement points. Only the wrappers were deleted.
 
@@ -181,13 +181,13 @@ A statement that the corpus commits to, expressed as an **invariant** with a sta
 
 ### Control
 
-A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory or blocking. It also declares the class that it acts in, such as detective ([spec 4](04-assurance-model.md#controls-are-data)).
+A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory or blocking. It also declares the class that it acts in, such as detective ([spec 4](assurance-model.md#controls-are-data)).
 
 These are the section's only two concepts. Their binding is visible in the **register projection**: the generated, checked view of which controls discharge which obligations. The view also gives the explicit disposition of every obligation with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist, accepted) — and control health, suppressions, and waivers. Every obligation carries exactly one disposition.
 
 The register projection is a projection like any other (below), distinguished only in that it is engine-defined and non-optional. The binding lives on the control (`discharges:`), and the disposition lives on the obligation. The view is never authored, and coverage claims are generated from it, never asserted in prose.
 
-See [assurance model](04-assurance-model.md).
+See [assurance model](assurance-model.md).
 
 ## Projections
 
@@ -197,15 +197,15 @@ A **projection** is a derived artifact computed from the graph. Examples: a shel
 - **checked** — CI fails when a committed projection differs from a regenerated one.
 - **declared** — the schema names them, so a taxonomy can add projections without engine changes, within the set of projection kinds that the engine implements.
 
-**A projection may be filtered, and a filtered projection says so.** An [export profile](07-distribution-and-federation.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+**A projection may be filtered, and a filtered projection says so.** An [export profile](distribution-and-federation.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](decisions.md#q17--governed-access-and-the-solution-layer)).
 
-**The corpus descriptor is a projection too.** A machine that arrives at a location reads it to learn which corpora live there, what taxonomy governs each one, and where to start ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)). The engine generates it from the roots, holds it to regeneration, and filters it like any other served artifact ([Q14](09-decisions.md#q14--discovery-surface)). Like the register projection, it is engine-defined and non-optional, and its path is the engine's rather than the taxonomy's. A reader who must consult the taxonomy to find the descriptor already knows what it would say.
+**The corpus descriptor is a projection too.** A machine that arrives at a location reads it to learn which corpora live there, what taxonomy governs each one, and where to start ([spec 7](distribution-and-federation.md#arriving-at-a-corpus-cold)). The engine generates it from the roots, holds it to regeneration, and filters it like any other served artifact ([Q14](decisions.md#q14--discovery-surface)). Like the register projection, it is engine-defined and non-optional, and its path is the engine's rather than the taxonomy's. A reader who must consult the taxonomy to find the descriptor already knows what it would say.
 
 ## Warrant
 
 A **warrant** is the mechanism by which the corpus can defend that a document is what it claims to be. The term comes from Toulmin's model of argument, where the warrant licenses the step from data to a claim. Here it licenses the step from *this document says X* to *the corpus asserts X*.
 
-Every document carries exactly one warrant. The set is closed, the engine owns it, and the value lives in the provenance block ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)).
+Every document carries exactly one warrant. The set is closed, the engine owns it, and the value lives in the provenance block ([spec 3](authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)).
 
 | Warrant | What stands behind the content | What fails loudly |
 |---|---|---|
@@ -218,12 +218,12 @@ Every document carries exactly one warrant. The set is closed, the engine owns i
 
 **An absent value is a finding, never a default.** A reader cannot tell an unknown value from a missing field. SPDX made the same ruling when it gave a license field both `NONE` and `NOASSERTION` ([HW-EVAL-adjacent-work §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
 
-**Agency and warrant are different fields.** An agent may draft a document that a human then accepts, and the warrant of that document is `accepted`. `asserted` marks content that nobody accepted, whoever wrote it. To read the author as the boundary loses the case that matters, which is unreviewed content at a volume where review does not scale ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).
+**Agency and warrant are different fields.** An agent may draft a document that a human then accepts, and the warrant of that document is `accepted`. `asserted` marks content that nobody accepted, whoever wrote it. To read the author as the boundary loses the case that matters, which is unreviewed content at a volume where review does not scale ([Q15](decisions.md#q15--a-synthesized-content-tier)).
 
 Two rules constrain `asserted` content, and each one reuses a distinction that this document already makes.
 
-- **No edge may let unwarranted content govern the reading of warranted content.** [Reading precedence](02-taxonomy-model.md#reading-precedence-is-derived) is derived from nuclearity, from succession, and from the governance family. Where the end that governs is `asserted` and the other end is not, the edge is a finding. An edge that ends on an external anchor carries no reading precedence, so an asserted document may declare `governs` against a code path. That edge is what gives the document write-time impact detection.
-- **An asserted document does not discharge an evidence obligation.** `evidence_basis: evidenced` obliges an external, auditable artifact, and an asserted document is neither ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)).
+- **No edge may let unwarranted content govern the reading of warranted content.** [Reading precedence](taxonomy-model.md#reading-precedence-is-derived) is derived from nuclearity, from succession, and from the governance family. Where the end that governs is `asserted` and the other end is not, the edge is a finding. An edge that ends on an external anchor carries no reading precedence, so an asserted document may declare `governs` against a code path. That edge is what gives the document write-time impact detection.
+- **An asserted document does not discharge an evidence obligation.** `evidence_basis: evidenced` obliges an external, auditable artifact, and an asserted document is neither ([spec 3](authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)).
 
 ## How the pieces fit
 

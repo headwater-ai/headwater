@@ -21,11 +21,11 @@ relations:
 
 ## Context
 
-`opens_a_sentence` in `engine/crates/doc/src/sentences.rs` decides whether a terminator ends a sentence. It admits a capital, a digit, and one of `"`, `“`, `(`, `[`, a backtick, `*`, `_` and `§`. It does not admit `#`. The guard exists to stop an abbreviation from splitting one sentence into two, which [Q5](../spec/09-decisions.md#q5--voice-checking-depth) measured as the largest source of false findings.
+`opens_a_sentence` in `engine/crates/doc/src/sentences.rs` decides whether a terminator ends a sentence. It admits a capital, a digit, and one of `"`, `“`, `(`, `[`, a backtick, `*`, `_` and `§`. It does not admit `#`. The guard exists to stop an abbreviation from splitting one sentence into two, which [Q5](../spec/decisions.md#q5--voice-checking-depth) measured as the largest source of false findings.
 
 A hash followed by a number is how this corpus cites an issue in running prose, and the citation often opens a sentence. When it does, the terminator before it ends nothing. Both sentences reach `language.controlled.not_met` as one, and the reported word count is their sum.
 
-**Measured, in a scratch paragraph appended to `docs/spec/06-engine-architecture.md` and then removed.** Two sentences of 15 and 16 words, where the second opens with `#346`, are reported as one sentence of 31 words at column 1. The same pair with the second sentence opening with a word is reported as two sentences and no finding. A code span at the head of a sentence splits correctly, because a backtick is in the set.
+**Measured, in a scratch paragraph appended to `docs/spec/engine-architecture.md` and then removed.** Two sentences of 15 and 16 words, where the second opens with `#346`, are reported as one sentence of 31 words at column 1. The same pair with the second sentence opening with a word is reported as two sentences and no finding. A code span at the head of a sentence splits correctly, because a backtick is in the set.
 
 ## Obligation
 

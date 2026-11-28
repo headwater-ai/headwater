@@ -90,6 +90,6 @@ The default server writes no file. A write-enabled server ends its usable sessio
 
 [`headwater route`](headwater-route.md) and [`headwater explain`](headwater-explain.md) document the terminal reads served by this protocol.
 
-[Spec 5](../spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) defines the query, working-tree write and landed-write classes.
+[Spec 5](../spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) defines the query, working-tree write and landed-write classes.
 
 [Queries and explain](../subsystems/queries-and-explain.md#mcp) defines the MCP transport boundary.
